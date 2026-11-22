@@ -532,6 +532,9 @@ pub fn run(shutdown: &'static AtomicBool, listener: ListenerConfig, hidden: bool
             },
         )
     };
+    // Labs › Notice patterns' offer, clear of the meeting capsule's corner.
+    #[cfg(hex_capture)]
+    let routine_offer = crate::rune_ui::skills::routine_offer::RoutineOffer::install(&mut app);
     let hud = crate::rune_hud::install(&mut app);
     crate::rune_ui::live_text::install(&mut app, crate::rune_hud::live_text_place);
     #[cfg(hex_capture)]
@@ -569,6 +572,8 @@ pub fn run(shutdown: &'static AtomicBool, listener: ListenerConfig, hidden: bool
         capture_overlays,
         #[cfg(hex_capture)]
         notice_events,
+        #[cfg(hex_capture)]
+        routine_offer,
         runtime: handle,
         shutdown,
         indicator_events,
@@ -675,11 +680,11 @@ struct Pump {
     capsules: crate::rune_ui::meeting_capsules::MeetingCapsules,
     #[cfg(hex_capture)]
     capture_overlays: Option<crate::rune_ui::capture_capsule::feed::CaptureOverlays>,
-    /// Labs › Notice patterns' offers and pane refreshes. Held so the
-    /// watcher's sends land somewhere; the offer capsule reads it.
+    /// Labs › Notice patterns' offers and pane refreshes.
     #[cfg(hex_capture)]
-    #[allow(dead_code)]
     notice_events: Receiver<crate::apprentice::notice::watch::NoticeEvent>,
+    #[cfg(hex_capture)]
+    routine_offer: crate::rune_ui::skills::routine_offer::RoutineOffer,
     runtime: RuntimeHandle,
     shutdown: &'static AtomicBool,
     indicator_events: Receiver<DictationIndicatorEvent>,
@@ -914,6 +919,8 @@ impl Pump {
         if let Some(overlays) = &mut self.capture_overlays {
             overlays.follow_recordings();
         }
+        #[cfg(hex_capture)]
+        self.notice();
         if self.status_actions.is_none() {
             return;
         }
@@ -938,6 +945,22 @@ impl Pump {
             crate::macos_rune::status_item::update_pause();
             self.meeting_menu_at = now + MEETING_MENU_REFRESH;
         }
+    }
+
+    /// Shows the watcher's offers, closes an unanswered one, and counts
+    /// pane refreshes.
+    #[cfg(hex_capture)]
+    fn notice(&mut self) {
+        use crate::apprentice::notice::watch::{self, NoticeEvent};
+        while let Ok(event) = self.notice_events.try_recv() {
+            match event {
+                NoticeEvent::Offer { id, title, line } => {
+                    self.routine_offer.show(id, title, line, Instant::now());
+                }
+                NoticeEvent::Changed => watch::note_changed(),
+            }
+        }
+        self.routine_offer.tick(Instant::now());
     }
 
     fn runtime_cancel(&self) {

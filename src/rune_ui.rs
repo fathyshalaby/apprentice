@@ -72,7 +72,7 @@ mod shortcut_rule;
 mod sidebar;
 mod sidebar_update;
 #[cfg(all(target_os = "macos", hex_capture))]
-mod skills;
+pub(crate) mod skills;
 mod sound_sets;
 mod spark;
 mod speech_model;

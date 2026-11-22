@@ -10,6 +10,7 @@
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::SyncSender;
 use std::sync::{Mutex, MutexGuard};
 use std::thread::JoinHandle;
@@ -69,6 +70,21 @@ static STORE: Mutex<()> = Mutex::new(());
 static HEALTH: Mutex<Vec<(PathBuf, FolderHealth)>> = Mutex::new(Vec::new());
 /// The watched folders from the last settings file that read cleanly.
 static LAST_GOOD: Mutex<Option<Vec<PathBuf>>> = Mutex::new(None);
+/// Counts the [`NoticeEvent::Changed`] the app has taken, so the pane reads
+/// again when it moves.
+static CHANGED: AtomicU64 = AtomicU64::new(0);
+
+/// The app took a [`NoticeEvent::Changed`].
+pub fn note_changed() {
+    CHANGED.fetch_add(1, Ordering::AcqRel);
+}
+
+/// Moves each time routines or folder health change.
+// Its reader, the Skills pane, comes later.
+#[allow(dead_code)]
+pub fn changed_generation() -> u64 {
+    CHANGED.load(Ordering::Acquire)
+}
 
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(|error| error.into_inner())
@@ -98,8 +114,6 @@ pub fn start(events: SyncSender<NoticeEvent>, wake: impl Fn() + Send + 'static) 
 }
 
 /// Show me: no more offers, and a lesson starts.
-// Its callers, the offer capsule and the Skills pane, come later.
-#[allow(dead_code)]
 pub fn accept(id: &str) {
     if let Some(dir) = log::noticed_dir()
         && set_state(&dir, id, RoutineState::Shown)
@@ -113,8 +127,6 @@ pub fn accept(id: &str) {
 
 /// Stop asking or Forget: never offered or listed again, and its events are
 /// dropped.
-// Its callers, the offer capsule and the Skills pane, come later.
-#[allow(dead_code)]
 pub fn ignore(id: &str) {
     let Some(dir) = log::noticed_dir() else {
         return;

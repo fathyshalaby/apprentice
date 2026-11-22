@@ -113,6 +113,8 @@ pub(super) const TRANSLATIONS: &[(&str, [&str; 6])] = &[
     ("files", ["pliki", "文件", "ファイル", "Dateien", "archivos", "файли"]),
     ("New {kind} in {root}", ["Nowy plik {kind} w {root}", "{root} 中有新的 {kind}", "{root} に新しい {kind}", "Neue {kind}-Datei in {root}", "Nuevo {kind} en {root}", "Новий {kind} у {root}"]),
     ("You usually file these ({days} days). Show me how?", ["Zwykle je porządkujesz (dni: {days}). Pokażesz mi jak?", "你通常会整理这些文件（{days} 天）。给我演示一下？", "いつもこれを整理していますね（{days} 日）。やり方を見せてくれますか？", "Du legst diese meist ab ({days} Tage). Zeigst du mir, wie?", "Sueles archivar estos ({days} días). ¿Me enseñas cómo?", "Ви зазвичай розкладаєте їх ({days} дн.). Покажете як?"]),
+    ("Show me", ["Pokaż", "演示", "見せる", "Zeigen", "Mostrar", "Показати"]),
+    ("Stop asking", ["Nie pytaj więcej", "不再询问", "今後は聞かない", "Nicht mehr fragen", "No volver a preguntar", "Більше не питати"]),
 ];
 
 /// Brazilian Portuguese, for the card and the pane.
@@ -229,6 +231,8 @@ pub(super) const PORTUGUESE: &[(&str, &str)] = &[
     ("files", "arquivos"),
     ("New {kind} in {root}", "Novo {kind} em {root}"),
     ("You usually file these ({days} days). Show me how?", "Você costuma arquivar estes ({days} dias). Me mostra como?"),
+    ("Show me", "Mostrar"),
+    ("Stop asking", "Não perguntar mais"),
 ];
 
 /// French, for the card and the pane.
@@ -345,6 +349,8 @@ pub(super) const FRENCH: &[(&str, &str)] = &[
     ("files", "fichiers"),
     ("New {kind} in {root}", "Nouveau {kind} dans {root}"),
     ("You usually file these ({days} days). Show me how?", "Vous les rangez d'habitude ({days} jours). Vous me montrez ?"),
+    ("Show me", "Montrer"),
+    ("Stop asking", "Ne plus demander"),
 ];
 
 /// Russian, for the card and the pane.
@@ -461,4 +467,6 @@ pub(super) const RUSSIAN: &[(&str, &str)] = &[
     ("files", "файлы"),
     ("New {kind} in {root}", "Новый {kind} в {root}"),
     ("You usually file these ({days} days). Show me how?", "Вы обычно раскладываете их ({days} дн.). Покажете как?"),
+    ("Show me", "Показать"),
+    ("Stop asking", "Больше не спрашивать"),
 ];

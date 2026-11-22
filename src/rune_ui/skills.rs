@@ -13,6 +13,7 @@ mod draft_view;
 mod fixtures;
 mod lesson_cards;
 mod model_picker;
+pub(crate) mod routine_offer;
 #[cfg(test)]
 mod tests;
 
