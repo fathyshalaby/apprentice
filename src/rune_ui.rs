@@ -422,7 +422,8 @@ pub(crate) enum Destination {
     Meetings(Option<String>),
     Modes,
     History,
-    /// Labs › Watch and learn's Skills pane.
+    /// Labs › Watch and learn's Skills pane (macOS).
+    #[cfg(all(target_os = "macos", hex_capture))]
     Skills,
 }
 
@@ -453,6 +454,7 @@ pub(crate) fn show(ui: &mut Ui, destination: Destination, tx: &mut Tx) {
             }
         }
         Destination::History => Pane::History,
+        #[cfg(all(target_os = "macos", hex_capture))]
         Destination::Skills => Pane::Skills,
     };
     ui.close_dialogs();

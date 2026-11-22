@@ -94,11 +94,11 @@ use own_windows::OwnWindowIds;
 use own_windows::{OWN_WINDOWS, own_windows_of};
 pub use own_windows::{OwnWindow, exclude_window, own_windows_recorded, record_own_windows};
 
+pub use lesson::Purpose;
 // Read by Watch and learn's lesson list and hook (macOS).
-pub use lesson::LESSON_MARK;
-pub use lesson::{Purpose, on_lesson_written};
-// Read by Watch and learn's lesson list (macOS).
-#[allow(unused_imports)]
+#[cfg_attr(not(target_os = "macos"), allow(unused_imports))]
+pub use lesson::{LESSON_MARK, on_lesson_written};
+#[cfg_attr(not(target_os = "macos"), allow(unused_imports))]
 pub(crate) use library::load as load_capture;
 pub use library::{
     explain as explain_capture, list as list_captures, send as send_capture, show as show_capture,

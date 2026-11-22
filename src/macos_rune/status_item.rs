@@ -50,6 +50,7 @@ pub enum StatusItemAction {
     /// The recording row: the Meetings pane.
     OpenMeetings,
     /// A lesson was written: the Skills pane (Labs › Watch and learn).
+    #[cfg(hex_capture)]
     OpenSkills,
     /// The update item: check, download, or restart into an update.
     Update,

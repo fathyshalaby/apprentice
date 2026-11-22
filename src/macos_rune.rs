@@ -1044,6 +1044,7 @@ impl Pump {
                 }
             }
             StatusItemAction::OpenMeetings => show(&self.window, Destination::Meetings(None)),
+            #[cfg(hex_capture)]
             StatusItemAction::OpenSkills => show(&self.window, Destination::Skills),
             // Labs › Pause from menu bar: only keyboard shortcuts stop; the
             // menu's own actions keep working. The row says Resume Hex while
