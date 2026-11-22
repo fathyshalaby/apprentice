@@ -101,6 +101,11 @@ fn delete(ui: &mut Ui, slug: &str) {
         return;
     }
     pane.armed = None;
+    // Nothing is removed from an agent while the skill itself can't be.
+    if let Err(message) = pane.ready_store() {
+        pane.error = Some(message);
+        return;
+    }
     let ours: Vec<Agent> = pane
         .agents
         .get(slug)

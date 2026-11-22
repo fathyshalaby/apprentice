@@ -1,8 +1,8 @@
 //! The Skills pane's draft view: a drafted skill's fields to read and edit,
 //! its why? questions one at a time, and Approve skill; or a saved skill
 //! reopened with Edit, whose Save changes is its own approval. Discarding
-//! a draft takes a second click; a name already taken asks Replace or Keep
-//! both.
+//! a draft takes a second click in another place; a name already taken
+//! asks Replace or Keep both. What those buttons do is in `approval`.
 
 use rune::{El, TextEdit, col, row, text};
 use rune_kit::{TextArea, TextInput};
@@ -12,9 +12,10 @@ use super::super::controls::{
     ButtonKind, DESCRIPTION, METRICS, Paint, button, note, section_with, setting_row,
 };
 use super::super::lists::{Tone, tone_tag};
+use super::approval::{answer, approve, discard, save_edit, skip};
 use super::small;
 use crate::apprentice::skill::{Skill, Step};
-use crate::apprentice::store::{Clash, Draft, StoreError};
+use crate::apprentice::store::{Clash, Draft};
 use crate::desktop::i18n::{tr, tr_fill, tr_named};
 
 /// Where the open skill comes from and goes back to.
@@ -42,10 +43,12 @@ pub(in crate::rune_ui) struct Editor {
     /// The skill as opened, with the why? answers given since.
     pub(in crate::rune_ui) base: Skill,
     /// The skill as last saved, to tell unsaved typing apart.
-    saved: Skill,
+    pub(super) saved: Skill,
     pub(in crate::rune_ui) name: TextEdit,
     pub(in crate::rune_ui) description: TextEdit,
     pub(in crate::rune_ui) when_to_use: TextEdit,
+    /// One input per line.
+    pub(in crate::rune_ui) inputs: TextEdit,
     pub(in crate::rune_ui) steps: Vec<StepEdit>,
     pub(in crate::rune_ui) verification: TextEdit,
     pub(in crate::rune_ui) edge_cases: TextEdit,
@@ -70,6 +73,7 @@ impl Editor {
             name: TextEdit::new(skill.name.clone()),
             description: TextEdit::new(skill.description.clone()),
             when_to_use: TextEdit::new(skill.when_to_use.clone()),
+            inputs: TextEdit::new(skill.inputs.join("\n")),
             steps: skill
                 .steps
                 .iter()
@@ -116,6 +120,7 @@ impl Editor {
         }
         skill.description = self.description.text.trim().to_owned();
         skill.when_to_use = self.when_to_use.text.trim().to_owned();
+        skill.inputs = lines(&self.inputs);
         skill.steps = self
             .base
             .steps
@@ -138,7 +143,7 @@ impl Editor {
     }
 
     /// The draft as it would be saved now.
-    fn draft(&self) -> Option<Draft> {
+    pub(super) fn draft(&self) -> Option<Draft> {
         let Source::Draft {
             id,
             lesson_id,
@@ -209,172 +214,6 @@ fn step_field(ui: &mut Ui, index: usize, detail: bool) -> &mut TextEdit {
         }
         _ => &mut pane.scratch,
     }
-}
-
-/// Saves the open draft as edited; false, with the reason shown, when it
-/// can't be.
-fn persist(ui: &mut Ui) -> bool {
-    let pane = &mut ui.skills;
-    let (Some(editor), Some(store)) = (&mut pane.editor, &pane.store) else {
-        return true;
-    };
-    let Some(draft) = editor.draft() else {
-        return true;
-    };
-    match store.save_draft(&draft) {
-        Ok(()) => {
-            editor.saved = draft.skill.clone();
-            if let Some(shown) = pane.drafts.iter_mut().find(|d| d.id == draft.id) {
-                *shown = draft;
-            }
-            true
-        }
-        Err(error) => {
-            editor.error = Some(tr_fill("Couldn't save the draft: {}", &error.to_string()));
-            false
-        }
-    }
-}
-
-/// Answer: the typed reason becomes the step's why.
-fn answer(ui: &mut Ui) {
-    let Some(editor) = &mut ui.skills.editor else {
-        return;
-    };
-    let Some(index) = editor.question() else {
-        return;
-    };
-    let why = editor.answer.text.trim().to_owned();
-    if why.is_empty() {
-        return;
-    }
-    editor.base.steps[index].why = Some(why);
-    editor.answer = TextEdit::default();
-    persist(ui);
-}
-
-fn skip(ui: &mut Ui) {
-    if let Some(editor) = &mut ui.skills.editor
-        && let Some(index) = editor.question()
-    {
-        editor.skipped.push(index);
-        editor.answer = TextEdit::default();
-    }
-}
-
-/// Approve skill: the draft as edited becomes a skill. A taken name asks
-/// first; `clash` is the answer.
-fn approve(ui: &mut Ui, clash: Option<Clash>) {
-    let pane = &mut ui.skills;
-    let Some(draft) = pane.editor.as_ref().and_then(Editor::draft) else {
-        return;
-    };
-    let Some(store) = &pane.store else {
-        // A scene: the draft becomes a skill on screen only.
-        pane.drafts.retain(|d| d.id != draft.id);
-        pane.expanded = Some(draft.skill.slug.clone());
-        pane.skills.retain(|s| s.slug != draft.skill.slug);
-        pane.skills.push(draft.skill);
-        pane.editor = None;
-        pane.changed();
-        return;
-    };
-    let approved = store
-        .save_draft(&draft)
-        .and_then(|()| store.approve(&draft.id, clash));
-    match approved {
-        Ok(approved) => {
-            pane.drafts.retain(|d| d.id != draft.id);
-            pane.skills.retain(|s| s.slug != approved.slug);
-            pane.skills.push(approved.skill.clone());
-            pane.skills.sort_by_key(|skill| skill.name.to_lowercase());
-            pane.agents.insert(
-                approved.slug.clone(),
-                super::agents::rows(
-                    crate::agent_install::Paths::current().as_ref(),
-                    &approved.skill,
-                ),
-            );
-            pane.expanded = Some(approved.slug);
-            pane.editor = None;
-            pane.changed();
-        }
-        Err(StoreError::Clash(slug)) => {
-            if let Some(editor) = &mut pane.editor {
-                editor.clash = Some(slug);
-            }
-        }
-        Err(error) => {
-            if let Some(editor) = &mut pane.editor {
-                editor.error = Some(tr_fill("Couldn't save the skill: {}", &error.to_string()));
-            }
-        }
-    }
-}
-
-/// Save changes on a saved skill: its own approval, with a new version.
-fn save_edit(ui: &mut Ui) {
-    let pane = &mut ui.skills;
-    let Some(editor) = &pane.editor else {
-        return;
-    };
-    let skill = editor.skill();
-    let saved = match &pane.store {
-        Some(store) => store.save_edit(skill),
-        None => Ok(Skill {
-            version: skill.version + 1,
-            ..skill
-        }),
-    };
-    match saved {
-        Ok(saved) => {
-            if let Some(shown) = pane.skills.iter_mut().find(|s| s.slug == saved.slug) {
-                *shown = saved.clone();
-            }
-            if pane.fixture.is_none() {
-                let paths = crate::agent_install::Paths::current();
-                pane.agents.insert(
-                    saved.slug.clone(),
-                    super::agents::rows(paths.as_ref(), &saved),
-                );
-            }
-            pane.editor = None;
-            pane.changed();
-        }
-        Err(error) => {
-            if let Some(editor) = &mut pane.editor {
-                editor.error = Some(tr_fill("Couldn't save the skill: {}", &error.to_string()));
-            }
-        }
-    }
-}
-
-/// Discard on a draft: the first click asks, the second deletes it.
-fn discard(ui: &mut Ui) {
-    let pane = &mut ui.skills;
-    let Some(editor) = &mut pane.editor else {
-        return;
-    };
-    if !editor.discard_armed {
-        editor.discard_armed = true;
-        return;
-    }
-    let Source::Draft { id, .. } = editor.source.clone() else {
-        return;
-    };
-    if let Some(store) = &pane.store
-        && let Err(error) = store.discard_draft(&id)
-        && error != StoreError::NotFound
-    {
-        editor.error = Some(tr_fill(
-            "Couldn't discard the draft: {}",
-            &error.to_string(),
-        ));
-        return;
-    }
-    pane.drafts.retain(|d| d.id != id);
-    pane.editor = None;
-    pane.changed();
 }
 
 /// What Review or Edit asks to open in place of the open editor.
@@ -534,6 +373,14 @@ pub(super) fn section(ui: &Ui, p: Paint) -> Option<El> {
             }),
         ),
     ]);
+    rows.push(labelled(
+        p,
+        "inputs",
+        tr("Inputs (one per line)"),
+        area(p, &editor.inputs, tr("Inputs (one per line)"), 2, |ui| {
+            field(ui, |e| &mut e.inputs)
+        }),
+    ));
     for (index, edit) in editor.steps.iter().enumerate() {
         rows.push(step_rows(p, editor, index, edit));
     }
@@ -752,15 +599,10 @@ fn actions(p: Paint, editor: &Editor, drafting: bool) -> El {
         ButtonKind::Primary,
         |ui: &mut Ui, _| approve(ui, None),
     ));
+    // Cancel takes Discard's place and the confirmation comes after it, so
+    // a double click on Discard never discards.
     if editor.discard_armed {
         buttons
-            .child(button(
-                p,
-                "confirm-discard-draft",
-                tr("Discard draft"),
-                ButtonKind::Danger,
-                |ui: &mut Ui, _| discard(ui),
-            ))
             .child(button(
                 p,
                 "cancel-discard-draft",
@@ -771,6 +613,13 @@ fn actions(p: Paint, editor: &Editor, drafting: bool) -> El {
                         editor.discard_armed = false;
                     }
                 },
+            ))
+            .child(button(
+                p,
+                "confirm-discard-draft",
+                tr("Discard draft"),
+                ButtonKind::Danger,
+                |ui: &mut Ui, _| discard(ui),
             ))
     } else {
         buttons.child(button(

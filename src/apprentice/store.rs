@@ -158,6 +158,7 @@ impl Store {
         drafts
     }
 
+    /// Moves a draft's folder to the Trash, where it can still be put back.
     pub fn discard_draft(&self, id: &str) -> Result<(), StoreError> {
         if !safe_draft_id(id) {
             return Err(StoreError::NotFound);
@@ -166,7 +167,7 @@ impl Store {
         if !dir.join("draft.json").is_file() {
             return Err(StoreError::NotFound);
         }
-        Ok(fs::remove_dir_all(dir)?)
+        Ok(move_to_trash(&dir)?)
     }
 
     fn write_skill(&self, skill: &Skill) -> Result<(), StoreError> {
@@ -268,6 +269,43 @@ fn safe_draft_id(id: &str) -> bool {
     id != DRAFTS && safe_name(id)
 }
 
+/// Moves `path` to the Trash. Tests move it to a folder of their own
+/// instead and note it ([`trashed`]), so nothing reaches the person's Trash.
+fn move_to_trash(path: &Path) -> std::io::Result<()> {
+    #[cfg(test)]
+    return test_trash::put(path);
+    #[cfg(not(test))]
+    crate::screenshots::save::trash(path)
+        .map_err(|error| std::io::Error::other(format!("{error:#}")))
+}
+
+/// Whether a test's [`Store`] moved `path` to the Trash.
+#[cfg(test)]
+pub(crate) fn trashed(path: &Path) -> bool {
+    test_trash::TRASHED
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .iter()
+        .any(|moved| moved == path)
+}
+
+#[cfg(test)]
+mod test_trash {
+    use std::path::{Path, PathBuf};
+    use std::sync::Mutex;
+
+    pub(super) static TRASHED: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
+
+    pub(super) fn put(path: &Path) -> std::io::Result<()> {
+        let mut trashed = TRASHED.lock().unwrap_or_else(|e| e.into_inner());
+        let bin = std::env::temp_dir().join(format!("apprentice-trash-{}", std::process::id()));
+        std::fs::create_dir_all(&bin)?;
+        std::fs::rename(path, bin.join(trashed.len().to_string()))?;
+        trashed.push(path.to_owned());
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -338,6 +376,20 @@ mod tests {
         store.discard_draft("1-aaaa").unwrap();
         assert_eq!(store.drafts().len(), 1);
         assert!(store.discard_draft("../x").is_err());
+    }
+
+    /// Discard moves a draft to the Trash, never deletes it for good.
+    #[test]
+    fn discarding_a_draft_moves_it_to_the_trash() {
+        let t = Temp::new("discard-trash");
+        let store = t.store();
+        store.save_draft(&draft("1-cccc", "File invoice")).unwrap();
+        let folder = t.0.join("drafts/1-cccc");
+        store.discard_draft("1-cccc").unwrap();
+        assert!(!folder.exists(), "no folder is left in drafts");
+        assert!(store.drafts().is_empty());
+        assert!(trashed(&folder), "it went to the Trash");
+        assert_eq!(store.discard_draft("1-cccc"), Err(StoreError::NotFound));
     }
 
     #[test]

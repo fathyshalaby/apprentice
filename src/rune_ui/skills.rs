@@ -8,6 +8,7 @@
 //! own.
 
 mod agents;
+mod approval;
 mod draft_view;
 mod fixtures;
 mod lesson_cards;
@@ -148,6 +149,9 @@ pub(super) struct SkillsPane {
     read_at: Option<Instant>,
     /// Bumped by every change the pane makes, so an older read is dropped.
     generation: u64,
+    /// A test's stand-in for a skills folder Apprentice can't open.
+    #[cfg(test)]
+    pub(super) refuse_store: bool,
 }
 
 impl SkillsPane {
@@ -198,7 +202,7 @@ impl SkillsPane {
 
     fn start_read(&mut self) {
         if self.store.is_none() {
-            self.store = Store::open().ok();
+            self.store = self.open_store();
         }
         let captures = crate::app_settings::capture_settings().captures_dir();
         let known: HashSet<String> = self.notes.keys().cloned().collect();
@@ -222,6 +226,32 @@ impl SkillsPane {
         self.skills = snapshot.skills;
         self.agents = snapshot.agents;
         self.notes.extend(snapshot.notes);
+    }
+
+    /// Makes sure changes have somewhere to go: the store, opened again if
+    /// the last try failed. `Ok(false)` for a scene's pane without one,
+    /// whose changes are shown only; in the app, `Err` with what to tell the
+    /// person, and nothing may change.
+    pub(super) fn ready_store(&mut self) -> Result<bool, String> {
+        if self.store.is_some() {
+            return Ok(true);
+        }
+        if self.fixture.is_some() {
+            return Ok(false);
+        }
+        self.store = self.open_store();
+        match self.store {
+            Some(_) => Ok(true),
+            None => Err(tr("Apprentice can't open its skills folder").to_owned()),
+        }
+    }
+
+    fn open_store(&self) -> Option<Store> {
+        #[cfg(test)]
+        if self.refuse_store {
+            return None;
+        }
+        Store::open().ok()
     }
 
     /// Marks the shown lists as newer than any read under way.
@@ -292,8 +322,9 @@ impl SkillsPane {
                 .map(|notes| notes.text)
                 .unwrap_or_default(),
         };
-        if self.store.is_none() && self.fixture.is_none() {
-            self.store = Store::open().ok();
+        if let Err(message) = self.ready_store() {
+            self.failed = Some((lesson, Failure::Message(message)));
+            return;
         }
         let now = crate::history::now_ms();
         let id = match &self.store {

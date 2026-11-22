@@ -576,6 +576,7 @@ mod tests {
         include_str!("../apprentice/install.rs"),
         include_str!("../rune_ui/skills.rs"),
         include_str!("../rune_ui/skills/agents.rs"),
+        include_str!("../rune_ui/skills/approval.rs"),
         include_str!("../rune_ui/skills/draft_view.rs"),
         include_str!("../rune_ui/skills/lesson_cards.rs"),
         include_str!("../rune_ui/skills/model_picker.rs"),

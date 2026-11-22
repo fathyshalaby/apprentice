@@ -229,7 +229,55 @@ fn discarding_a_draft_takes_a_second_click() {
     tap(&mut rt, "confirm-discard-draft");
     assert!(Store::at(root.clone()).drafts().is_empty());
     assert!(rt.state.skills.editor.is_none());
+    // To the Trash, not deleted for good.
+    let folder = root.join("drafts").join("1763800000000-ab12");
+    assert!(!folder.exists());
+    assert!(crate::apprentice::store::trashed(&folder));
     let _ = std::fs::remove_dir_all(root);
+}
+
+/// Pressing twice where Discard was: the second press lands on Cancel, so
+/// a double click never confirms a discard.
+fn double_click(rt: &mut Runtime<Ui>, key: &str) {
+    let (x, y) = rt.find(key).unwrap_or_else(|| panic!("no element {key}"));
+    for _ in 0..2 {
+        rt.pointer_down(x, y);
+        rt.pointer_up(x, y);
+        settle(rt);
+    }
+}
+
+#[test]
+fn a_double_click_never_confirms_a_discard() {
+    let root = temp("double-discard");
+    let mut rt = runtime("mac-skills-draft");
+    let store = Store::at(root.clone());
+    store.save_draft(&rt.state.skills.drafts[0]).unwrap();
+    rt.state.skills.store = Some(store);
+    refresh(&mut rt);
+    double_click(&mut rt, "discard-draft");
+    assert_eq!(Store::at(root.clone()).drafts().len(), 1);
+    let editor = rt
+        .state
+        .skills
+        .editor
+        .as_ref()
+        .expect("the draft stays open");
+    assert!(!editor.discard_armed, "the second press was Cancel");
+    let _ = std::fs::remove_dir_all(root);
+
+    let mut rt = runtime("mac-skills-lesson");
+    double_click(&mut rt, "discard-lesson");
+    assert_eq!(rt.state.skills.lessons.len(), 1);
+    assert!(
+        rt.state.skills.armed.is_none(),
+        "the second press was Cancel"
+    );
+    // An expired lesson's only button is Discard: the same holds.
+    rt.state.skills.lessons[0].media = Media::Expired;
+    refresh(&mut rt);
+    double_click(&mut rt, "discard-lesson");
+    assert_eq!(rt.state.skills.lessons.len(), 1);
 }
 
 #[test]
@@ -543,4 +591,65 @@ fn a_text_only_model_never_reads_screenshots() {
         &rt,
         "Reads: narration, names of what you click, window titles, screenshots · gemma4:26b"
     ));
+}
+
+#[test]
+fn inputs_are_edited_in_the_draft_view() {
+    let root = temp("inputs");
+    let mut rt = runtime("mac-skills-draft");
+    let store = Store::at(root.clone());
+    store.save_draft(&rt.state.skills.drafts[0]).unwrap();
+    rt.state.skills.store = Some(store);
+    refresh(&mut rt);
+    assert!(rt.find("inputs").is_some(), "the draft view shows Inputs");
+    let editor = rt.state.skills.editor.as_mut().unwrap();
+    assert_eq!(editor.inputs.text, "The month");
+    editor.inputs = TextEdit::new("The month\n\n  The invoice email ");
+    refresh(&mut rt);
+    tap(&mut rt, "approve-skill");
+    let skills = Store::at(root.clone()).skills();
+    assert_eq!(skills[0].inputs, ["The month", "The invoice email"]);
+    let _ = std::fs::remove_dir_all(root);
+}
+
+/// The real app's pane (no scene) with a skills folder it can't open.
+fn without_a_folder(scene: &str) -> Runtime<Ui> {
+    let mut rt = runtime(scene);
+    let pane = &mut rt.state.skills;
+    pane.fixture = None;
+    pane.store = None;
+    pane.refuse_store = true;
+    // Nothing reads the real folders or Ollama while the test runs.
+    pane.read_at = Some(std::time::Instant::now());
+    pane.picker.installed = Some(Ok(Vec::new()));
+    refresh(&mut rt);
+    rt
+}
+
+const NO_FOLDER: &str = "Apprentice can't open its skills folder";
+
+#[test]
+fn without_its_folder_nothing_changes_on_screen_only() {
+    let mut rt = without_a_folder("mac-skills-draft");
+    tap(&mut rt, "approve-skill");
+    assert!(rt.state.skills.skills.is_empty(), "no skill on screen only");
+    assert_eq!(rt.state.skills.drafts.len(), 1);
+    assert!(rt.state.skills.editor.is_some());
+    assert!(shows(&rt, NO_FOLDER), "{:?}", texts(&rt));
+    tap(&mut rt, "discard-draft");
+    tap(&mut rt, "confirm-discard-draft");
+    assert_eq!(rt.state.skills.drafts.len(), 1, "nothing discarded");
+    assert!(rt.state.skills.editor.is_some());
+
+    let mut rt = without_a_folder("mac-skills-list");
+    let before = rt.state.skills.skills.len();
+    tap(&mut rt, "edit-skill");
+    tap(&mut rt, "save-skill");
+    assert!(rt.state.skills.editor.is_some(), "the edit stays open");
+    assert!(shows(&rt, NO_FOLDER));
+    tap(&mut rt, "close-skill");
+    tap(&mut rt, "delete-skill");
+    tap(&mut rt, "confirm-delete-skill");
+    assert_eq!(rt.state.skills.skills.len(), before, "nothing deleted");
+    assert_eq!(rt.state.skills.error.as_deref(), Some(NO_FOLDER));
 }

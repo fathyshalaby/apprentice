@@ -190,21 +190,23 @@ fn lesson_card(ui: &Ui, p: Paint, lesson: &Lesson, primary: &Primary) -> El {
         });
     }
     let discard_id = id.clone();
+    // Cancel takes Discard's place and Move to Trash comes after it, so a
+    // double click on Discard never discards.
     buttons = if armed {
         buttons
-            .child(button(
-                p,
-                "confirm-discard-lesson",
-                tr("Move to Trash"),
-                ButtonKind::Danger,
-                move |ui: &mut Ui, _| discard_lesson(ui, &discard_id),
-            ))
             .child(button(
                 p,
                 "cancel-discard-lesson",
                 tr("Cancel"),
                 ButtonKind::Secondary,
                 |ui: &mut Ui, _| ui.skills.armed = None,
+            ))
+            .child(button(
+                p,
+                "confirm-discard-lesson",
+                tr("Move to Trash"),
+                ButtonKind::Danger,
+                move |ui: &mut Ui, _| discard_lesson(ui, &discard_id),
             ))
     } else {
         buttons.child(button(

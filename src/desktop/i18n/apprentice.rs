@@ -104,6 +104,8 @@ pub(super) const TRANSLATIONS: &[(&str, [&str; 6])] = &[
     ("Discard changes", ["Odrzuć zmiany", "放弃更改", "変更を破棄", "Änderungen verwerfen", "Descartar cambios", "Відкинути зміни"]),
     ("Keep editing", ["Edytuj dalej", "继续编辑", "編集を続ける", "Weiter bearbeiten", "Seguir editando", "Продовжити редагування"]),
     ("This model runs in the cloud, so Apprentice won't use it", ["Ten model działa w chmurze, więc Apprentice go nie użyje", "此模型在云端运行，因此 Apprentice 不会使用它", "このモデルはクラウドで動作するため、Apprentice は使用しません", "Dieses Modell läuft in der Cloud, deshalb verwendet Apprentice es nicht", "Este modelo se ejecuta en la nube, así que Apprentice no lo usará", "Ця модель працює в хмарі, тому Apprentice її не використовуватиме"]),
+    ("Inputs (one per line)", ["Dane wejściowe (jedna na wiersz)", "输入（每行一个）", "入力（1 行に 1 つ）", "Eingaben (eine pro Zeile)", "Entradas (una por línea)", "Вхідні дані (по одному на рядок)"]),
+    ("Apprentice can't open its skills folder", ["Apprentice nie może otworzyć folderu umiejętności", "Apprentice 无法打开它的技能文件夹", "Apprentice はスキルフォルダを開けません", "Apprentice kann seinen Ordner für Skills nicht öffnen", "Apprentice no puede abrir su carpeta de habilidades", "Apprentice не може відкрити свою папку навичок"]),
 ];
 
 /// Brazilian Portuguese, for the card and the pane.
@@ -209,6 +211,8 @@ pub(super) const PORTUGUESE: &[(&str, &str)] = &[
     ("Discard changes", "Descartar alterações"),
     ("Keep editing", "Continuar editando"),
     ("This model runs in the cloud, so Apprentice won't use it", "Este modelo roda na nuvem, então o Apprentice não vai usá-lo"),
+    ("Inputs (one per line)", "Entradas (uma por linha)"),
+    ("Apprentice can't open its skills folder", "O Apprentice não consegue abrir a pasta de habilidades"),
 ];
 
 /// French, for the card and the pane.
@@ -314,6 +318,8 @@ pub(super) const FRENCH: &[(&str, &str)] = &[
     ("Discard changes", "Abandonner les modifications"),
     ("Keep editing", "Continuer à modifier"),
     ("This model runs in the cloud, so Apprentice won't use it", "Ce modèle s'exécute dans le cloud, donc Apprentice ne l'utilisera pas"),
+    ("Inputs (one per line)", "Entrées (une par ligne)"),
+    ("Apprentice can't open its skills folder", "Apprentice ne peut pas ouvrir son dossier de compétences"),
 ];
 
 /// Russian, for the card and the pane.
@@ -419,4 +425,6 @@ pub(super) const RUSSIAN: &[(&str, &str)] = &[
     ("Discard changes", "Отменить изменения"),
     ("Keep editing", "Продолжить редактирование"),
     ("This model runs in the cloud, so Apprentice won't use it", "Эта модель работает в облаке, поэтому Apprentice не будет её использовать"),
+    ("Inputs (one per line)", "Входные данные (по одному на строку)"),
+    ("Apprentice can't open its skills folder", "Apprentice не может открыть свою папку навыков"),
 ];
