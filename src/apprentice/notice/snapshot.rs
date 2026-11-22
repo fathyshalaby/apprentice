@@ -308,11 +308,8 @@ fn shape(text: &str, keep_letters: bool) -> String {
 /// A file name with its words and numbers abstracted, a well-known
 /// extension kept: `2026-11-03 Telekom.pdf` becomes `#-#-# a.pdf`.
 pub fn name_shape(name: &str) -> String {
-    match known_extension(name) {
-        Some(ext) => {
-            let stem = &name[..name.len() - ext.len() - 1];
-            format!("{}.{ext}", shape(stem, false))
-        }
+    match split_known(name) {
+        Some((stem, ext)) => format!("{}.{ext}", shape(stem, false)),
         None => shape(name, false),
     }
 }
@@ -320,9 +317,15 @@ pub fn name_shape(name: &str) -> String {
 /// The lowercased extension of `name` when it is on the allow-list, else
 /// `None`: an unknown extension can be part of a name (`J.Smith`).
 pub fn known_extension(name: &str) -> Option<String> {
+    split_known(name).map(|(_, ext)| ext)
+}
+
+/// The original stem and the lowercased known extension. Lengths are never
+/// recomputed: lowercasing can change a string's byte length.
+fn split_known(name: &str) -> Option<(&str, String)> {
     let (stem, ext) = name.rsplit_once('.')?;
     let ext = ext.to_lowercase();
-    (!stem.is_empty() && KNOWN_EXTENSIONS.contains(&ext.as_str())).then_some(ext)
+    (!stem.is_empty() && KNOWN_EXTENSIONS.contains(&ext.as_str())).then_some((stem, ext))
 }
 
 /// A relative folder path with its numbers abstracted, words kept:
@@ -540,6 +543,11 @@ mod tests {
         assert_eq!(rels(&s), ["a.txt"]);
         assert!(!s.truncated);
         assert!(!read(&f.root, DEPTH, 1).unwrap().truncated);
+    }
+
+    #[test]
+    fn a_lowercase_that_changes_length_does_not_panic() {
+        assert_eq!(name_shape("x.\u{212A}ey"), "a.key");
     }
 
     #[test]

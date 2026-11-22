@@ -88,20 +88,29 @@ impl Log {
         file.write_all(&buffer)
     }
 
-    /// Every readable event, oldest first; bad lines are skipped.
+    /// Every readable event, oldest first; bad lines (including invalid
+    /// UTF-8) are skipped, and an unreadable log reads as empty.
     pub fn read(&self) -> Vec<Event> {
-        let Ok(text) = std::fs::read_to_string(&self.path) else {
-            return Vec::new();
+        self.try_read().unwrap_or_default()
+    }
+
+    /// Like `read`, but an I/O error is an error; a missing file is empty.
+    fn try_read(&self) -> io::Result<Vec<Event>> {
+        let bytes = match std::fs::read(&self.path) {
+            Ok(bytes) => bytes,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
+            Err(error) => return Err(error),
         };
-        text.lines()
-            .filter_map(|line| serde_json::from_str(line).ok())
-            .collect()
+        Ok(bytes
+            .split(|byte| *byte == b'\n')
+            .filter_map(|line| serde_json::from_slice(line).ok())
+            .collect())
     }
 
     /// Drops events older than 14 days and keeps the newest 20,000.
     pub fn prune(&self, now_ms: u64) -> io::Result<()> {
         let cutoff = now_ms.saturating_sub(KEEP_MS);
-        let mut events = self.read();
+        let mut events = self.try_read()?;
         events.retain(|event| event.t >= cutoff);
         if events.len() > MAX_LINES {
             events.drain(..events.len() - MAX_LINES);
@@ -113,7 +122,7 @@ impl Log {
     /// removed root are dropped.
     pub fn remap(&self, old: &[PathBuf], new: &[PathBuf]) -> io::Result<()> {
         let events: Vec<Event> = self
-            .read()
+            .try_read()?
             .into_iter()
             .filter_map(|mut event| {
                 let path = old.get(event.root)?;
@@ -126,7 +135,7 @@ impl Log {
 
     /// Drops the events `matching` selects, in one root or in all.
     pub fn forget(&self, root: Option<usize>, matching: impl Fn(&Event) -> bool) -> io::Result<()> {
-        let mut events = self.read();
+        let mut events = self.try_read()?;
         events.retain(|event| !(root.is_none_or(|root| event.root == root) && matching(event)));
         self.rewrite(&events)
     }
@@ -276,6 +285,40 @@ mod tests {
         log.append(&[ev(1, 0)]).unwrap();
         log.clear().unwrap();
         assert!(log.read().is_empty());
+    }
+
+    #[test]
+    fn an_invalid_utf8_line_costs_only_that_line() {
+        let dir = Dir::new("utf8");
+        let log = Log::open(&dir.0).unwrap();
+        log.append(&[ev(100, 0)]).unwrap();
+        let path = dir.0.join("events.ndjson");
+        let mut bytes = std::fs::read(&path).unwrap();
+        bytes.extend_from_slice(b"\xff\xfe{\n");
+        std::fs::write(&path, &bytes).unwrap();
+        log.append(&[ev(200, 0)]).unwrap();
+        assert_eq!(log.read().len(), 2);
+        log.prune(300).unwrap();
+        assert_eq!(log.read().len(), 2);
+    }
+
+    #[test]
+    fn a_read_error_aborts_a_rewrite() {
+        let dir = Dir::new("rderr");
+        let log = Log::open(&dir.0).unwrap();
+        std::fs::create_dir(dir.0.join("events.ndjson")).unwrap();
+        assert!(log.prune(10).is_err());
+        assert!(log.clear().is_err());
+        assert!(log.forget(None, |_| true).is_err());
+        assert!(log.remap(&[], &[]).is_err());
+        assert!(dir.0.join("events.ndjson").is_dir());
+    }
+
+    #[test]
+    fn a_lowercase_length_change_in_a_name_works() {
+        let e = event(&change("x.\u{212A}ey", ChangeKind::Added), 0, 1, None);
+        assert_eq!(e.name, "a.key");
+        assert_eq!(e.ext, "key");
     }
 
     #[test]
