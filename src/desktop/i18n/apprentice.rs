@@ -28,6 +28,9 @@ pub(super) const TRANSLATIONS: &[(&str, [&str; 6])] = &[
     ("Ollama sent an unreadable answer", ["Ollama wysłała nieczytelną odpowiedź", "Ollama 发送了无法读取的回答", "Ollama から読み取れない応答が届きました", "Ollama hat eine unlesbare Antwort gesendet", "Ollama envió una respuesta ilegible", "Ollama надіслала нечитабельну відповідь"]),
     ("Ollama answered HTTP {}", ["Ollama odpowiedziała kodem HTTP {}", "Ollama 返回了 HTTP {}", "Ollama が HTTP {} を返しました", "Ollama hat mit HTTP {} geantwortet", "Ollama respondió HTTP {}", "Ollama відповіла HTTP {}"]),
     ("This lesson's notes are gone, so there is nothing to learn from", ["Notatki tej lekcji zniknęły, więc nie ma z czego się uczyć", "这节课的笔记已不存在，因此没有可学习的内容", "このレッスンのメモがなくなったため、学べる内容がありません", "Die Notizen dieser Lektion sind weg, daher gibt es nichts zu lernen", "Las notas de esta lección ya no están, así que no hay nada que aprender", "Нотатки цього уроку зникли, тож немає з чого вчитися"]),
+    ("{} isn't Apprentice's, so it was left alone", ["{} nie należy do Apprentice, więc go nie ruszono", "{} 不是 Apprentice 写入的，因此未改动", "{} は Apprentice のものではないため、そのままにしました", "{} stammt nicht von Apprentice und wurde deshalb nicht angerührt", "{} no es de Apprentice, así que se dejó como está", "{} не належить Apprentice, тому його не чіпали"]),
+    ("{} is a link, so nothing was written", ["{} jest dowiązaniem, więc nic nie zapisano", "{} 是链接，因此未写入任何内容", "{} はリンクのため、何も書き込みませんでした", "{} ist ein Link, daher wurde nichts geschrieben", "{} es un enlace, así que no se escribió nada", "{} є посиланням, тому нічого не записано"]),
+    ("{} is a link, so nothing was removed", ["{} jest dowiązaniem, więc nic nie usunięto", "{} 是链接，因此未删除任何内容", "{} はリンクのため、何も削除しませんでした", "{} ist ein Link, daher wurde nichts entfernt", "{} es un enlace, así que no se eliminó nada", "{} є посиланням, тому нічого не видалено"]),
 ];
 
 /// Brazilian Portuguese, for the card and the pane.
@@ -57,6 +60,9 @@ pub(super) const PORTUGUESE: &[(&str, &str)] = &[
     ("Ollama sent an unreadable answer", "O Ollama enviou uma resposta ilegível"),
     ("Ollama answered HTTP {}", "O Ollama respondeu HTTP {}"),
     ("This lesson's notes are gone, so there is nothing to learn from", "As notas desta lição sumiram, então não há nada para aprender"),
+    ("{} isn't Apprentice's, so it was left alone", "{} não é do Apprentice, por isso foi deixado como está"),
+    ("{} is a link, so nothing was written", "{} é um link, então nada foi escrito"),
+    ("{} is a link, so nothing was removed", "{} é um link, então nada foi removido"),
 ];
 
 /// French, for the card and the pane.
@@ -86,6 +92,9 @@ pub(super) const FRENCH: &[(&str, &str)] = &[
     ("Ollama sent an unreadable answer", "Ollama a envoyé une réponse illisible"),
     ("Ollama answered HTTP {}", "Ollama a répondu HTTP {}"),
     ("This lesson's notes are gone, so there is nothing to learn from", "Les notes de cette leçon ont disparu, il n'y a donc rien à apprendre"),
+    ("{} isn't Apprentice's, so it was left alone", "{} n'appartient pas à Apprentice, il a donc été laissé tel quel"),
+    ("{} is a link, so nothing was written", "{} est un lien, rien n'a donc été écrit"),
+    ("{} is a link, so nothing was removed", "{} est un lien, rien n'a donc été supprimé"),
 ];
 
 /// Russian, for the card and the pane.
@@ -115,4 +124,7 @@ pub(super) const RUSSIAN: &[(&str, &str)] = &[
     ("Ollama sent an unreadable answer", "Ollama прислала нечитаемый ответ"),
     ("Ollama answered HTTP {}", "Ollama ответила HTTP {}"),
     ("This lesson's notes are gone, so there is nothing to learn from", "Заметки этого урока пропали, поэтому учиться не на чем"),
+    ("{} isn't Apprentice's, so it was left alone", "{} не принадлежит Apprentice, поэтому его не трогали"),
+    ("{} is a link, so nothing was written", "{} — это ссылка, поэтому ничего не записано"),
+    ("{} is a link, so nothing was removed", "{} — это ссылка, поэтому ничего не удалено"),
 ];

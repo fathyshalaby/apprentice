@@ -462,7 +462,7 @@ impl Agents {
 
     fn read(&mut self) {
         if let Some(paths) = &self.paths {
-            self.statuses = agent_install::status(paths);
+            self.statuses = agent_install::status(paths, &agent_install::ANNOTATE);
         }
         #[cfg(target_os = "macos")]
         {
@@ -514,7 +514,7 @@ impl Agents {
             if !self.selected.get(index).copied().unwrap_or(false) || status.linked {
                 continue;
             }
-            if let Err(error) = agent_install::install(&paths, status.agent) {
+            if let Err(error) = agent_install::install(&paths, status.agent, &agent_install::ANNOTATE) {
                 failure.get_or_insert(error);
             }
         }

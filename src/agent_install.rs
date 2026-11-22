@@ -14,6 +14,20 @@ use std::path::{Path, PathBuf};
 /// The guide "hex annotate skill" prints, embedded from the repository.
 pub(crate) use crate::control::cli::annotate_read::SKILL;
 
+/// One skill folder to install: its folder name under an agent's `skills/`
+/// and the bytes of its SKILL.md.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct SkillFile<'a> {
+    pub(crate) folder: &'a str,
+    pub(crate) contents: &'a [u8],
+}
+
+/// The skill Annotate's pane installs.
+pub(crate) const ANNOTATE: SkillFile<'static> = SkillFile {
+    folder: "hex-annotate",
+    contents: SKILL.as_bytes(),
+};
+
 /// One coding agent that reads skills from a folder of its own.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Agent {
@@ -134,9 +148,12 @@ impl Paths {
         self.home.join(".agents")
     }
 
-    /// ~/.agents/skills/hex-annotate/SKILL.md.
-    pub(crate) fn shared_skill(&self) -> PathBuf {
-        self.shared_folder().join("skills/hex-annotate/SKILL.md")
+    /// ~/.agents/skills/<folder>/SKILL.md.
+    pub(crate) fn shared_skill(&self, folder: &str) -> PathBuf {
+        self.shared_folder()
+            .join("skills")
+            .join(folder)
+            .join("SKILL.md")
     }
 
     /// The folder that means the agent is installed: ~/.claude (or
@@ -156,13 +173,14 @@ impl Paths {
     /// The SKILL.md the agent reads and an install writes. Codex reads the
     /// shared copy; Pi reads the shared copy when npx skills already wrote
     /// one, else its own.
-    pub(crate) fn skill_path(&self, agent: Agent) -> PathBuf {
+    pub(crate) fn skill_path(&self, agent: Agent, folder: &str) -> PathBuf {
+        let own = |root: PathBuf| root.join("skills").join(folder).join("SKILL.md");
         match agent {
-            Agent::ClaudeCode => self.claude_folder().join("skills/hex-annotate/SKILL.md"),
-            Agent::Codex => self.shared_skill(),
-            Agent::OpenCode => self.opencode_folder().join("skills/hex-annotate/SKILL.md"),
-            Agent::Pi if self.shared_skill().exists() => self.shared_skill(),
-            Agent::Pi => self.pi_folder().join("skills/hex-annotate/SKILL.md"),
+            Agent::ClaudeCode => own(self.claude_folder()),
+            Agent::Codex => self.shared_skill(folder),
+            Agent::OpenCode => own(self.opencode_folder()),
+            Agent::Pi if self.shared_skill(folder).exists() => self.shared_skill(folder),
+            Agent::Pi => own(self.pi_folder()),
         }
     }
 }
@@ -174,15 +192,15 @@ fn nonempty(name: &str) -> Option<PathBuf> {
 }
 
 /// Every agent's folder and skill as this computer has them.
-pub(crate) fn status(paths: &Paths) -> Vec<AgentStatus> {
+pub(crate) fn status(paths: &Paths, skill: &SkillFile) -> Vec<AgentStatus> {
     Agent::ALL
         .into_iter()
         .map(|agent| {
-            let path = paths.skill_path(agent);
+            let path = paths.skill_path(agent, skill.folder);
             AgentStatus {
                 agent,
                 found: paths.found(agent),
-                skill: read_state(&path),
+                skill: read_state(&path, skill.contents),
                 linked: linked(&path),
                 path,
             }
@@ -190,9 +208,9 @@ pub(crate) fn status(paths: &Paths) -> Vec<AgentStatus> {
         .collect()
 }
 
-fn read_state(path: &Path) -> SkillState {
+fn read_state(path: &Path, contents: &[u8]) -> SkillState {
     match std::fs::read(path) {
-        Ok(bytes) if bytes == SKILL.as_bytes() => SkillState::Current,
+        Ok(bytes) if bytes == contents => SkillState::Current,
         Ok(_) => SkillState::Outdated,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => SkillState::Missing,
         // Unreadable (a directory, a permission bit): installing replaces it.
@@ -202,7 +220,7 @@ fn read_state(path: &Path) -> SkillState {
 
 /// Whether the skill file or its hex-annotate folder is a symlink: someone
 /// else manages it, so it is read but never written through.
-fn linked(path: &Path) -> bool {
+pub(crate) fn linked(path: &Path) -> bool {
     is_symlink(path) || path.parent().is_some_and(is_symlink)
 }
 
@@ -214,8 +232,8 @@ fn is_symlink(path: &Path) -> bool {
 /// with a staging file renamed into place so a crash leaves the old file or
 /// the complete new one. Nothing else in the folder is touched. A symlinked
 /// skill or folder is left where it is.
-pub(crate) fn install(paths: &Paths, agent: Agent) -> Result<PathBuf, String> {
-    let path = paths.skill_path(agent);
+pub(crate) fn install(paths: &Paths, agent: Agent, skill: &SkillFile) -> Result<PathBuf, String> {
+    let path = paths.skill_path(agent, skill.folder);
     if linked(&path) {
         return Ok(path);
     }
@@ -223,9 +241,31 @@ pub(crate) fn install(paths: &Paths, agent: Agent) -> Result<PathBuf, String> {
         .parent()
         .ok_or_else(|| format!("{} has no folder", path.display()))?;
     std::fs::create_dir_all(folder).map_err(|error| format!("{}: {}", folder.display(), error))?;
-    crate::durable::write(&path, SKILL.as_bytes())
+    crate::durable::write(&path, skill.contents)
         .map_err(|error| format!("{}: {}", path.display(), error))?;
     Ok(path)
+}
+
+/// Deletes the agent's SKILL.md for `folder`, then the folder if nothing else
+/// is in it. A symlinked file or folder is managed elsewhere and refused; a
+/// missing skill is already removed. Callers that own extra files (a mark)
+/// check ownership first.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub(crate) fn remove(paths: &Paths, agent: Agent, folder: &str) -> Result<(), String> {
+    let path = paths.skill_path(agent, folder);
+    if linked(&path) {
+        return Err(format!("{} is a link", path.display()));
+    }
+    match std::fs::remove_file(&path) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(format!("{}: {}", path.display(), error)),
+    }
+    if let Some(parent) = path.parent() {
+        // Fails while anything else is inside; that is the point.
+        let _ = std::fs::remove_dir(parent);
+    }
+    Ok(())
 }
 
 /// Putting Hex's hex on PATH for agents: /opt/homebrew/bin, /usr/local/bin,
@@ -519,7 +559,7 @@ mod tests {
             home: home.clone(),
             ..Paths::default()
         };
-        let before = status(&paths);
+        let before = status(&paths, &ANNOTATE);
         assert!(before[0].found, "Claude Code's folder exists");
         assert!(before[1].found, "Codex's folder exists");
         assert!(!before[2].found, "OpenCode's folder is absent");
@@ -540,12 +580,12 @@ mod tests {
         );
 
         // A skill Hex wrote reads current; an edited one reads outdated.
-        install(&paths, Agent::ClaudeCode).unwrap();
-        let installed = status(&paths);
+        install(&paths, Agent::ClaudeCode, &ANNOTATE).unwrap();
+        let installed = status(&paths, &ANNOTATE);
         assert_eq!(installed[0].skill, SkillState::Current);
         assert_eq!(std::fs::read(&installed[0].path).unwrap(), SKILL.as_bytes());
         std::fs::write(&installed[0].path, "an older skill").unwrap();
-        assert_eq!(status(&paths)[0].skill, SkillState::Outdated);
+        assert_eq!(status(&paths, &ANNOTATE)[0].skill, SkillState::Outdated);
     }
 
     #[test]
@@ -557,7 +597,7 @@ mod tests {
             home,
             ..Paths::default()
         };
-        let statuses = status(&paths);
+        let statuses = status(&paths, &ANNOTATE);
         assert!(!statuses[1].found, "~/.agents alone is not a Codex install");
         assert_eq!(statuses[1].skill, SkillState::Missing);
     }
@@ -582,23 +622,26 @@ mod tests {
             pi_agent: Some(pi.clone()),
         };
         assert_eq!(
-            paths.skill_path(Agent::ClaudeCode),
+            paths.skill_path(Agent::ClaudeCode, "hex-annotate"),
             claude.join("skills/hex-annotate/SKILL.md")
         );
         assert_eq!(
-            paths.skill_path(Agent::Codex),
-            paths.shared_skill(),
+            paths.skill_path(Agent::Codex, "hex-annotate"),
+            paths.shared_skill("hex-annotate"),
             "Codex always reads the shared copy"
         );
         assert_eq!(
-            paths.skill_path(Agent::OpenCode),
+            paths.skill_path(Agent::OpenCode, "hex-annotate"),
             config.join("opencode/skills/hex-annotate/SKILL.md")
         );
         assert_eq!(
-            paths.skill_path(Agent::Pi),
+            paths.skill_path(Agent::Pi, "hex-annotate"),
             pi.join("skills/hex-annotate/SKILL.md")
         );
-        let found: Vec<_> = status(&paths).into_iter().map(|s| s.found).collect();
+        let found: Vec<_> = status(&paths, &ANNOTATE)
+            .into_iter()
+            .map(|s| s.found)
+            .collect();
         assert_eq!(found, [true, true, true, true]);
     }
 
@@ -614,9 +657,9 @@ mod tests {
         };
         // npx skills wrote the shared copy: both agents read it and neither
         // is checked for a second copy.
-        let shared = paths.shared_skill();
+        let shared = paths.shared_skill("hex-annotate");
         write_file(&shared, SKILL);
-        let statuses = status(&paths);
+        let statuses = status(&paths, &ANNOTATE);
         assert_eq!(statuses[1].skill, SkillState::Current);
         assert_eq!(statuses[1].path, shared);
         assert_eq!(statuses[3].skill, SkillState::Current);
@@ -624,8 +667,8 @@ mod tests {
 
         // An outdated shared copy is the one Pi's install updates.
         std::fs::write(&shared, "old").unwrap();
-        assert_eq!(status(&paths)[3].skill, SkillState::Outdated);
-        install(&paths, Agent::Pi).unwrap();
+        assert_eq!(status(&paths, &ANNOTATE)[3].skill, SkillState::Outdated);
+        install(&paths, Agent::Pi, &ANNOTATE).unwrap();
         assert_eq!(std::fs::read(&shared).unwrap(), SKILL.as_bytes());
         assert!(
             !home.join(".pi/agent/skills/hex-annotate/SKILL.md").exists(),
@@ -650,10 +693,10 @@ mod tests {
             home: home.clone(),
             ..Paths::default()
         };
-        let statuses = status(&paths);
+        let statuses = status(&paths, &ANNOTATE);
         assert!(statuses[0].linked, "the folder is a symlink");
         assert_eq!(statuses[0].skill, SkillState::Outdated);
-        install(&paths, Agent::ClaudeCode).unwrap();
+        install(&paths, Agent::ClaudeCode, &ANNOTATE).unwrap();
         assert_eq!(
             std::fs::read_to_string(outside.join("hex-annotate/SKILL.md")).unwrap(),
             "an older skill",
@@ -673,7 +716,7 @@ mod tests {
         std::fs::create_dir_all(&folder).unwrap();
         std::fs::write(folder.join("NOTES.md"), "mine").unwrap();
 
-        let path = install(&paths, Agent::Codex).unwrap();
+        let path = install(&paths, Agent::Codex, &ANNOTATE).unwrap();
         assert_eq!(path, folder.join("SKILL.md"));
         assert_eq!(std::fs::read(&path).unwrap(), SKILL.as_bytes());
         assert_eq!(
@@ -696,11 +739,11 @@ mod tests {
             home: home.clone(),
             ..Paths::default()
         };
-        install(&paths, Agent::OpenCode).unwrap();
-        std::fs::write(paths.skill_path(Agent::OpenCode), "old").unwrap();
-        assert_eq!(status(&paths)[2].skill, SkillState::Outdated);
-        install(&paths, Agent::OpenCode).unwrap();
-        assert_eq!(status(&paths)[2].skill, SkillState::Current);
+        install(&paths, Agent::OpenCode, &ANNOTATE).unwrap();
+        std::fs::write(paths.skill_path(Agent::OpenCode, "hex-annotate"), "old").unwrap();
+        assert_eq!(status(&paths, &ANNOTATE)[2].skill, SkillState::Outdated);
+        install(&paths, Agent::OpenCode, &ANNOTATE).unwrap();
+        assert_eq!(status(&paths, &ANNOTATE)[2].skill, SkillState::Current);
     }
 
     #[cfg(unix)]
