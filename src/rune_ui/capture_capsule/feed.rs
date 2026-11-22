@@ -525,6 +525,7 @@ pub(crate) fn act(action: Action) {
             command(CaptureCommand::FindPhone),
         ],
         Action::Start(target) => vec![command(CaptureCommand::Start(target))],
+        Action::Lesson => vec![command(resume_lesson(pointer()))],
         // The Screenshots picker's permission was granted: open it again,
         // in the mode its shortcut asked for.
         Action::OpenScreenshots { record } => {
@@ -575,6 +576,12 @@ pub(crate) fn act(action: Action) {
             tracing::warn!(%error, "the capture capsule could not reach the listener");
         }
     }
+}
+
+/// A lesson refused for a permission, started again once it is granted:
+/// the display under the pointer, as Watch this records.
+fn resume_lesson(at: [f64; 2]) -> CaptureCommand {
+    CaptureCommand::Lesson(CaptureTarget::Display { at })
 }
 
 /// Whether this Hex can't record the screen now, read afresh.
@@ -904,6 +911,16 @@ mod tests {
         assert_eq!(follow.next(&a), []);
         assert_eq!(follow.next(&CaptureSnapshot::default()), [Input::Gone]);
         assert_eq!(follow.next(&CaptureSnapshot::default()), []);
+    }
+
+    /// A lesson resumed after its permission is a lesson of the display
+    /// under the pointer, never an Annotate capture.
+    #[test]
+    fn a_resumed_lesson_sends_a_lesson_command() {
+        assert_eq!(
+            resume_lesson([3.0, 4.0]),
+            CaptureCommand::Lesson(CaptureTarget::Display { at: [3.0, 4.0] })
+        );
     }
 
     /// A lesson records the whole screen: its capsule offers no target

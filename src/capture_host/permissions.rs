@@ -46,9 +46,10 @@ pub enum NeedState {
     Restart,
 }
 
-/// What asked for the permission helper: a capture starting, or Labs ›
-/// Screenshots' picker. The helper's grant returns to what asked: a capture
-/// records the screen, while the picker opens again to shoot or record.
+/// What asked for the permission helper: a capture starting, a lesson, or
+/// Labs › Screenshots' picker. The helper's grant returns to what asked: a
+/// capture records the screen, a lesson starts a lesson, and the picker
+/// opens again to shoot or record.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AskedBy {
     Capture,
@@ -57,16 +58,19 @@ pub enum AskedBy {
     Screenshots {
         record: bool,
     },
+    /// Labs › Watch and learn's lesson, which starts again as a lesson.
+    Lesson,
 }
 
 impl AskedBy {
-    /// What a capture refused for a permission asks: a Screenshots recording
-    /// (`clip`) returns to its picker; any other capture is Annotate's.
-    pub fn for_capture(clip: bool) -> Self {
-        if clip {
-            Self::Screenshots { record: true }
-        } else {
-            Self::Capture
+    /// What a capture of `purpose` refused for a permission asks: a
+    /// Screenshots recording returns to its picker, a lesson to a lesson;
+    /// any other capture is Annotate's.
+    pub fn for_purpose(purpose: super::Purpose) -> Self {
+        match purpose {
+            super::Purpose::Capture => Self::Capture,
+            super::Purpose::Clip => Self::Screenshots { record: true },
+            super::Purpose::Lesson => Self::Lesson,
         }
     }
 }
@@ -186,8 +190,8 @@ pub fn on_missing(show: impl Fn(CaptureNeed, AskedBy) + Send + Sync + 'static) {
 
 /// A capture was refused for `need`; `clip` is a Screenshots recording,
 /// which returns to its picker rather than Annotate's whole-screen capture.
-pub fn report_capture(need: CaptureNeed, clip: bool) {
-    report_asked(need, AskedBy::for_capture(clip));
+pub fn report_capture(need: CaptureNeed, purpose: super::Purpose) {
+    report_asked(need, AskedBy::for_purpose(purpose));
 }
 
 /// A screenshot or recording was refused for `need`: the helper returns to
@@ -209,14 +213,17 @@ fn report_asked(need: CaptureNeed, asked_by: AskedBy) {
 mod tests {
     use super::*;
 
-    /// A Screenshots recording returns to its picker once granted; any other
-    /// capture returns to Annotate's own whole-screen capture.
+    /// A Screenshots recording returns to its picker once granted, a lesson
+    /// to a lesson; any other capture returns to Annotate's own whole-screen
+    /// capture.
     #[test]
-    fn a_clip_capture_asks_for_the_screenshots_picker() {
+    fn a_refused_capture_asks_for_what_it_was() {
+        use super::super::Purpose;
         assert_eq!(
-            AskedBy::for_capture(true),
+            AskedBy::for_purpose(Purpose::Clip),
             AskedBy::Screenshots { record: true }
         );
-        assert_eq!(AskedBy::for_capture(false), AskedBy::Capture);
+        assert_eq!(AskedBy::for_purpose(Purpose::Lesson), AskedBy::Lesson);
+        assert_eq!(AskedBy::for_purpose(Purpose::Capture), AskedBy::Capture);
     }
 }

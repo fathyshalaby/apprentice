@@ -629,7 +629,7 @@ fn check_screen_permission() -> Option<ControlReply> {
         super::screen_access::ScreenAccess::Off => {
             super::permissions::report_capture(
                 super::permissions::CaptureNeed::ScreenRecording,
-                false,
+                super::Purpose::Capture,
             );
             Some(ControlReply::error(
                 "permission",

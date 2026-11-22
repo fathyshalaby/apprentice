@@ -145,6 +145,9 @@ impl Flow {
                             AskedBy::Screenshots { record } => {
                                 vec![Action::OpenScreenshots { record }]
                             }
+                            // A lesson starts again as a lesson, never as
+                            // a capture that is copied and routed.
+                            AskedBy::Lesson => vec![Action::Lesson],
                         }
                     }
                 }

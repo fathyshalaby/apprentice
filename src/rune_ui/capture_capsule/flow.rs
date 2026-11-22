@@ -311,6 +311,9 @@ pub(crate) enum Action {
     OpenScreenshots {
         record: bool,
     },
+    /// Labs › Watch and learn's lesson, once its permission is granted: a
+    /// lesson of the display under the pointer.
+    Lesson,
     /// The permission helper's Allow: macOS's prompt, or System Settings
     /// with the guide beside it.
     Allow(CaptureNeed),
@@ -3267,5 +3270,20 @@ mod tests {
         flow.input(Input::NeedsPermission(screen, AskedBy::Capture), 2.0);
         flow.input(Input::Permission(screen, Grant::Ready), 3.0);
         assert_eq!(flow.click(Id::Ask, 4.0), vec![Action::Record(Mode::Screen)]);
+    }
+
+    /// Labs › Watch and learn: a lesson refused for Screen Recording resumes
+    /// as a lesson once granted, never as an Annotate capture that would be
+    /// copied and routed.
+    #[test]
+    fn a_granted_lesson_permission_starts_a_lesson() {
+        use super::super::surface::Id;
+        let screen = CaptureNeed::ScreenRecording;
+        let mut flow = Flow::new();
+        flow.input(Input::NeedsPermission(screen, AskedBy::Lesson), 1.0);
+        assert_eq!(done(&flow, 1.0).text, "Apprentice needs Screen Recording");
+        flow.input(Input::Permission(screen, Grant::Ready), 2.0);
+        assert_eq!(flow.click(Id::Ask, 3.0), vec![Action::Lesson]);
+        assert_eq!(flow.pres(3.0), Pres::Hidden, "the helper folds");
     }
 }

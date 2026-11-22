@@ -1976,9 +1976,9 @@ impl CaptureHost {
         if !cfg!(test)
             && let Some((need, _)) = permissions::missing(target != CaptureTarget::Phone)
         {
-            // A Screenshots recording (`clip`) goes back to its picker once
-            // the grant is made; any other capture records the screen.
-            permissions::report_capture(need, clip);
+            // A Screenshots recording goes back to its picker once the grant
+            // is made, a lesson starts again; any other capture records.
+            permissions::report_capture(need, purpose);
             return Ok(ControlReply::error(
                 "permission",
                 format!("{} is off for Apprentice", need.name()),
