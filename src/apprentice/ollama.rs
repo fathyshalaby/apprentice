@@ -177,6 +177,10 @@ pub fn chat(
         "model": model,
         "messages": [{ "role": "system", "content": system }, user],
         "stream": false,
+        // A thinking model reasons at length before a schema answer (17,000
+        // characters for a one-minute lesson, or never finishing); a model
+        // that can't think accepts `false`.
+        "think": false,
         "format": format,
         "options": { "temperature": TEMPERATURE, "num_ctx": NUM_CTX },
     });
@@ -573,6 +577,9 @@ mod tests {
         let sent = body(&received[0]);
         assert_eq!(sent["model"], "gemma4:26b");
         assert_eq!(sent["stream"], false);
+        // A thinking model left to think ran past the call's limit on a
+        // one-minute lesson; a model that can't think accepts `false`.
+        assert_eq!(sent["think"], false);
         assert_eq!(sent["format"], schema);
         assert_eq!(sent["options"]["temperature"], 0.2);
         // Ollama's default context is small and cuts prompts from the front.

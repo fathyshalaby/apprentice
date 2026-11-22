@@ -52,10 +52,11 @@ name of the element when it is known. Screenshots of key moments may be attached
 Write the steps an AI coding agent could follow to do the same task: short titles, concrete \
 details, in order. Use only what the evidence supports and never invent steps. \
 Also give a one-sentence description, when to use the skill, the inputs it needs, how to \
-verify it worked, and edge cases the person mentioned.\n\
-Mark at most 5 steps that look like decisions (the person chose between options) by adding a \
-short, plain question to the person, such as \"Why did you pick that folder?\". Leave `question` \
-out of every other step.\n\
+verify it worked, and edge cases the person mentioned. Use an empty list where there are none.\n\
+Mark at most 5 steps that look like decisions (the person chose between options) by giving \
+them a short, plain question to the person, such as \"Why did you pick that folder?\". Ask \
+about choices the person did not already explain. Every other step's `question` is an empty \
+string.\n\
 Answer with JSON in the given schema only, with no other text."
 }
 
@@ -78,13 +79,17 @@ pub fn schema() -> Value {
                         "detail": { "type": "string" },
                         "question": { "type": "string" }
                     },
-                    "required": ["title", "detail"]
+                    "required": ["title", "detail", "question"]
                 }
             },
             "verification": strings,
             "edgeCases": strings
         },
-        "required": ["name", "description", "whenToUse", "steps"]
+        // Every field: Ollama lets a model skip optional ones, and real
+        // models then fold them into other fields.
+        "required": [
+            "name", "description", "whenToUse", "inputs", "steps", "verification", "edgeCases"
+        ]
     })
 }
 
@@ -256,5 +261,48 @@ mod tests {
         assert!(p.contains("Part 2 of 3") && p.contains("said: hi"));
         assert!(merge_prompt(&["a".into(), "b".into()]).contains("Part 2:\nb"));
         assert!(schema()["properties"]["steps"].is_object());
+    }
+
+    /// Ollama writes to the schema token by token and lets a model skip
+    /// optional fields: real models then put inputs, checks, edge cases, and
+    /// their questions into other fields. Every field is required.
+    #[test]
+    fn the_schema_requires_every_field() {
+        fn required(object: &Value) -> Vec<String> {
+            let mut names: Vec<String> = object["required"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|name| name.as_str().unwrap().to_owned())
+                .collect();
+            names.sort();
+            names
+        }
+        fn properties(object: &Value) -> Vec<String> {
+            let mut names: Vec<String> = object["properties"]
+                .as_object()
+                .unwrap()
+                .keys()
+                .cloned()
+                .collect();
+            names.sort();
+            names
+        }
+        let schema = schema();
+        assert_eq!(required(&schema), properties(&schema));
+        let step = &schema["properties"]["steps"]["items"];
+        assert_eq!(required(step), properties(step));
+        assert!(instructions().contains("empty string"));
+    }
+
+    #[test]
+    fn an_empty_question_is_no_question() {
+        let raw = r#"{"name":"N","description":"","whenToUse":"","inputs":[],
+            "steps":[{"title":"a","detail":"b","question":""},
+                     {"title":"c","detail":"d","question":"Why that folder?"}],
+            "verification":[],"edgeCases":[]}"#;
+        let skill = parse(raw, "l", 0).unwrap();
+        assert_eq!(skill.steps[0].question, None);
+        assert_eq!(skill.steps[1].question.as_deref(), Some("Why that folder?"));
     }
 }

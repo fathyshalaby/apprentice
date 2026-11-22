@@ -212,24 +212,59 @@ feature's OS list (`labs::Feature::oses`), so it has no entry there.
 ## Observed on this Mac
 
 ```ts
-2026-11-22, automated checks only
-├─ cargo test --release --bin hex      passing apart from the known baseline failures
+2026-11-22, automated checks
+├─ cargo test --bin hex                passing apart from the known baseline failures
 ├─ cargo test (crates/capture)         passing
 ├─ scripts/code-shape.py --check       passing
-├─ Skills scenes rendered with --snap  looked at, light appearance
-└─ launch                              an earlier run stopped at macOS's Desktop
-                                       folder prompt, before any window
+└─ Skills scenes rendered with --snap  looked at, light appearance
+
+2026-11-22, the installed app (/Applications, German interface), driven
+through its accessibility tree, Apple M6, 32 GB, Ollama 0.40.17
+├─ lesson   a hand-built bundle in the captures folder: five real
+│           screenshots of filing invoices in Finder, scripted narration
+│           and click names (no microphone or screen permission was granted)
+│  ├─ a keyframe reason Annotate never writes → "Diese Lektion ist
+│  │  abgelaufen" (the manifest doesn't load); fixed in the bundle
+│  └─ listed as "Neue Lektion · 1:02", reads narration, clicks, titles,
+│     screenshots; Draft is "Wähle zuerst ein Modell" until a model is set
+├─ Apple Intelligence   draft in 6 s, 5 questions, approved, saved
+│  owner-only, installed into OpenCode (apprentice-<slug>, mark file,
+│  same SKILL.md); text only, so one step invented a drag
+├─ gemma4:12b (vision)  the reads line adds screenshots; the draft failed
+│  at the 180 s call limit: Ollama thinks by default and generated ~9,500
+│  tokens without finishing (a replay ran 15 min)
+└─ the same request replayed against Ollama
+   ├─ thinking on    gemma4:26b 101 s (17,534 characters of thinking)
+   ├─ thinking off   gemma4:12b 22 s
+   └─ optional schema fields were skipped by every model: inputs, checks,
+      edge cases, and questions folded into whenToUse or a step's detail,
+      so no why? questions reached the person
+
+fixed: chat sends "think": false (a model that can't think accepts it;
+"think": true is refused), and the schema requires every field, with an
+empty question for steps that aren't decisions. Replayed:
+├─ gemma4:26b     15 s, 5 steps, 2 questions, no edge cases
+├─ gemma4:12b     16 s, 4 steps, 1 question, no edge cases
+└─ qwen3.8:27b    51 s, 6 steps, 3 questions, both edge cases the person
+                  named (non-invoices stay, the invoices' month not today's)
+
+the fixed build, installed, same lesson, gemma4:12b with screenshots
+├─ draft in 19 s: 5 steps, inputs, checks, one edge case, 1 question
+├─ the question answered in the pane → "1 von 1 Warum-Fragen beantwortet"
+└─ approved: SKILL.md (owner-only) carries the answer under Decisions
 ```
 
 ### Not verified
 
-- Recording a real lesson in a running app, and the Skills pane and menu item
-  appearing and vanishing with the switch.
-- Drafting with a real model: no model was downloaded, no Ollama was
-  contacted, and Apple Intelligence was not run.
-- Installing a skill into a real agent and reading the installed `SKILL.md`.
-- The model-default trial (`gemma4:26b` against `qwen3.8:27b`), so
-  `RECOMMENDED` is unchanged.
+- Recording a real lesson: Screen Recording, Microphone, and Accessibility
+  were not granted to the new build, so Watch this and the capsule, a
+  lesson's real transcript and click names, and the Skills pane opening on
+  its own after a lesson were not run.
+- A skill approved with questions left unanswered lists each as "Why: not
+  answered" in `SKILL.md` (seen with the Apple Intelligence draft); whether
+  agents are better off without those lines is open.
+- The model-default trial: qwen3.8:27b wrote the most complete skill on one
+  lesson; `RECOMMENDED` is unchanged on that alone.
 - Linux and Windows builds: no Linux or Windows target is installed here, so
   the cfg gates were checked by reading only.
 - Linux goldens: the Skills scenes are macOS-only and the golden tests run
