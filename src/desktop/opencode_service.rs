@@ -435,7 +435,7 @@ impl Service {
             }
             head.push_str(&format!(
                 "Authorization: Basic {}\r\n",
-                base64(format!("opencode:{password}").as_bytes())
+                crate::desktop::base64::encode(format!("opencode:{password}").as_bytes())
             ));
         }
         if let Some(directory) = directory {
@@ -699,27 +699,6 @@ fn dechunk(mut body: &[u8]) -> Option<Vec<u8>> {
         out.extend_from_slice(body.get(..size)?);
         body = body.get(size..)?.strip_prefix(b"\r\n")?;
     }
-}
-
-fn base64(bytes: &[u8]) -> String {
-    const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
-    for chunk in bytes.chunks(3) {
-        let n = u32::from_be_bytes([
-            0,
-            chunk[0],
-            *chunk.get(1).unwrap_or(&0),
-            *chunk.get(2).unwrap_or(&0),
-        ]);
-        let ch = |shift: u32| char::from(TABLE[((n >> shift) & 63) as usize]);
-        out.extend([
-            ch(18),
-            ch(12),
-            if chunk.len() > 1 { ch(6) } else { '=' },
-            if chunk.len() > 2 { ch(0) } else { '=' },
-        ]);
-    }
-    out
 }
 
 fn encode_uri_component(value: &str) -> String {

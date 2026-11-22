@@ -573,6 +573,8 @@ mod tests {
     const SOURCES: &[&str] = &[
         include_str!("activity.rs"),
         include_str!("opencode_catalog.rs"),
+        include_str!("../apprentice/ollama.rs"),
+        include_str!("../apprentice/run.rs"),
         include_str!("../rune_ui.rs"),
         include_str!("../rune_ui/activity.rs"),
         include_str!("../rune_ui/drop_transcribe.rs"),
