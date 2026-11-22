@@ -225,10 +225,12 @@ Notice patterns                          // apprentice.notice
 │       reported unreadable and keeps its last snapshot; settings that
 │       can't be read keep the last good folder list (never read as "no
 │       folders", which would drop the log); with none yet the tick waits
-├── Kept (owner-only, <Application Support>/hex/noticed/; without a data
-│   folder nothing is noticed)
+├── Kept (owner-only, <Application Support>/apprentice/noticed/, or
+│   apprentice-test in a macOS test build, or under
+│   HEX_APPLICATION_SUPPORT_DIR when set; without a data folder nothing is
+│   noticed)
 │   ├── events.ndjson: one line per event {t, root, kind, folder, ext, from,
-│   │   to, name, app?}; `from` and `to` are folder paths relative to the
+│   │   to, name, app?}; `folder` is a boolean (a folder event); `from` and `to` are folder paths relative to the
 │   │   watched folder, as the person named them; `name` is a shape
 │   │   (name_shape: letters become a, digits #, so `2026-11-03 Telekom.pdf`
 │   │   reads `#-#-# a.pdf`); `ext` only from an allow-list of common
