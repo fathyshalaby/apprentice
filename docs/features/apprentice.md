@@ -223,8 +223,10 @@ Notice patterns                          // apprentice.notice
 │   │   one identity is a Removed and an Added
 │   └── A folder that can't be read (missing, or macOS refuses it) is
 │       reported unreadable and keeps its last snapshot; settings that
-│       can't be read keep the last good folder list (never read as "no
-│       folders", which would drop the log); with none yet the tick waits
+│       can't be read, or whose apprentice.watched_folders had to be
+│       repaired (a wrong type), keep the last good folder list
+│       (AppSettings::read_trusted_from; never read as "no folders", which
+│       would drop the log); with none yet the tick waits
 ├── Kept (owner-only, <Application Support>/apprentice/noticed/, or
 │   apprentice-test in a macOS test build, or under
 │   HEX_APPLICATION_SUPPORT_DIR when set; without a data folder nothing is
@@ -266,9 +268,10 @@ Notice patterns                          // apprentice.notice
 │   ├── Its id is the first 8 bytes of SHA-256(folder path, steps) in hex,
 │   │   stable across runs and different per folder
 │   ├── Its trigger is the extension of the new file that arrived in the root
-│   │   within 2 hours before (TRIGGER_WINDOW_MS, counting the episode's own
-│   │   first event) most episodes, when at least half have one; ties go to
-│   │   the alphabetically first
+│   │   itself (not a subfolder, as for offers) within 2 hours before
+│   │   (TRIGGER_WINDOW_MS, counting the episode's own first event) most
+│   │   episodes, when at least half have one; ties go to the alphabetically
+│   │   first
 │   ├── Looked for when the gate opens and once an episode has been quiet for
 │   │   10 minutes, over the whole log; a known routine keeps its state and
 │   │   gets new days, last seen, trigger, and sentence
@@ -283,8 +286,8 @@ Notice patterns                          // apprentice.notice
 │   │   days wins
 │   ├── State New, or Offered at least 24 h ago (REOFFER_MS); never Shown or
 │   │   Ignored; at most 3 offers a local day across routines (MAX_PER_DAY)
-│   ├── Never while dictating, a meeting records, or a capture or lesson
-│   │   records (offer::Busy); the offer is not queued
+│   ├── Never while dictating, a meeting records, a capture or lesson
+│   │   records, or Annotate is off (offer::Busy); the offer is not queued
 │   ├── One capsule at the top of the screen: "New PDF in Downloads" and "You
 │   │   usually file these (3 days). Show me how?", with Show me, Not now, and
 │   │   Stop asking; it takes no focus, takes the pointer only where it
@@ -293,12 +296,20 @@ Notice patterns                          // apprentice.notice
 │   ├── Closes by itself after 30 s (TIMEOUT), doing nothing and staying
 │   │   offerable again after 24 h; Not now only closes; closing the gate
 │   │   closes it at once
-│   ├── Show me starts a lesson (watch::accept -> lessons::start), and only
-│   │   once it started marks the routine Shown (no more offers); a lesson
-│   │   that can't start (Annotate off, a capture recording) is logged and
-│   │   the routine stays offerable; the lesson is the usual Watch and learn
-│   │   lesson (whole display, narrated), never started by the watcher alone
-│   └── Stop asking marks it Ignored and drops its episodes' events
+│   ├── Show me (watch::accept, off the main thread) refuses at once while
+│   │   Annotate is off or a capture records, in the pane's words; otherwise
+│   │   it asks the listener for a lesson (lessons::start_confirmed ->
+│   │   capture_host::ask_listener) and waits at most 2 s (LESSON_ANSWER)
+│   │   for its answer. Only an answer that the lesson started recording
+│   │   marks the routine Shown (no more offers); a refusal, a listener that
+│   │   doesn't answer in time, or a refused start is logged and the routine
+│   │   stays offerable (a lesson the listener starts after the 2 s still
+│   │   records, and the routine may be offered again). The lesson is the
+│   │   usual Watch and learn lesson (whole display, narrated), never started
+│   │   by the watcher alone
+│   ├── Stop asking marks it Ignored and drops its episodes' events
+│   └── Show me and Stop asking (capsule or pane) tell an open pane to read
+│       again (watch::note_changed)
 ├── The pane (Skills › Noticing, while the lab is on)
 │   ├── Watched folders: each with Remove, and Add folder… (the folder
 │   │   dialog from the home folder); a folder that can't be read says "Can't
@@ -339,9 +350,12 @@ Notice patterns                          // apprentice.notice
 // an_unreadable_root_is_reported_and_skipped, the_thread_stops_when_the_gate_closes,
 // removing_a_folder_remaps_the_log, ignoring_forgets_the_routine_and_its_events,
 // show_me_marks_the_routine_shown_only_once_the_lesson_starts,
+// show_me_refuses_as_the_pane_does_while_annotate_is_off_or_a_capture_records,
+// answers_tell_an_open_pane_to_read_again,
 // broken_settings_keep_the_folders_and_the_log, only_a_file_in_the_root_itself_offers,
 // an_unparsable_folder_list_is_set_aside_and_the_log_dropped,
 // a_state_file_that_cant_be_read_skips_the_tick,
+// app_settings::persistence::tests::a_repaired_watched_folder_list_is_not_trusted,
 // rune_ui::skills::routine_offer::tests::*,
 // rune_ui::skills::tests::noticing_is_hidden_while_the_lab_is_off,
 // noticing_lists_folders_and_routines, forget_everything_asks_twice,

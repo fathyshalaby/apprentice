@@ -74,6 +74,29 @@ pub fn start() -> color_eyre::Result<()> {
     crate::capture_host::send_to_listener(CaptureControl::Command(command))
 }
 
+/// [`start`], but waits at most `wait` for the listener's answer, so `Ok`
+/// means the lesson started recording; a refusal or no answer in time is
+/// the reason it didn't. For a caller off the UI thread (Notice patterns'
+/// Show me).
+pub fn start_confirmed(wait: std::time::Duration) -> Result<(), String> {
+    use crate::capture_host::{CaptureCommand, CaptureControl, CaptureTarget};
+    let at = scrawl_capture::screens::pointer().unwrap_or_default();
+    let command = CaptureCommand::Lesson(CaptureTarget::Display { at });
+    answered(crate::capture_host::ask_listener(
+        CaptureControl::Command(command),
+        wait,
+    ))
+}
+
+/// The listener's answer to a lesson: started, or why not.
+fn answered(reply: color_eyre::Result<crate::control::ControlReply>) -> Result<(), String> {
+    match reply {
+        Ok(crate::control::ControlReply::Error { message, .. }) => Err(message),
+        Ok(_) => Ok(()),
+        Err(error) => Err(error.to_string()),
+    }
+}
+
 /// Every lesson under `captures`, newest first.
 pub fn list(captures: &Path) -> Vec<Lesson> {
     let Ok(entries) = fs::read_dir(captures) else {
@@ -183,6 +206,23 @@ mod tests {
         assert_eq!(requests.try_recv(), Ok(StatusItemAction::OpenSkills));
         assert!(requests.try_recv().is_err());
         assert_eq!(lesson_id(&bundle), "2026-11-22-lesson");
+    }
+
+    #[test]
+    fn only_the_listeners_yes_counts_as_started() {
+        use crate::control::ControlReply;
+        let started = ControlReply::Done {
+            message: "recording".into(),
+            changed: true,
+        };
+        assert_eq!(answered(Ok(started)), Ok(()));
+        let refused = ControlReply::error("feature-off", "captures are off");
+        assert_eq!(answered(Ok(refused)), Err("captures are off".to_owned()));
+        let silent = Err(color_eyre::eyre::eyre!("Apprentice didn't answer in time"));
+        assert_eq!(
+            answered(silent),
+            Err("Apprentice didn't answer in time".to_owned())
+        );
     }
 
     #[test]

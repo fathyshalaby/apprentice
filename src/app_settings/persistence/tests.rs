@@ -1052,3 +1052,32 @@ fn a_managed_lock_saves_a_retired_yearly_stats_choice_as_dictation_stats() {
     );
     assert!(saved["labs"].get("yearly_stats").is_none());
 }
+
+#[test]
+fn a_repaired_watched_folder_list_is_not_trusted() {
+    // A wrong type repairs to no folders, which would read as "watch
+    // nothing" and drop what was noticed.
+    for broken in [
+        json!({"apprentice": {"watched_folders": 5}}),
+        json!({"apprentice": {"watched_folders": ["/a", 5]}}),
+        json!({"apprentice": 5}),
+    ] {
+        let file = SettingsFile::new(&serde_json::to_vec(&broken).unwrap());
+        assert!(
+            AppSettings::read_trusted_from(&file.path)
+                .unwrap()
+                .is_none(),
+            "{broken}"
+        );
+    }
+    // Another repaired setting leaves the list known.
+    let file = SettingsFile::new(
+        &serde_json::to_vec(&json!({
+            "apprentice": {"ollama_url": 5, "watched_folders": ["/a"]},
+            "recording_duck_volume": "loud",
+        }))
+        .unwrap(),
+    );
+    let read = AppSettings::read_trusted_from(&file.path).unwrap().unwrap();
+    assert_eq!(read.apprentice.watched_folders, [PathBuf::from("/a")]);
+}

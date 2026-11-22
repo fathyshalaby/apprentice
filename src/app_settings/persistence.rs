@@ -133,16 +133,18 @@ impl AppSettings {
     }
 
     /// What `read_from` reads, but `None` when the file is there and
-    /// couldn't be read or isn't a JSON object, rather than the defaults
-    /// standing in for it: for a reader that must not mistake a broken file
-    /// for an empty one. Writes nothing.
+    /// couldn't be read or isn't a JSON object, or when its
+    /// `apprentice.watched_folders` had to be repaired, rather than the
+    /// defaults standing in for it: for Notice patterns' watcher, which must
+    /// not mistake a broken file or list for an empty one. Writes nothing.
     #[cfg_attr(not(all(target_os = "macos", hex_capture)), allow(dead_code))]
     pub(crate) fn read_trusted_from(path: &Path) -> Result<Option<Self>> {
         let mut revision = WRITER.lock().unwrap_or_else(|error| error.into_inner());
-        let (mut settings, _, issue) = Self::read_managed_checked_from(path, Policy::current())?;
-        if issue.is_some() {
+        let (mut settings, _, issue, repairs) = Self::read_saved_noting(path)?;
+        if issue.is_some() || repairs.iter().any(touches_watched_folders) {
             return Ok(None);
         }
+        Policy::current().enforce(&mut settings);
         stamp(&mut settings, path, true, &mut revision);
         Ok(Some(settings))
     }
@@ -205,21 +207,33 @@ impl AppSettings {
     }
 
     fn read_saved_from(path: &Path) -> Result<(Self, bool, Option<LoadIssue>)> {
+        let (settings, migrated, issue, _) = Self::read_saved_noting(path)?;
+        Ok((settings, migrated, issue))
+    }
+
+    /// `read_saved_from`, with where decoding repaired the file.
+    fn read_saved_noting(path: &Path) -> Result<(Self, bool, Option<LoadIssue>, Vec<Repair>)> {
         let data = match fs::read(path) {
             Ok(data) => data,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                return Ok((Self::default(), false, None));
+                return Ok((Self::default(), false, None, Vec::new()));
             }
             Err(error) => {
                 tracing::warn!(path = %path.display(), %error, "could not read settings; using defaults without changing the file");
-                return Ok((Self::default(), false, Some(LoadIssue::Unreadable)));
+                return Ok((
+                    Self::default(),
+                    false,
+                    Some(LoadIssue::Unreadable),
+                    Vec::new(),
+                ));
             }
         };
         let issue = match settings_object(&data) {
             Ok(_) => None,
             Err(reason) => Some(LoadIssue::Unparseable(reason)),
         };
-        let (mut settings, mut repaired) = decode(&data);
+        let (mut settings, repairs) = decode_repairing(&data);
+        let mut repaired = !repairs.is_empty();
         let loaded = serde_json::to_value(&settings)?;
         let hints = legacy_recognition_hints(&data);
         if let Err(error) = settings.validate_recording_duck_volume() {
@@ -283,7 +297,7 @@ impl AppSettings {
         // dictation chord is cleared on every load, and only leaves the file
         // at its next save.
         settings.clear_shortcuts_sharing_dictation();
-        Ok((settings, migrated, issue))
+        Ok((settings, migrated, issue, repairs))
     }
 
     #[cfg(test)]
@@ -435,7 +449,7 @@ impl AppSettings {
         if !policy.any() {
             return Cow::Borrowed(self);
         }
-        let mut saved = saved.map_or_else(Self::default, |data| decode(data).0);
+        let mut saved = saved.map_or_else(Self::default, |data| decode_repairing(data).0);
         // A file from before `meetings.summaries` keeps its choice under a lock.
         saved.migrate_meeting_summaries();
         // A file from before Yearly stats merged keeps its choice too.
@@ -609,22 +623,39 @@ fn legacy_recognition_hints(data: &[u8]) -> Vec<String> {
         .collect()
 }
 
+/// Where a repair defaulted a value: its map keys and list indexes from the
+/// top. Empty when the whole file fell back to the defaults.
+type Repair = Vec<String>;
+
+#[cfg(test)]
 fn decode(data: &[u8]) -> (AppSettings, bool) {
+    let (settings, repairs) = decode_repairing(data);
+    (settings, !repairs.is_empty())
+}
+
+/// The settings in `data`, and where decoding had to repair them.
+fn decode_repairing(data: &[u8]) -> (AppSettings, Vec<Repair>) {
     let mut value = match settings_object(data) {
         Ok(value) => value,
         Err(reason) => {
             warn("$", &format!("settings.json {}", reason.sentence()));
-            return (AppSettings::default(), true);
+            return (AppSettings::default(), vec![Repair::new()]);
         }
     };
-    decode_value(&mut value)
+    decode_noting(&mut value)
 }
 
 fn decode_value(value: &mut Value) -> (AppSettings, bool) {
-    let mut repaired = false;
+    let (settings, repairs) = decode_noting(value);
+    (settings, !repairs.is_empty())
+}
+
+/// `decode_value`, with where each repair happened.
+fn decode_noting(value: &mut Value) -> (AppSettings, Vec<Repair>) {
+    let mut repairs = Vec::new();
     loop {
         match serde_path_to_error::deserialize::<_, AppSettings>(&*value) {
-            Ok(settings) => return (settings, repaired),
+            Ok(settings) => return (settings, repairs),
             Err(error) => {
                 let path: Vec<_> = error.path().iter().collect();
                 warn(&error.path().to_string(), &error.inner().to_string());
@@ -632,12 +663,32 @@ fn decode_value(value: &mut Value) -> (AppSettings, bool) {
                 // section-specific defaults. A malformed list/map entry with
                 // required fields is removed as a unit on the next attempt.
                 if !remove(value, &path) {
-                    return (AppSettings::default(), true);
+                    repairs.push(Repair::new());
+                    return (AppSettings::default(), repairs);
                 }
-                repaired = true;
+                repairs.push(path.iter().map(|segment| segment_name(segment)).collect());
             }
         }
     }
+}
+
+fn segment_name(segment: &Segment) -> String {
+    match segment {
+        Segment::Seq { index } => index.to_string(),
+        Segment::Map { key } => key.clone(),
+        Segment::Enum { variant } => variant.clone(),
+        Segment::Unknown => String::new(),
+    }
+}
+
+/// Whether `repair` defaulted Labs › Notice patterns' watched folders, or
+/// something holding them (the whole file, the `apprentice` section).
+#[cfg_attr(not(all(target_os = "macos", hex_capture)), allow(dead_code))]
+fn touches_watched_folders(repair: &Repair) -> bool {
+    repair
+        .iter()
+        .zip(["apprentice", "watched_folders"])
+        .all(|(segment, expected)| segment == expected)
 }
 
 /// Remove the deepest existing part of an error path. Each failed attempt

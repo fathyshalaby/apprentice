@@ -222,7 +222,8 @@ fn routine_id(root: &str, steps: &[Step]) -> String {
 }
 
 /// The extension most episodes' files had when they arrived in the root
-/// within [`TRIGGER_WINDOW_MS`] before the episode, when at least half the
+/// itself (not a folder in it, as offers only come for those) within
+/// [`TRIGGER_WINDOW_MS`] before the episode, when at least half the
 /// episodes have one.
 fn trigger(group: &Group, events: &[Event]) -> Option<String> {
     let mut counts: HashMap<&str, usize> = HashMap::new();
@@ -234,6 +235,7 @@ fn trigger(group: &Group, events: &[Event]) -> Option<String> {
             if event.root == group.root
                 && event.kind == EventKind::Added
                 && !event.folder
+                && event.to.is_empty()
                 && !event.ext.is_empty()
                 && event.t <= start
                 && start - event.t <= TRIGGER_WINDOW_MS
@@ -415,6 +417,25 @@ mod tests {
         assert_eq!(routine.steps[0].name.as_deref(), Some("Invoices #-#"));
         assert_eq!(routine.steps[1].to, "Invoices #-#");
         assert_eq!(routine.last_seen_ms, NOW - DAY + 3 * MIN);
+    }
+
+    #[test]
+    fn only_a_file_added_to_the_root_itself_triggers() {
+        // Offers come only for files that arrive in the root, so a file that
+        // arrives in a subfolder never makes the trigger.
+        let events: Vec<Event> = three_days()
+            .into_iter()
+            .map(|mut event| {
+                if event.kind == EventKind::Added && !event.folder {
+                    event.from = "Inbox".into();
+                    event.to = "Inbox".into();
+                }
+                event
+            })
+            .collect();
+        let found = detect(&events, &roots(), NOW, day_of);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].trigger, None);
     }
 
     #[test]

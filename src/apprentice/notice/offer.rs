@@ -10,25 +10,27 @@ pub const REOFFER_MS: u64 = 24 * 60 * 60 * 1000;
 /// Offers in one local day, across routines.
 pub const MAX_PER_DAY: usize = 3;
 
-/// What would make an offer an interruption.
+/// What would make an offer an interruption, or one Show me can't answer.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Busy {
     pub dictating: bool,
     pub meeting: bool,
     /// A capture or a lesson records.
     pub capturing: bool,
+    /// Annotate is off, so Show me's lesson couldn't record.
+    pub annotate_off: bool,
 }
 
 impl Busy {
     fn any(self) -> bool {
-        self.dictating || self.meeting || self.capturing
+        self.dictating || self.meeting || self.capturing || self.annotate_off
     }
 }
 
 /// The routine to offer for a file with `added_ext` that arrived in `root`:
 /// one whose trigger it is, still `New` or `Offered` more than a day ago,
-/// while fewer than three offers were made today and nothing records. The
-/// routine seen on the most days wins.
+/// while fewer than three offers were made today, nothing records, and
+/// Annotate is on. The routine seen on the most days wins.
 pub fn pick(
     known: &[Known],
     added_ext: &str,
@@ -139,6 +141,10 @@ mod tests {
             },
             Busy {
                 capturing: true,
+                ..Busy::default()
+            },
+            Busy {
+                annotate_off: true,
                 ..Busy::default()
             },
         ] {

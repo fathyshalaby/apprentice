@@ -714,7 +714,7 @@ fn noticing_lists_folders_and_routines() {
         "~/Documents/Scans",
         "Can't read this folder",
         "Routines",
-        "Moves PDFs from Downloads into folders like Invoices 2026-11, then renames them like 2026-11 Invoice.pdf (3 days)",
+        "Moves PDFs from Downloads into folders like Invoices 2026-11, then renames them like #-#-# a.pdf (3 days)",
         "Apprentice keeps file kinds, folder names and times for 14 days, on this Mac.",
     ] {
         assert!(shown.iter().any(|t| t == copy), "no {copy:?} in {shown:?}");

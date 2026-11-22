@@ -22,7 +22,7 @@ use super::routine::{self, EPISODE_GAP_MS, Routine};
 use super::snapshot::{self, Change, ChangeKind, Snapshot};
 use super::state::{Known, RoutineState, Routines, set_aside};
 use crate::apprentice::events::{self, ApprenticeAction};
-use crate::desktop::i18n::tr_named;
+use crate::desktop::i18n::{tr, tr_named};
 
 /// How often the watched folders are read.
 pub const POLL: Duration = Duration::from_secs(5);
@@ -72,7 +72,8 @@ static LAST_GOOD: Mutex<Option<Vec<PathBuf>>> = Mutex::new(None);
 /// again when it moves.
 static CHANGED: AtomicU64 = AtomicU64::new(0);
 
-/// The app took a [`NoticeEvent::Changed`].
+/// The app took a [`NoticeEvent::Changed`], or an answer (Show me, Stop
+/// asking, Forget) changed a routine.
 pub fn note_changed() {
     CHANGED.fetch_add(1, Ordering::AcqRel);
 }
@@ -109,25 +110,53 @@ pub fn start(events: SyncSender<NoticeEvent>, wake: impl Fn() + Send + 'static) 
         .expect("the apprentice-notice thread starts")
 }
 
-/// Show me: a lesson starts, and only then are there no more offers. A
-/// lesson that can't start (Annotate off, a capture recording) leaves the
-/// routine offerable and returns why.
+/// How long Show me waits for the listener to say the lesson started.
+const LESSON_ANSWER: Duration = Duration::from_secs(2);
+
+/// Show me: the routine is marked Shown (no more offers) only once the
+/// listener answered, within [`LESSON_ANSWER`], that the lesson started
+/// recording. While Annotate is off or a capture records it refuses at once
+/// in the pane's words; a lesson the listener refuses, or doesn't answer
+/// for in time, also leaves the routine offerable. Returns why. It waits,
+/// so it runs off the main thread.
 pub fn accept(id: &str) -> Result<(), String> {
-    accept_in(log::noticed_dir().as_deref(), id, || {
-        crate::apprentice::lessons::start().map_err(|error| error.to_string())
+    let refusal = lesson_refusal(
+        crate::app_settings::capture_on(),
+        crate::capture_host::snapshot().recording.is_some(),
+    );
+    accept_in(log::noticed_dir().as_deref(), id, refusal, || {
+        crate::apprentice::lessons::start_confirmed(LESSON_ANSWER)
     })
+}
+
+/// Why a lesson can't start now, as the pane's Show me and Watch this say
+/// it; `None` when it can.
+fn lesson_refusal(annotate_on: bool, recording: bool) -> Option<String> {
+    if !annotate_on {
+        Some(tr("Turn on Annotate to record a lesson").to_owned())
+    } else if recording {
+        Some(tr("Recording… stop it from the capsule").to_owned())
+    } else {
+        None
+    }
 }
 
 fn accept_in(
     dir: Option<&Path>,
     id: &str,
+    refusal: Option<String>,
     start: impl FnOnce() -> Result<(), String>,
 ) -> Result<(), String> {
+    if let Some(why) = refusal {
+        return Err(why);
+    }
     start()?;
     if let Some(dir) = dir
         && set_state(dir, id, RoutineState::Shown)
     {
         events::emit(ApprenticeAction::RoutineAccepted, id, None);
+        // An open pane reads again, also when the capsule answered.
+        note_changed();
     }
     Ok(())
 }
@@ -224,6 +253,9 @@ fn ignore_in(dir: &Path, id: &str) -> bool {
     if let Err(error) = forget_events(dir, &known) {
         tracing::warn!(%error, "could not forget a routine's events");
     }
+    // An open pane stops listing it, even when the capsule's Stop asking
+    // answered.
+    note_changed();
     true
 }
 
@@ -361,6 +393,7 @@ fn busy_now() -> Busy {
         dictating: crate::transcription::engine::dictation_busy(),
         meeting: crate::meeting::recording(),
         capturing: crate::capture_host::snapshot().recording.is_some(),
+        annotate_off: !crate::app_settings::capture_on(),
     }
 }
 
@@ -1108,14 +1141,68 @@ mod tests {
         let before = Routines::load(&data).known[0].state.clone();
         assert_ne!(before, RoutineState::Shown);
 
-        // A lesson that can't start (Annotate off, a capture recording)
-        // leaves the routine as it was, still offerable, and says why.
-        let failed = accept_in(Some(&data), &id, || Err("Annotate is off".into()));
-        assert_eq!(failed, Err("Annotate is off".into()));
+        // A lesson the listener refuses or never answers leaves the
+        // routine as it was, still offerable, and says why.
+        let failed = accept_in(Some(&data), &id, None, || Err("captures are off".into()));
+        assert_eq!(failed, Err("captures are off".into()));
         assert_eq!(Routines::load(&data).known[0].state, before);
 
-        assert_eq!(accept_in(Some(&data), &id, || Ok(())), Ok(()));
+        assert_eq!(accept_in(Some(&data), &id, None, || Ok(())), Ok(()));
         assert_eq!(Routines::load(&data).known[0].state, RoutineState::Shown);
+    }
+
+    #[test]
+    fn show_me_refuses_as_the_pane_does_while_annotate_is_off_or_a_capture_records() {
+        let dir = Dir::new("refuse");
+        let data = dir.0.join("noticed");
+        let downloads = dir.0.join("Downloads");
+        std::fs::create_dir_all(&downloads).unwrap();
+        let log = Log::open(&data).unwrap();
+        for (days_ago, month) in [(3, "09"), (2, "10"), (1, "11")] {
+            log.append(&invoice_episode(NOW - days_ago * DAY, month))
+                .unwrap();
+        }
+        let (mut watcher, _receiver) = watcher(&data, vec![downloads]);
+        watcher.tick(NOW);
+        let id = Routines::load(&data).known[0].id.clone();
+        let before = Routines::load(&data).known[0].state.clone();
+        assert_eq!(lesson_refusal(true, false), None);
+        for (annotate_on, recording, why) in [
+            (false, false, "Turn on Annotate to record a lesson"),
+            (false, true, "Turn on Annotate to record a lesson"),
+            (true, true, "Recording… stop it from the capsule"),
+        ] {
+            let refusal = lesson_refusal(annotate_on, recording);
+            let refused = accept_in(Some(&data), &id, refusal, || {
+                panic!("no lesson starts while it is refused")
+            });
+            assert_eq!(refused, Err(why.to_owned()));
+            assert_eq!(Routines::load(&data).known[0].state, before);
+        }
+    }
+
+    #[test]
+    fn answers_tell_an_open_pane_to_read_again() {
+        let dir = Dir::new("refresh");
+        let data = dir.0.join("noticed");
+        let downloads = dir.0.join("Downloads");
+        std::fs::create_dir_all(&downloads).unwrap();
+        let log = Log::open(&data).unwrap();
+        for (days_ago, month) in [(3, "09"), (2, "10"), (1, "11")] {
+            log.append(&invoice_episode(NOW - days_ago * DAY, month))
+                .unwrap();
+        }
+        let (mut watcher, _receiver) = watcher(&data, vec![downloads]);
+        watcher.tick(NOW);
+        let id = Routines::load(&data).known[0].id.clone();
+
+        let seen = changed_generation();
+        assert_eq!(accept_in(Some(&data), &id, None, || Ok(())), Ok(()));
+        assert!(changed_generation() > seen, "Show me");
+
+        let seen = changed_generation();
+        assert!(ignore_in(&data, &id));
+        assert!(changed_generation() > seen, "Stop asking");
     }
 
     #[test]
@@ -1149,6 +1236,16 @@ mod tests {
         std::fs::write(&settings, b"{ \"apprentice\": ").unwrap();
         assert_eq!(folders_from(&settings), None);
         watcher.tick(NOW + 10_000);
+        assert_eq!(log.read().len(), 1);
+        assert_eq!(std::fs::read(data.join(ROOTS_FILE)).unwrap(), roots);
+        assert_eq!(watcher.roots, vec![root.clone()]);
+
+        // A list of the wrong type is repaired to none in memory: unknown
+        // too, never "no folders".
+        let wrong = serde_json::json!({ "apprentice": { "watched_folders": 5 } });
+        std::fs::write(&settings, serde_json::to_vec(&wrong).unwrap()).unwrap();
+        assert_eq!(folders_from(&settings), None);
+        watcher.tick(NOW + 12_000);
         assert_eq!(log.read().len(), 1);
         assert_eq!(std::fs::read(data.join(ROOTS_FILE)).unwrap(), roots);
         assert_eq!(watcher.roots, vec![root.clone()]);

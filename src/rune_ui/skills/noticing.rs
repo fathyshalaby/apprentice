@@ -179,8 +179,8 @@ pub(super) fn chosen(ui: &mut Ui, choice: Choice) -> bool {
     }
 }
 
-/// Remove: the folder is no longer watched; what was noticed in it stays
-/// until it ages out or Forget everything.
+/// Remove: the folder is no longer watched. Its routines leave the list at
+/// once, and the watcher drops its noticed events at its next read.
 fn remove(ui: &mut Ui, folder: &Path) {
     if !open(ui) {
         return;

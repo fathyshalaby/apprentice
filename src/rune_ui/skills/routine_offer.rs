@@ -107,8 +107,10 @@ impl OfferState {
     /// The drawn offer's buttons answer only that offer, even when a press
     /// lands after a replacement. Accepting and ignoring take the notice
     /// store's lock and may sync to disk, so they run on a thread of their
-    /// own, never the main thread's. A lesson Show me couldn't start is
-    /// logged; the routine stays offerable.
+    /// own, never the main thread's, where Show me also waits for the
+    /// lesson to start. One that didn't (Annotate off, a capture recording,
+    /// the listener refusing or not answering in time) is logged, and the
+    /// routine stays offerable.
     fn answer(&mut self, id: &str, answer: Answer) {
         if self.offer.as_ref().is_none_or(|offer| offer.id != id) {
             return;

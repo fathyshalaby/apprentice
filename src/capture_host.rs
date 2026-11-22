@@ -2837,12 +2837,27 @@ pub enum CaptureControl {
     Reply(ScrawlCaptureAction, SyncSender<ControlReply>),
 }
 
-/// Hands `control` to the listener without waiting for it.
+/// Hands `control` to the listener without waiting for it: `Ok` means it
+/// was queued, not that it ran.
 #[cfg(target_os = "macos")]
 pub fn send_to_listener(control: CaptureControl) -> Result<()> {
+    hand_to_listener(control).map(drop)
+}
+
+/// Hands `control` to the listener and waits at most `wait` for its answer,
+/// which may itself be a refusal ([`ControlReply::Error`]).
+#[cfg(target_os = "macos")]
+pub fn ask_listener(control: CaptureControl, wait: Duration) -> Result<ControlReply> {
+    hand_to_listener(control)?
+        .recv_timeout(wait)
+        .map_err(|_| eyre!("Apprentice didn't answer in time"))
+}
+
+#[cfg(target_os = "macos")]
+fn hand_to_listener(control: CaptureControl) -> Result<Receiver<ControlReply>> {
     use crate::recognition::RecognitionControl;
     let runtime = crate::macos_rune::runtime().ok_or_else(|| eyre!("Apprentice is starting"))?;
-    let (reply, _) = mpsc::sync_channel(1);
+    let (reply, answer) = mpsc::sync_channel(1);
     runtime
         .recognition(match control {
             CaptureControl::Scrawl(action) => RecognitionControl::ScrawlCapture { action, reply },
@@ -2850,7 +2865,8 @@ pub fn send_to_listener(control: CaptureControl) -> Result<()> {
                 RecognitionControl::CaptureCommand { command, reply }
             }
         })
-        .map_err(|error| eyre!(error))
+        .map_err(|error| eyre!(error))?;
+    Ok(answer)
 }
 
 /// The Linux or Windows listener's queue of capsule commands, while one
