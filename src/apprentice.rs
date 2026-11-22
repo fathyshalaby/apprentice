@@ -5,3 +5,4 @@ mod models;
 mod ollama;
 mod run;
 mod skill;
+mod store;
