@@ -582,6 +582,7 @@ mod tests {
         include_str!("../rune_ui/skills/model_picker.rs"),
         include_str!("../apprentice/ollama.rs"),
         include_str!("../apprentice/notice/routine.rs"),
+        include_str!("../apprentice/notice/watch.rs"),
         include_str!("../apprentice/run.rs"),
         include_str!("../rune_ui.rs"),
         include_str!("../rune_ui/activity.rs"),

@@ -344,6 +344,14 @@ pub fn run(shutdown: &'static AtomicBool, listener: ListenerConfig, hidden: bool
         crate::apprentice::events::set_log(event_log.clone());
         crate::capture_host::on_lesson_written(crate::apprentice::lessons::written);
     }
+    // Labs › Notice patterns: the watcher idles until its gate opens and a
+    // folder is watched, and wakes the pump when it has something to show.
+    #[cfg(hex_capture)]
+    let notice_events = {
+        let (sender, receiver) = mpsc::sync_channel(8);
+        crate::apprentice::notice::watch::start(sender, wake_pump);
+        receiver
+    };
     let drained_event_log = event_log.clone();
     let transformations = Arc::new(crate::personal_commands::TransformationClient::default());
     let (developer_sender, developer_receiver) = mpsc::sync_channel(8);
@@ -559,6 +567,8 @@ pub fn run(shutdown: &'static AtomicBool, listener: ListenerConfig, hidden: bool
         capsules,
         #[cfg(hex_capture)]
         capture_overlays,
+        #[cfg(hex_capture)]
+        notice_events,
         runtime: handle,
         shutdown,
         indicator_events,
@@ -665,6 +675,11 @@ struct Pump {
     capsules: crate::rune_ui::meeting_capsules::MeetingCapsules,
     #[cfg(hex_capture)]
     capture_overlays: Option<crate::rune_ui::capture_capsule::feed::CaptureOverlays>,
+    /// Labs › Notice patterns' offers and pane refreshes. Held so the
+    /// watcher's sends land somewhere; the offer capsule reads it.
+    #[cfg(hex_capture)]
+    #[allow(dead_code)]
+    notice_events: Receiver<crate::apprentice::notice::watch::NoticeEvent>,
     runtime: RuntimeHandle,
     shutdown: &'static AtomicBool,
     indicator_events: Receiver<DictationIndicatorEvent>,

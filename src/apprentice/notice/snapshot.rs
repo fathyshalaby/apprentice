@@ -1,9 +1,7 @@
 //! A watched folder as a set of file identities, and the diff of two such
 //! sets. Pure file-system reading: nothing here writes, follows links, or
 //! looks inside packages. A file moved out of the tree (or below depth 2)
-//! reads as Removed, and one moved in reads as Added. Later tasks consume
-//! these items.
-#![cfg_attr(not(test), allow(dead_code))]
+//! reads as Removed, and one moved in reads as Added.
 
 use std::collections::HashMap;
 use std::os::unix::fs::MetadataExt;

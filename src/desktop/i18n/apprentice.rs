@@ -111,6 +111,8 @@ pub(super) const TRANSLATIONS: &[(&str, [&str; 6])] = &[
     ("Renames {kind} in {root} like {shape}", ["Zmienia nazwy: {kind} w {root} na wzór {shape}", "将 {root} 中的{kind}按 {shape} 的样式重命名", "{root} の{kind}を {shape} のように名前変更します", "Benennt {kind} in {root} wie {shape} um", "Cambia el nombre de {kind} en {root} como {shape}", "Перейменовує {kind} у {root} за зразком {shape}"]),
     ("Makes folders like {folder} in {root}", ["Tworzy w {root} foldery takie jak {folder}", "在 {root} 中创建类似 {folder} 的文件夹", "{root} に {folder} のようなフォルダを作ります", "Legt in {root} Ordner wie {folder} an", "Crea en {root} carpetas como {folder}", "Створює в {root} папки на кшталт {folder}"]),
     ("files", ["pliki", "文件", "ファイル", "Dateien", "archivos", "файли"]),
+    ("New {kind} in {root}", ["Nowy plik {kind} w {root}", "{root} 中有新的 {kind}", "{root} に新しい {kind}", "Neue {kind}-Datei in {root}", "Nuevo {kind} en {root}", "Новий {kind} у {root}"]),
+    ("You usually file these ({days} days). Show me how?", ["Zwykle je porządkujesz (dni: {days}). Pokażesz mi jak?", "你通常会整理这些文件（{days} 天）。给我演示一下？", "いつもこれを整理していますね（{days} 日）。やり方を見せてくれますか？", "Du legst diese meist ab ({days} Tage). Zeigst du mir, wie?", "Sueles archivar estos ({days} días). ¿Me enseñas cómo?", "Ви зазвичай розкладаєте їх ({days} дн.). Покажете як?"]),
 ];
 
 /// Brazilian Portuguese, for the card and the pane.
@@ -225,6 +227,8 @@ pub(super) const PORTUGUESE: &[(&str, &str)] = &[
     ("Renames {kind} in {root} like {shape}", "Renomeia {kind} em {root} como {shape}"),
     ("Makes folders like {folder} in {root}", "Cria em {root} pastas como {folder}"),
     ("files", "arquivos"),
+    ("New {kind} in {root}", "Novo {kind} em {root}"),
+    ("You usually file these ({days} days). Show me how?", "Você costuma arquivar estes ({days} dias). Me mostra como?"),
 ];
 
 /// French, for the card and the pane.
@@ -339,6 +343,8 @@ pub(super) const FRENCH: &[(&str, &str)] = &[
     ("Renames {kind} in {root} like {shape}", "Renomme {kind} dans {root} comme {shape}"),
     ("Makes folders like {folder} in {root}", "Crée dans {root} des dossiers comme {folder}"),
     ("files", "fichiers"),
+    ("New {kind} in {root}", "Nouveau {kind} dans {root}"),
+    ("You usually file these ({days} days). Show me how?", "Vous les rangez d'habitude ({days} jours). Vous me montrez ?"),
 ];
 
 /// Russian, for the card and the pane.
@@ -453,4 +459,6 @@ pub(super) const RUSSIAN: &[(&str, &str)] = &[
     ("Renames {kind} in {root} like {shape}", "Переименовывает {kind} в {root} по образцу {shape}"),
     ("Makes folders like {folder} in {root}", "Создаёт в {root} папки вроде {folder}"),
     ("files", "файлы"),
+    ("New {kind} in {root}", "Новый {kind} в {root}"),
+    ("You usually file these ({days} days). Show me how?", "Вы обычно раскладываете их ({days} дн.). Покажете как?"),
 ];

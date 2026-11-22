@@ -154,11 +154,12 @@ impl Log {
     }
 }
 
-/// `<data>/apprentice/noticed`.
-pub fn noticed_dir() -> PathBuf {
+/// `<data>/noticed`, or `None` when the data folder can't be found: then
+/// nothing is noticed, rather than kept somewhere shared.
+pub fn noticed_dir() -> Option<PathBuf> {
     crate::app_paths::support_dir()
-        .unwrap_or_else(|_| std::env::temp_dir().join("apprentice"))
-        .join("noticed")
+        .ok()
+        .map(|data| data.join("noticed"))
 }
 
 #[cfg(test)]

@@ -93,6 +93,11 @@ pub enum ApprenticeAction {
     SkillInstalled,
     SkillRemoved,
     ModelDownloaded,
+    /// Notice patterns found a routine; `id` is the routine's hash.
+    RoutineNoticed,
+    RoutineOffered,
+    RoutineAccepted,
+    RoutineIgnored,
 }
 
 impl VoiceEvent {
@@ -892,6 +897,31 @@ mod tests {
         let line = serde_json::to_string(&bare).unwrap();
         assert!(!line.contains("count"), "{line}");
         assert_eq!(serde_json::from_str::<VoiceEvent>(&line).unwrap(), bare);
+    }
+
+    #[test]
+    fn routine_actions_name_only_the_routine() {
+        for (action, name) in [
+            (ApprenticeAction::RoutineNoticed, "routine_noticed"),
+            (ApprenticeAction::RoutineOffered, "routine_offered"),
+            (ApprenticeAction::RoutineAccepted, "routine_accepted"),
+            (ApprenticeAction::RoutineIgnored, "routine_ignored"),
+        ] {
+            let event = VoiceEvent::Apprentice {
+                timestamp_ms: 9,
+                action,
+                id: "0123456789abcdef".into(),
+                count: None,
+            };
+            let line = serde_json::to_string(&event).unwrap();
+            assert_eq!(
+                line,
+                format!(
+                    r#"{{"kind":"apprentice","timestamp_ms":9,"action":"{name}","id":"0123456789abcdef"}}"#
+                )
+            );
+            assert_eq!(serde_json::from_str::<VoiceEvent>(&line).unwrap(), event);
+        }
     }
 
     #[test]
