@@ -152,13 +152,21 @@ pub(super) struct SkillsPane {
 
 impl SkillsPane {
     /// Follows a running draft and download always (a finished draft is
-    /// saved even while the pane is hidden); reads the folders and the
-    /// capture state only while the pane shows.
-    pub(super) fn poll(&mut self, visible: bool) -> bool {
+    /// saved even while the pane is hidden); reads the folders, the capture
+    /// state, and (for a chosen Ollama model) Ollama's models only while
+    /// the pane shows.
+    pub(super) fn poll(
+        &mut self,
+        visible: bool,
+        settings: &crate::app_settings::ApprenticeSettings,
+    ) -> bool {
         let mut changed = self.poll_drafting();
         changed |= self.picker.poll();
         if !visible || self.fixture.is_some() {
             return changed;
+        }
+        if let Some(crate::app_settings::ModelChoice::Ollama { .. }) = settings.choice() {
+            self.picker.list_once(&settings.ollama_url);
         }
         let recording = crate::capture_host::snapshot().recording.is_some();
         changed |= std::mem::replace(&mut self.recording, recording) != recording;

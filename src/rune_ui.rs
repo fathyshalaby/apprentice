@@ -1388,7 +1388,8 @@ fn poll(ui: &mut Ui, clock: f64, tx: &mut Tx) -> bool {
     #[cfg(all(target_os = "macos", hex_capture))]
     {
         changed |= history::unified::poll(ui);
-        changed |= ui.skills.poll(ui.pane == Pane::Skills && !ui.labs_open);
+        let visible = ui.pane == Pane::Skills && !ui.labs_open;
+        changed |= ui.skills.poll(visible, &ui.settings.apprentice);
     }
     if ui.pane == Pane::Output && !ui.labs_open {
         changed |= output::poll(ui, clock, tx);

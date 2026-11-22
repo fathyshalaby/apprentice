@@ -17,6 +17,10 @@ use crate::desktop::i18n::{tr, tr_fill};
 
 /// Ollama's sampling temperature for drafts: steady, but not greedy.
 const TEMPERATURE: f64 = 0.2;
+/// The context every chat asks for, in tokens: Ollama's default is small
+/// and silently cuts a long prompt from the front. Text-only drafts size
+/// their parts from it.
+pub const NUM_CTX: usize = 16_384;
 /// Listing models and checking one's capabilities.
 const LIST_TIMEOUT: Duration = Duration::from_secs(10);
 /// How long a download may wait for Ollama to start answering.
@@ -36,6 +40,15 @@ pub struct Installed {
     pub size: u64,
     /// Whether it reads images (`/api/show` lists `vision`).
     pub vision: bool,
+}
+
+/// What `/api/show` says about one model.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct Details {
+    /// It reads images (`vision` among its capabilities).
+    pub vision: bool,
+    /// It runs on another computer (ollama.com) that Ollama forwards to.
+    pub remote: bool,
 }
 
 /// One line of a download's progress.
@@ -61,6 +74,8 @@ pub enum ModelError {
     Timeout,
     /// The person stopped it (a download's Cancel).
     Cancelled,
+    /// The model runs in the cloud; nothing was sent to it.
+    Cloud,
     Failed(String),
 }
 
@@ -74,12 +89,17 @@ impl ModelError {
             Self::Refused => tr("The model refused this lesson").to_owned(),
             Self::Timeout => tr("The model took too long to answer").to_owned(),
             Self::Cancelled => tr("Cancelled").to_owned(),
+            Self::Cloud => {
+                tr("This model runs in the cloud, so Apprentice won't use it").to_owned()
+            }
             Self::Failed(reason) => tr_fill("The model failed: {}", reason),
         }
     }
 }
 
-/// The models Ollama at `url` has, each checked for vision.
+/// The models Ollama at `url` has on this computer, each checked for
+/// vision. Models it runs in the cloud are left out: by their `-cloud` or
+/// `:cloud` tag, a remote host in the list, or one `/api/show` names.
 pub fn installed(url: &str) -> Result<Vec<Installed>, ModelError> {
     let base = base(url)?;
     let agent = agent(Some(LIST_TIMEOUT));
@@ -90,29 +110,48 @@ pub fn installed(url: &str) -> Result<Vec<Installed>, ModelError> {
     Ok(tags
         .models
         .into_iter()
-        .map(|model| Installed {
+        .filter(|tag| !is_cloud(&tag.name) && !remote(&tag.remote_host, &tag.remote_model))
+        .filter_map(|tag| {
             // A model Ollama can't describe reads as text-only, not as a
             // failed list.
-            vision: sees_images(&agent, &base, &model.name),
-            name: model.name,
-            size: model.size,
+            let details = describe(&agent, &base, &tag.name).ok();
+            (!details.is_some_and(|details| details.remote)).then(|| Installed {
+                vision: details.is_some_and(|details| details.vision),
+                name: tag.name,
+                size: tag.size,
+            })
         })
         .collect())
 }
 
-/// Whether `/api/show` lists `vision` for `model`; false when it can't say.
-fn sees_images(agent: &ureq::Agent, base: &str, model: &str) -> bool {
-    let request = post(base, "/api/show", &json!({ "model": model }));
-    let Ok(request) = request else {
-        return false;
-    };
-    read_json::<Show>(agent, request, None)
-        .map(|show| {
-            show.capabilities
-                .iter()
-                .any(|capability| capability == "vision")
-        })
-        .unwrap_or(false)
+/// Whether `model`'s tag names one of Ollama's cloud models.
+pub fn is_cloud(model: &str) -> bool {
+    model.ends_with("-cloud") || model.ends_with(":cloud")
+}
+
+/// One `/api/show` of `model`: whether it sees images, and whether it runs
+/// somewhere else.
+pub fn details(url: &str, model: &str) -> Result<Details, ModelError> {
+    let base = base(url)?;
+    describe(&agent(Some(LIST_TIMEOUT)), &base, model)
+}
+
+fn describe(agent: &ureq::Agent, base: &str, model: &str) -> Result<Details, ModelError> {
+    let request = post(base, "/api/show", &json!({ "model": model }))?;
+    let show: Show = read_json(agent, request, Some(model))?;
+    Ok(Details {
+        vision: show.capabilities.iter().any(|c| c == "vision"),
+        remote: remote(&show.remote_host, &show.remote_model),
+    })
+}
+
+/// Whether Ollama names a remote host or model for an entry.
+fn remote(host: &Option<String>, model: &Option<String>) -> bool {
+    [host, model].into_iter().any(|field| {
+        field
+            .as_deref()
+            .is_some_and(|value| !value.trim().is_empty())
+    })
 }
 
 /// One non-streaming chat turn; returns the answer's text. `images` go with
@@ -139,7 +178,7 @@ pub fn chat(
         "messages": [{ "role": "system", "content": system }, user],
         "stream": false,
         "format": format,
-        "options": { "temperature": TEMPERATURE },
+        "options": { "temperature": TEMPERATURE, "num_ctx": NUM_CTX },
     });
     let request = post(&base, "/api/chat", &body)?;
     let answer: Chat = read_json(&agent(Some(timeout)), request, Some(model))?;
@@ -299,12 +338,20 @@ struct Tag {
     name: String,
     #[serde(default)]
     size: u64,
+    #[serde(default)]
+    remote_host: Option<String>,
+    #[serde(default)]
+    remote_model: Option<String>,
 }
 
 #[derive(Deserialize)]
 struct Show {
     #[serde(default)]
     capabilities: Vec<String>,
+    #[serde(default)]
+    remote_host: Option<String>,
+    #[serde(default)]
+    remote_model: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -398,6 +445,110 @@ mod tests {
         assert_eq!(body(&received[2]), json!({ "model": "llama3:8b" }));
     }
 
+    /// Ollama lists models it runs on ollama.com beside its own: by a
+    /// `-cloud` or `:cloud` tag, a `remote_host` or `remote_model` in the
+    /// list, or one only `/api/show` reveals. None is offered.
+    #[test]
+    fn installed_leaves_out_cloud_models() {
+        let (url, server) = serve(vec![
+            (
+                "GET /api/tags".into(),
+                200,
+                json!({ "models": [
+                    { "name": "gpt-oss:120b-cloud", "size": 384 },
+                    { "name": "gemma4:26b", "size": 17_000_000_000_u64 },
+                    { "name": "kimi-k2:cloud", "size": 384 },
+                    { "name": "deepseek-v3.1:671b", "size": 384,
+                      "remote_model": "deepseek-v3.1:671b",
+                      "remote_host": "https://ollama.com:443" },
+                    { "name": "glm:4.6", "size": 384 },
+                ] })
+                .to_string(),
+            ),
+            (
+                "POST /api/show".into(),
+                200,
+                json!({ "capabilities": ["completion", "vision"] }).to_string(),
+            ),
+            (
+                "POST /api/show".into(),
+                200,
+                json!({ "capabilities": ["completion"],
+                        "remote_host": "https://ollama.com:443",
+                        "remote_model": "glm-4.6" })
+                .to_string(),
+            ),
+        ]);
+        let models = installed(&url).unwrap();
+        assert_eq!(
+            models,
+            [Installed {
+                name: "gemma4:26b".into(),
+                size: 17_000_000_000,
+                vision: true,
+            }]
+        );
+        let received = server.join().unwrap();
+        assert_eq!(received.len(), 3, "tagged cloud models aren't even shown");
+        assert_eq!(body(&received[2]), json!({ "model": "glm:4.6" }));
+    }
+
+    #[test]
+    fn cloud_names_end_in_cloud() {
+        for name in [
+            "gpt-oss:120b-cloud",
+            "kimi-k2:cloud",
+            "qwen3-coder:480b-cloud",
+        ] {
+            assert!(is_cloud(name), "{name}");
+        }
+        for name in ["gemma4:26b", "qwen3-vl:8b", "cloudy:7b", "cloud-model:1b"] {
+            assert!(!is_cloud(name), "{name}");
+        }
+    }
+
+    #[test]
+    fn details_read_vision_and_the_cloud() {
+        let (url, server) = serve(vec![
+            (
+                "POST /api/show".into(),
+                200,
+                json!({ "capabilities": ["completion", "vision"] }).to_string(),
+            ),
+            (
+                "POST /api/show".into(),
+                200,
+                json!({ "capabilities": ["completion"], "remote_host": "https://ollama.com:443" })
+                    .to_string(),
+            ),
+            (
+                "POST /api/show".into(),
+                404,
+                json!({ "error": "model 'nope' not found" }).to_string(),
+            ),
+        ]);
+        assert_eq!(
+            details(&url, "gemma4:26b"),
+            Ok(Details {
+                vision: true,
+                remote: false
+            })
+        );
+        assert_eq!(
+            details(&url, "glm:4.6"),
+            Ok(Details {
+                vision: false,
+                remote: true
+            })
+        );
+        assert_eq!(
+            details(&url, "nope"),
+            Err(ModelError::NotDownloaded("nope".into()))
+        );
+        server.join().unwrap();
+        assert!(!ModelError::Cloud.message().is_empty());
+    }
+
     #[test]
     fn chat_sends_images_and_the_schema() {
         let (url, server) = serve(vec![(
@@ -424,6 +575,9 @@ mod tests {
         assert_eq!(sent["stream"], false);
         assert_eq!(sent["format"], schema);
         assert_eq!(sent["options"]["temperature"], 0.2);
+        // Ollama's default context is small and cuts prompts from the front.
+        assert_eq!(sent["options"]["num_ctx"], NUM_CTX);
+        assert_eq!(NUM_CTX, 16_384);
         assert_eq!(
             sent["messages"][0],
             json!({ "role": "system", "content": "system words" })
@@ -608,6 +762,7 @@ mod tests {
             ModelError::Refused,
             ModelError::Timeout,
             ModelError::Cancelled,
+            ModelError::Cloud,
             ModelError::Failed("boom".into()),
         ] {
             assert!(!error.message().is_empty(), "{error:?}");

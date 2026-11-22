@@ -48,21 +48,21 @@ fn title(lesson: &Lesson) -> String {
     )
 }
 
-/// What drafting reads, and with which model.
-fn reads(choice: Option<&ModelChoice>) -> String {
-    match choice {
-        Some(ModelChoice::AppleIntelligence) => format!(
-            "{} · Apple Intelligence · {}",
-            tr("Reads: narration, names of what you click, window titles"),
-            tr("text only")
-        ),
-        Some(ModelChoice::Ollama { model }) => format!(
-            "{} · {model}",
-            tr("Reads: narration, names of what you click, window titles, screenshots")
-        ),
-        None => {
-            tr("Reads: narration, names of what you click, window titles, screenshots").to_owned()
+/// What drafting reads, and with which model. An Ollama model reads
+/// screenshots only once the picker knows it sees images (`vision`).
+fn reads(choice: Option<&ModelChoice>, vision: Option<bool>) -> String {
+    let text = tr("Reads: narration, names of what you click, window titles");
+    let screen = tr("Reads: narration, names of what you click, window titles, screenshots");
+    match (choice, vision) {
+        (Some(ModelChoice::AppleIntelligence), _) => {
+            format!("{text} · Apple Intelligence · {}", tr("text only"))
         }
+        (Some(ModelChoice::Ollama { model }), Some(true)) => format!("{screen} · {model}"),
+        (Some(ModelChoice::Ollama { model }), Some(false)) => {
+            format!("{text} · {model} · {}", tr("text only"))
+        }
+        (Some(ModelChoice::Ollama { model }), None) => format!("{text} · {model}"),
+        (None, _) => screen.to_owned(),
     }
 }
 
@@ -91,6 +91,10 @@ fn lesson_card(ui: &Ui, p: Paint, lesson: &Lesson, primary: &Primary) -> El {
     let pane = &ui.skills;
     let id = lesson.id.clone();
     let choice = ui.settings.apprentice.choice();
+    let vision = match &choice {
+        Some(ModelChoice::Ollama { model }) => pane.picker.sees_images(model),
+        _ => None,
+    };
     let drafting = pane.drafting.as_ref().filter(|d| d.lesson == lesson.id);
     let failed = pane
         .failed
@@ -123,7 +127,7 @@ fn lesson_card(ui: &Ui, p: Paint, lesson: &Lesson, primary: &Primary) -> El {
             Stage::Stopping => tr("Stopping…").to_owned(),
         };
         block = block
-            .child(line("reads", reads(choice.as_ref()), p.muted()))
+            .child(line("reads", reads(choice.as_ref(), vision), p.muted()))
             .child(line("stage", stage, p.text()));
         let stopping = drafting.stage == Stage::Stopping;
         buttons = buttons.child(super::super::controls::button_enabled(
@@ -136,7 +140,7 @@ fn lesson_card(ui: &Ui, p: Paint, lesson: &Lesson, primary: &Primary) -> El {
         ));
         return card(p, &format!("lesson-{id}"), vec![block.child(buttons)]);
     } else {
-        block = block.child(line("reads", reads(choice.as_ref()), p.muted()));
+        block = block.child(line("reads", reads(choice.as_ref(), vision), p.muted()));
         if let Some(note) = thin_note(ui, lesson) {
             block = block.child(line("thin", note, p.warning()));
         }

@@ -510,3 +510,37 @@ fn the_skills_destination_opens_the_pane_while_the_lab_is_on() {
     rt.update(|ui, tx| crate::rune_ui::show(ui, crate::rune_ui::Destination::Skills, tx));
     assert_eq!(rt.state.pane, Pane::Skills);
 }
+
+/// Sets the chosen Ollama model and what the picker knows of it.
+fn choose_ollama(rt: &mut Runtime<Ui>, model: &str, vision: bool) {
+    rt.state.settings.apprentice.model = Some(format!("ollama:{model}"));
+    rt.state.skills.picker.installed = Some(Ok(vec![crate::apprentice::ollama::Installed {
+        name: model.into(),
+        size: 2_000_000_000,
+        vision,
+    }]));
+    refresh(rt);
+}
+
+#[test]
+fn a_text_only_model_never_reads_screenshots() {
+    let mut rt = runtime("mac-skills-lesson");
+    choose_ollama(&mut rt, "llama3.2:3b", false);
+    let shown = texts(&rt);
+    assert!(
+        shown.iter().all(|copy| !copy.contains("screenshots")),
+        "{shown:?}"
+    );
+    assert!(
+        shows(
+            &rt,
+            "Reads: narration, names of what you click, window titles · llama3.2:3b · text only"
+        ),
+        "{shown:?}"
+    );
+    choose_ollama(&mut rt, "gemma4:26b", true);
+    assert!(shows(
+        &rt,
+        "Reads: narration, names of what you click, window titles, screenshots · gemma4:26b"
+    ));
+}

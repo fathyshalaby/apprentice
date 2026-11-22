@@ -105,6 +105,21 @@ impl Picker {
         true
     }
 
+    /// Whether Ollama's `model` sees images, once its models are listed.
+    pub(super) fn sees_images(&self, model: &str) -> Option<bool> {
+        let installed = self.installed.as_ref()?.as_ref().ok()?;
+        installed.iter().find(|m| m.name == model).map(|m| m.vision)
+    }
+
+    /// Lists Ollama's models at `url` once, so a lesson can say whether the
+    /// chosen one reads screenshots before the picker is ever opened.
+    pub(super) fn list_once(&mut self, url: &str) {
+        if self.installed.is_none() && self.listing.is_none() {
+            self.listed_url = url.to_owned();
+            self.list();
+        }
+    }
+
     /// Asks Ollama for its models off the window's thread.
     fn list(&mut self) {
         self.installed = None;

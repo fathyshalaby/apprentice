@@ -103,6 +103,7 @@ pub(super) const TRANSLATIONS: &[(&str, [&str; 6])] = &[
     ("Discard your changes to {}?", ["Odrzucić zmiany w: {}?", "放弃对 {} 的更改？", "{} への変更を破棄しますか？", "Deine Änderungen an {} verwerfen?", "¿Descartar tus cambios en {}?", "Відкинути ваші зміни в {}?"]),
     ("Discard changes", ["Odrzuć zmiany", "放弃更改", "変更を破棄", "Änderungen verwerfen", "Descartar cambios", "Відкинути зміни"]),
     ("Keep editing", ["Edytuj dalej", "继续编辑", "編集を続ける", "Weiter bearbeiten", "Seguir editando", "Продовжити редагування"]),
+    ("This model runs in the cloud, so Apprentice won't use it", ["Ten model działa w chmurze, więc Apprentice go nie użyje", "此模型在云端运行，因此 Apprentice 不会使用它", "このモデルはクラウドで動作するため、Apprentice は使用しません", "Dieses Modell läuft in der Cloud, deshalb verwendet Apprentice es nicht", "Este modelo se ejecuta en la nube, así que Apprentice no lo usará", "Ця модель працює в хмарі, тому Apprentice її не використовуватиме"]),
 ];
 
 /// Brazilian Portuguese, for the card and the pane.
@@ -207,6 +208,7 @@ pub(super) const PORTUGUESE: &[(&str, &str)] = &[
     ("Discard your changes to {}?", "Descartar suas alterações em {}?"),
     ("Discard changes", "Descartar alterações"),
     ("Keep editing", "Continuar editando"),
+    ("This model runs in the cloud, so Apprentice won't use it", "Este modelo roda na nuvem, então o Apprentice não vai usá-lo"),
 ];
 
 /// French, for the card and the pane.
@@ -311,6 +313,7 @@ pub(super) const FRENCH: &[(&str, &str)] = &[
     ("Discard your changes to {}?", "Abandonner vos modifications de {} ?"),
     ("Discard changes", "Abandonner les modifications"),
     ("Keep editing", "Continuer à modifier"),
+    ("This model runs in the cloud, so Apprentice won't use it", "Ce modèle s'exécute dans le cloud, donc Apprentice ne l'utilisera pas"),
 ];
 
 /// Russian, for the card and the pane.
@@ -415,4 +418,5 @@ pub(super) const RUSSIAN: &[(&str, &str)] = &[
     ("Discard your changes to {}?", "Отменить ваши изменения в {}?"),
     ("Discard changes", "Отменить изменения"),
     ("Keep editing", "Продолжить редактирование"),
+    ("This model runs in the cloud, so Apprentice won't use it", "Эта модель работает в облаке, поэтому Apprentice не будет её использовать"),
 ];

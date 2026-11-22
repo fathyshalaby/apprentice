@@ -415,14 +415,15 @@ fn load_frame(dir: &Path, file: &str, width: u32) -> Option<Vec<u8>> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(super) mod tests {
     use super::*;
     use crate::apprentice::lessons::Media;
     use scrawl_capture::model::RgbaFrame;
     use serde_json::{Value, json};
     use std::path::PathBuf;
 
-    struct Fixture {
+    /// A lesson's folder, removed when dropped.
+    pub(in crate::apprentice) struct Fixture {
         root: PathBuf,
     }
 
@@ -439,7 +440,7 @@ mod tests {
 
     /// A lesson bundle on disk: words as `(t0, t1, text)`, extra events,
     /// window snapshots as `(t, app, title)`, keyframe times (2000 px wide).
-    fn lesson(
+    pub(in crate::apprentice) fn lesson(
         name: &str,
         words: &[(u64, u64, &str)],
         events: Vec<Value>,

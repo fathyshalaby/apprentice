@@ -60,8 +60,8 @@ pub trait Model {
 /// Drafts a skill from `lesson` with exactly `choice`, on a thread of its own
 /// (`apprentice-draft`). The receiver ends after one `Done`, `Failed`, or
 /// `Unparsed`. Any model error ends the draft: nothing retries or switches to
-/// another model. Video and audio are never sent; Ollama gets each part's key
-/// frames, Apple Intelligence text alone.
+/// another model. Video and audio are never sent; an Ollama model that sees
+/// images gets each part's key frames, any other model text alone.
 pub fn draft(
     lesson: &Lesson,
     choice: &ModelChoice,
@@ -80,38 +80,7 @@ pub fn draft(
     let failed = events.clone();
     let spawned = thread::Builder::new()
         .name("apprentice-draft".into())
-        .spawn(move || {
-            events::emit(ApprenticeAction::DraftStarted, &lesson.id, None);
-            let (model, limits): (Box<dyn Model>, Limits) = match choice {
-                ModelChoice::Ollama { model } => {
-                    (Box::new(Ollama { url, model }), Limits::for_vision())
-                }
-                ModelChoice::AppleIntelligence => (
-                    Box::new(AppleIntelligence),
-                    Limits::for_text(apple_intelligence::context_tokens()),
-                ),
-            };
-            match evidence::build(&lesson, &limits) {
-                Ok(evidence) => drive(
-                    evidence.segments,
-                    model.as_ref(),
-                    limits.frames_per_segment,
-                    &lesson.id,
-                    &cancel,
-                    deadline,
-                    &events,
-                ),
-                // The one way a build fails: the lesson's bundle is gone.
-                Err(reason) => {
-                    tracing::warn!(lesson = %lesson.id, %reason, "could not read a lesson");
-                    events::emit(ApprenticeAction::DraftFailed, &lesson.id, None);
-                    let _ = events.send(Progress::Failed(
-                        tr("This lesson's notes are gone, so there is nothing to learn from")
-                            .to_owned(),
-                    ));
-                }
-            }
-        });
+        .spawn(move || job(&lesson, choice, &url, &cancel, deadline, &events));
     if let Err(error) = spawned {
         tracing::warn!(%error, "could not start drafting");
         let _ = failed.send(Progress::Failed(
@@ -119,6 +88,77 @@ pub fn draft(
         ));
     }
     received
+}
+
+/// One draft, on its thread: the model is checked first (an Ollama model in
+/// the cloud is refused before anything is read or sent), then the lesson is
+/// read within what the model takes and driven through it.
+fn job(
+    lesson: &Lesson,
+    choice: ModelChoice,
+    url: &str,
+    cancel: &AtomicBool,
+    deadline: Instant,
+    events: &Sender<Progress>,
+) {
+    events::emit(ApprenticeAction::DraftStarted, &lesson.id, None);
+    let (model, limits) = match prepare(choice, url) {
+        Ok(prepared) => prepared,
+        Err(error) => {
+            tracing::warn!(lesson = %lesson.id, ?error, "the chosen model can't draft");
+            events::emit(ApprenticeAction::DraftFailed, &lesson.id, None);
+            let _ = events.send(Progress::Failed(error.message()));
+            return;
+        }
+    };
+    match evidence::build(lesson, &limits) {
+        Ok(evidence) => drive(
+            evidence.segments,
+            model.as_ref(),
+            limits.frames_per_segment,
+            &lesson.id,
+            cancel,
+            deadline,
+            events,
+        ),
+        // The one way a build fails: the lesson's bundle is gone.
+        Err(reason) => {
+            tracing::warn!(lesson = %lesson.id, %reason, "could not read a lesson");
+            events::emit(ApprenticeAction::DraftFailed, &lesson.id, None);
+            let _ = events.send(Progress::Failed(
+                tr("This lesson's notes are gone, so there is nothing to learn from").to_owned(),
+            ));
+        }
+    }
+}
+
+/// The chosen model and how much of a lesson one call takes. An Ollama
+/// model is asked about once: one in the cloud is refused, one that sees
+/// images gets key frames, and a text-only one gets text sized to
+/// [`ollama::NUM_CTX`] and no frames.
+fn prepare(choice: ModelChoice, url: &str) -> Result<(Box<dyn Model>, Limits), ModelError> {
+    match choice {
+        ModelChoice::Ollama { model } => {
+            if ollama::is_cloud(&model) {
+                return Err(ModelError::Cloud);
+            }
+            let details = ollama::details(url, &model)?;
+            if details.remote {
+                return Err(ModelError::Cloud);
+            }
+            let limits = if details.vision {
+                Limits::for_vision()
+            } else {
+                Limits::for_text(ollama::NUM_CTX)
+            };
+            let url = url.to_owned();
+            Ok((Box::new(Ollama { url, model }), limits))
+        }
+        ModelChoice::AppleIntelligence => Ok((
+            Box::new(AppleIntelligence),
+            Limits::for_text(apple_intelligence::context_tokens()),
+        )),
+    }
 }
 
 /// Asks about each part (at most [`MAX_PARTS`]), then merges several parts'
@@ -319,6 +359,7 @@ mod tests {
     use super::*;
     use crate::apprentice::evidence::Frame;
     use crate::apprentice::lessons::Media;
+    use crate::desktop::opencode_service::tests::serve;
     use std::cell::RefCell;
     use std::collections::VecDeque;
     use std::sync::atomic::Ordering;
@@ -564,6 +605,113 @@ mod tests {
         };
         assert_eq!(message, tr("Drafting took too long"));
         assert!(model.calls.borrow().is_empty());
+    }
+
+    /// A lesson on disk with two key frames, for whole drafts against a
+    /// fake Ollama.
+    fn lesson_with_frames(name: &str) -> (crate::apprentice::evidence::tests::Fixture, Lesson) {
+        crate::apprentice::evidence::tests::lesson(
+            name,
+            &[(1_000, 1_400, "open finder")],
+            Vec::new(),
+            &[(500, "Finder", "Desktop")],
+            &[1_200, 1_500],
+        )
+    }
+
+    /// One whole draft of `lesson` with the Ollama model `model` at `url`.
+    fn job_with(url: &str, model: &str, lesson: &Lesson) -> Vec<Progress> {
+        let (events, received) = mpsc::channel();
+        job(
+            lesson,
+            ModelChoice::Ollama {
+                model: model.into(),
+            },
+            url,
+            &AtomicBool::new(false),
+            soon(),
+            &events,
+        );
+        drop(events);
+        received.into_iter().collect()
+    }
+
+    fn show(capabilities: serde_json::Value) -> (String, u16, String) {
+        ("POST /api/show".into(), 200, capabilities.to_string())
+    }
+
+    fn answer() -> (String, u16, String) {
+        let reply = serde_json::json!({ "message": { "content": DRAFT } });
+        ("POST /api/chat".into(), 200, reply.to_string())
+    }
+
+    fn sent(received: &(String, Vec<u8>)) -> serde_json::Value {
+        serde_json::from_slice(&received.1).unwrap()
+    }
+
+    #[test]
+    fn a_text_only_model_gets_no_frames() {
+        let (_fixture, lesson) = lesson_with_frames("run-text-only");
+        let (url, server) = serve(vec![
+            show(serde_json::json!({ "capabilities": ["completion"] })),
+            answer(),
+        ]);
+        let progress = job_with(&url, "llama3:8b", &lesson);
+        assert!(
+            matches!(progress.last(), Some(Progress::Done(_))),
+            "{progress:?}"
+        );
+        let received = server.join().unwrap();
+        let chat = sent(&received[1]);
+        assert!(chat["messages"][1].get("images").is_none(), "{chat}");
+        assert_eq!(chat["options"]["num_ctx"], ollama::NUM_CTX);
+    }
+
+    #[test]
+    fn a_vision_model_gets_the_lesson_s_frames() {
+        let (_fixture, lesson) = lesson_with_frames("run-vision");
+        let (url, server) = serve(vec![
+            show(serde_json::json!({ "capabilities": ["completion", "vision"] })),
+            answer(),
+        ]);
+        let progress = job_with(&url, "gemma4:26b", &lesson);
+        assert!(
+            matches!(progress.last(), Some(Progress::Done(_))),
+            "{progress:?}"
+        );
+        let received = server.join().unwrap();
+        let images = &sent(&received[1])["messages"][1]["images"];
+        assert_eq!(images.as_array().map(Vec::len), Some(2), "{images}");
+    }
+
+    #[test]
+    fn a_cloud_model_fails_without_a_chat() {
+        let (_fixture, lesson) = lesson_with_frames("run-cloud");
+        let (url, server) = serve(vec![show(serde_json::json!({
+            "capabilities": ["completion"],
+            "remote_host": "https://ollama.com:443",
+            "remote_model": "glm-4.6",
+        }))]);
+        let progress = job_with(&url, "glm:4.6", &lesson);
+        let Some(Progress::Failed(message)) = progress.last() else {
+            panic!("{progress:?}");
+        };
+        assert_eq!(message, &ModelError::Cloud.message());
+        assert_eq!(server.join().unwrap().len(), 1, "only /api/show was asked");
+    }
+
+    #[test]
+    fn a_cloud_tag_fails_before_asking_ollama() {
+        let (_fixture, lesson) = lesson_with_frames("run-cloud-tag");
+        // Nothing listens: any request would read as Ollama not running.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        drop(listener);
+        let progress = job_with(&url, "gpt-oss:120b-cloud", &lesson);
+        let Some(Progress::Failed(message)) = progress.last() else {
+            panic!("{progress:?}");
+        };
+        assert_eq!(message, &ModelError::Cloud.message());
     }
 
     #[test]

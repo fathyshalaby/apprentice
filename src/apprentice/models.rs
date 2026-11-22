@@ -55,5 +55,11 @@ mod tests {
                 ("qwen3-vl:8b", 6, "Sees images · lightest"),
             ]
         );
+        // Apprentice is local only: nothing it suggests runs in the cloud.
+        assert!(
+            RECOMMENDED
+                .iter()
+                .all(|model| !crate::apprentice::ollama::is_cloud(model.name))
+        );
     }
 }
