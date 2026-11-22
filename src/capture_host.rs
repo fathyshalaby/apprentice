@@ -96,7 +96,6 @@ pub use own_windows::{OwnWindow, exclude_window, own_windows_recorded, record_ow
 
 // Read by Watch and learn's lesson list and hook (macOS).
 pub use lesson::LESSON_MARK;
-#[allow(unused_imports)]
 pub use lesson::{Purpose, on_lesson_written};
 // Read by Watch and learn's lesson list (macOS).
 #[allow(unused_imports)]

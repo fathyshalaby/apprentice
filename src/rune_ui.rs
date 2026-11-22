@@ -422,6 +422,8 @@ pub(crate) enum Destination {
     Meetings(Option<String>),
     Modes,
     History,
+    /// Labs › Watch and learn's Skills pane.
+    Skills,
 }
 
 /// Where `hex window show` opens the window. While Meetings is off, its
@@ -451,6 +453,7 @@ pub(crate) fn show(ui: &mut Ui, destination: Destination, tx: &mut Tx) {
             }
         }
         Destination::History => Pane::History,
+        Destination::Skills => Pane::Skills,
     };
     ui.close_dialogs();
     if pane.shown(ui) {

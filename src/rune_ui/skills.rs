@@ -31,7 +31,7 @@ use crate::apprentice::lessons::{self, Lesson, Media};
 use crate::apprentice::run::{self, Progress};
 use crate::apprentice::skill::Skill;
 use crate::apprentice::store::{Draft, Store};
-use crate::capture_host::{CaptureCommand, CaptureControl, CaptureTarget};
+use crate::capture_host::{CaptureCommand, CaptureTarget};
 use crate::desktop::i18n::{tr, tr_fill};
 pub(super) use fixtures::Fixture;
 
@@ -433,9 +433,7 @@ pub(super) fn watch(ui: &mut Ui) {
             }));
         return;
     }
-    let at = scrawl_capture::screens::pointer().unwrap_or_default();
-    let command = CaptureCommand::Lesson(CaptureTarget::Display { at });
-    match crate::capture_host::send_to_listener(CaptureControl::Command(command)) {
+    match lessons::start() {
         Ok(()) => {
             ui.skills.error = None;
             ui.skills.recording = true;

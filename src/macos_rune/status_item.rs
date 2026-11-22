@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::sync::OnceLock;
 use std::sync::mpsc::{Receiver, SyncSender, sync_channel};
 
 use color_eyre::eyre::{Result, eyre};
@@ -48,6 +49,8 @@ pub enum StatusItemAction {
     CopyChapter(usize),
     /// The recording row: the Meetings pane.
     OpenMeetings,
+    /// A lesson was written: the Skills pane (Labs › Watch and learn).
+    OpenSkills,
     /// The update item: check, download, or restart into an update.
     Update,
     Quit,
@@ -127,6 +130,7 @@ objc2::define_class!(
             refresh_recent_dictations();
             refresh_copy_dictation_audio();
             refresh_restore_capture();
+            refresh_watch_this();
             refresh_upcoming();
             update_pause();
         }
@@ -140,6 +144,10 @@ objc2::define_class!(
         fn validate_menu_item(&self, item: &NSMenuItem) -> bool {
             match item.action() {
                 Some(action) if action == sel!(restoreCapture:) => restore_capture_enabled(),
+                Some(action) if action == sel!(watchThis:) => {
+                    watch_this_state(true, annotate_on(), recording_capture())
+                        == WatchThis::Ready
+                }
                 Some(action) if action == sel!(copyLastDictationAudio:) => {
                     copy_last_dictation_audio_enabled()
                 }
@@ -229,6 +237,12 @@ objc2::define_class!(
             let _ = self.ivars().actions.try_send(StatusItemAction::OpenMeetings);
         }
 
+        /// Labs › Watch and learn: a lesson of the whole screen.
+        #[unsafe(method(watchThis:))]
+        fn watch_this(&self, _sender: &AnyObject) {
+            watch_this();
+        }
+
         #[unsafe(method(checkForUpdates:))]
         fn check_for_updates(&self, _sender: &AnyObject) {
             let _ = self
@@ -280,6 +294,8 @@ enum Row {
     CopyLastMeetingTranscript,
     /// Labs › Screenshots: hidden until the menu opens with it on.
     RestoreCapture,
+    /// Labs › Watch and learn: hidden until the menu opens with it on.
+    WatchThis,
     SpeechModel,
     Separator,
     Settings,
@@ -290,7 +306,7 @@ enum Row {
 /// How many upcoming meetings the menu lists at most.
 const UPCOMING_ROWS: usize = crate::calendar_menu::MAX_ROWS;
 
-const ROWS: [Row; 24] = [
+const ROWS: [Row; 25] = [
     Row::UpcomingHeader,
     Row::UpcomingSlot,
     Row::UpcomingSlot,
@@ -310,6 +326,7 @@ const ROWS: [Row; 24] = [
     Row::CopyRecentDictation,
     Row::CopyLastMeetingTranscript,
     Row::RestoreCapture,
+    Row::WatchThis,
     Row::SpeechModel,
     Row::Separator,
     Row::Settings,
@@ -348,6 +365,7 @@ impl Row {
                 tr("Copy last meeting transcript"),
             ),
             Row::RestoreCapture => label("Restore Last Capture", tr("Restore last capture")),
+            Row::WatchThis => label("Watch This…", tr("Watch this")),
             Row::SpeechModel => label("Speech Model", tr("Speech model")),
             Row::Settings => label("Settings…", tr("Settings")),
             Row::Update => update_title(&crate::desktop::host::DesktopUpdateStatus::Checking),
@@ -374,6 +392,7 @@ impl Row {
             Row::CopyLastDictationAudio => sel!(copyLastDictationAudio:),
             Row::CopyLastMeetingTranscript => sel!(copyLastMeetingTranscript:),
             Row::RestoreCapture => sel!(restoreCapture:),
+            Row::WatchThis => sel!(watchThis:),
             Row::Settings => sel!(openSettings:),
             Row::Update => sel!(checkForUpdates:),
             Row::Quit => sel!(quit:),
@@ -416,6 +435,7 @@ impl Row {
                 | Row::CopyRecentDictation
                 | Row::CopyLastMeetingTranscript
                 | Row::RestoreCapture
+                | Row::WatchThis
         )
     }
 }
@@ -533,6 +553,7 @@ struct StatusItemController {
     /// The call links behind the slots now, by slot; `None` is informational.
     upcoming_meetings: RefCell<Vec<Option<CalendarMeeting>>>,
     restore_capture: Retained<NSMenuItem>,
+    watch_this: Retained<NSMenuItem>,
     update: Option<Retained<NSMenuItem>>,
     update_title: RefCell<String>,
     _menu: Retained<NSMenu>,
@@ -554,10 +575,20 @@ thread_local! {
     static STATUS_ITEM: RefCell<Option<StatusItemController>> = const { RefCell::new(None) };
 }
 
+/// The menu's action queue, for work that finishes off the main thread
+/// (a written lesson asking for the Skills pane).
+static ACTIONS: OnceLock<SyncSender<StatusItemAction>> = OnceLock::new();
+
+/// The queue [`install`] made, once the status item exists.
+pub fn actions() -> Option<&'static SyncSender<StatusItemAction>> {
+    ACTIONS.get()
+}
+
 pub fn install() -> Result<Receiver<StatusItemAction>> {
     let mtm =
         MainThreadMarker::new().ok_or_else(|| eyre!("status item requires the main thread"))?;
     let (actions, receiver) = sync_channel(8);
+    let _ = ACTIONS.set(actions.clone());
     let target = StatusItemTarget::new(actions, mtm);
     let menu = NSMenu::initWithTitle(NSMenu::alloc(mtm), &NSString::from_str("Apprentice"));
     let meeting_sections_menu =
@@ -662,7 +693,8 @@ pub fn install() -> Result<Receiver<StatusItemAction>> {
         .button(mtm)
         .ok_or_else(|| eyre!("status item button is unavailable"))?;
     let symbol = status_bar_icon(IDLE_ICON_PNG, "Apprentice")?;
-    let recording_symbol = status_bar_icon(RECORDING_ICON_PNG, "Apprentice is recording a meeting")?;
+    let recording_symbol =
+        status_bar_icon(RECORDING_ICON_PNG, "Apprentice is recording a meeting")?;
     button.setImage(Some(&symbol));
     button.setImagePosition(NSCellImagePosition::ImageLeading);
     // SAFETY: the target answers `menuNeedsUpdate:` and outlives the menu's
@@ -702,6 +734,7 @@ pub fn install() -> Result<Receiver<StatusItemAction>> {
             upcoming_labels: RefCell::new(Vec::new()),
             upcoming_meetings: RefCell::new(Vec::new()),
             restore_capture: row(Row::RestoreCapture),
+            watch_this: row(Row::WatchThis),
             update: (!update_managed).then(|| row(Row::Update)),
             update_title: RefCell::new(Row::Update.title().unwrap_or_default()),
             _menu: menu,
@@ -1014,6 +1047,63 @@ fn refresh_restore_capture() {
     });
 }
 
+/// What the Watch this row does with the Lab, Annotate, and the recorder.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum WatchThis {
+    Hidden,
+    Dimmed,
+    Ready,
+}
+
+fn watch_this_state(lab: bool, annotate: bool, recording: bool) -> WatchThis {
+    match (lab, annotate && !recording) {
+        (false, _) => WatchThis::Hidden,
+        (true, false) => WatchThis::Dimmed,
+        (true, true) => WatchThis::Ready,
+    }
+}
+
+/// Shows Watch This while Labs › Watch and learn is on, as the menu opens.
+fn refresh_watch_this() {
+    let shown = crate::labs::watch_and_learn();
+    STATUS_ITEM.with(|controller| {
+        if let Some(controller) = controller.borrow().as_ref() {
+            controller.watch_this.setHidden(!shown);
+        }
+    });
+}
+
+fn annotate_on() -> bool {
+    #[cfg(hex_capture)]
+    return AppSettings::load().map_or(true, |settings| settings.capture_on());
+    #[cfg(not(hex_capture))]
+    false
+}
+
+fn recording_capture() -> bool {
+    #[cfg(hex_capture)]
+    return crate::capture_host::snapshot().recording.is_some();
+    #[cfg(not(hex_capture))]
+    false
+}
+
+/// Watch This: a whole-screen lesson, only while the Lab and Annotate are on
+/// and nothing records (the menu dims it otherwise; this checks again).
+fn watch_this() {
+    if watch_this_state(
+        crate::labs::watch_and_learn(),
+        annotate_on(),
+        recording_capture(),
+    ) != WatchThis::Ready
+    {
+        return;
+    }
+    #[cfg(hex_capture)]
+    if let Err(error) = crate::apprentice::lessons::start() {
+        tracing::warn!(%error, "could not start a lesson from the menu");
+    }
+}
+
 /// Labs › Upcoming meetings in menu bar's section, refreshed on the meeting
 /// tick and as the menu opens. It only formats the meeting controller's last
 /// calendar read: EventKit is never touched here.
@@ -1238,6 +1328,17 @@ mod tests {
     use super::*;
 
     #[test]
+    fn watch_this_is_hidden_with_the_lab_off() {
+        assert_eq!(watch_this_state(false, true, false), WatchThis::Hidden);
+        assert_eq!(watch_this_state(false, false, true), WatchThis::Hidden);
+        assert_eq!(watch_this_state(true, true, false), WatchThis::Ready);
+        // Dimmed while Annotate is off or a capture records.
+        assert_eq!(watch_this_state(true, false, false), WatchThis::Dimmed);
+        assert_eq!(watch_this_state(true, true, true), WatchThis::Dimmed);
+        assert!(Row::WatchThis.starts_hidden());
+    }
+
+    #[test]
     fn meeting_menu_offers_one_action_per_state() {
         use crate::meeting::watcher::MeetingMenuState;
         let idle = meeting_menu(&MeetingMenuState::Idle, true);
@@ -1339,6 +1440,7 @@ mod tests {
                 "Copy Recent Dictation".into(),
                 "Copy Last Meeting Transcript".into(),
                 "Restore Last Capture".into(),
+                "Watch This…".into(),
                 "Speech Model".into(),
                 "—".into(),
                 "Settings…".into(),

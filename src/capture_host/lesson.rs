@@ -75,7 +75,6 @@ static LESSON_WRITTEN: OnceLock<fn(PathBuf)> = OnceLock::new();
 
 /// Sends each written lesson to `written`; the first caller wins. The
 /// macOS app registers it.
-#[allow(dead_code)]
 pub fn on_lesson_written(written: fn(PathBuf)) {
     let _ = LESSON_WRITTEN.set(written);
 }

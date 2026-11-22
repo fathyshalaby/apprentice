@@ -340,7 +340,10 @@ pub fn run(shutdown: &'static AtomicBool, listener: ListenerConfig, hidden: bool
     let event_path = listener.event_path.clone();
     let event_log = crate::desktop::events::EventLog::create(&event_path)?;
     #[cfg(hex_capture)]
-    crate::apprentice::events::set_log(event_log.clone());
+    {
+        crate::apprentice::events::set_log(event_log.clone());
+        crate::capture_host::on_lesson_written(crate::apprentice::lessons::written);
+    }
     let drained_event_log = event_log.clone();
     let transformations = Arc::new(crate::personal_commands::TransformationClient::default());
     let (developer_sender, developer_receiver) = mpsc::sync_channel(8);
@@ -1041,6 +1044,7 @@ impl Pump {
                 }
             }
             StatusItemAction::OpenMeetings => show(&self.window, Destination::Meetings(None)),
+            StatusItemAction::OpenSkills => show(&self.window, Destination::Skills),
             // Labs › Pause from menu bar: only keyboard shortcuts stop; the
             // menu's own actions keep working. The row says Resume Hex while
             // a resume waits, and choosing it again leaves it waiting.

@@ -3,8 +3,10 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::mpsc::SyncSender;
 
 use crate::capture_host::{LESSON_MARK, load_capture};
+use crate::macos_rune::status_item::StatusItemAction;
 
 const MEDIA_CLEANED: &str = ".media-cleaned";
 
@@ -29,6 +31,47 @@ pub struct Lesson {
     pub media: Media,
     /// Key frames still in `frames/`.
     pub frames: usize,
+}
+
+/// The capture-finish hook ([`crate::capture_host::on_lesson_written`]):
+/// records that a lesson was written and asks the app to show the Skills
+/// pane. It runs on the `capture-finish` thread, so it only hands on.
+pub fn written(bundle: PathBuf) {
+    match crate::macos_rune::status_item::actions() {
+        Some(open) => announce(&bundle, open),
+        None => super::events::emit(
+            super::events::ApprenticeAction::LessonWritten,
+            &lesson_id(&bundle),
+            None,
+        ),
+    }
+}
+
+fn announce(bundle: &Path, open: &SyncSender<StatusItemAction>) {
+    super::events::emit(
+        super::events::ApprenticeAction::LessonWritten,
+        &lesson_id(bundle),
+        None,
+    );
+    // Never blocks: a full queue already has the app's attention.
+    let _ = open.try_send(StatusItemAction::OpenSkills);
+}
+
+/// A bundle's lesson id: its folder's stem.
+fn lesson_id(bundle: &Path) -> String {
+    bundle
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .unwrap_or_default()
+}
+
+/// Whole-screen lesson of the display under the pointer, handed to the
+/// listener without waiting (the Skills pane's and the menu's Watch this).
+pub fn start() -> color_eyre::Result<()> {
+    use crate::capture_host::{CaptureCommand, CaptureControl, CaptureTarget};
+    let at = scrawl_capture::screens::pointer().unwrap_or_default();
+    let command = CaptureCommand::Lesson(CaptureTarget::Display { at });
+    crate::capture_host::send_to_listener(CaptureControl::Command(command))
 }
 
 /// Every lesson under `captures`, newest first.
@@ -124,6 +167,22 @@ mod tests {
             format!(r#"{{"version":1,"startedAtMs":{ms}}}"#),
         )
         .unwrap();
+    }
+
+    #[test]
+    fn a_written_lesson_opens_the_skills_pane() {
+        use crate::macos_rune::status_item::StatusItemAction;
+        let (open, requests) = std::sync::mpsc::sync_channel(1);
+        let bundle = PathBuf::from("/captures/2026-11-22-lesson.scrawl");
+        // No lesson mark and no manifest: the pane lists what it finds.
+        announce(&bundle, &open);
+        assert_eq!(requests.try_recv(), Ok(StatusItemAction::OpenSkills));
+        // A full queue never blocks the capture-finish thread.
+        announce(&bundle, &open);
+        announce(&bundle, &open);
+        assert_eq!(requests.try_recv(), Ok(StatusItemAction::OpenSkills));
+        assert!(requests.try_recv().is_err());
+        assert_eq!(lesson_id(&bundle), "2026-11-22-lesson");
     }
 
     #[test]

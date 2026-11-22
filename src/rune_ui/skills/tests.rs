@@ -501,3 +501,12 @@ fn review_over_unsaved_typing_asks_first() {
         "File the monthly invoice"
     );
 }
+
+#[test]
+fn the_skills_destination_opens_the_pane_while_the_lab_is_on() {
+    let mut rt = runtime("mac-settings");
+    rt.state.settings.labs.watch_and_learn = true;
+    refresh(&mut rt);
+    rt.update(|ui, tx| crate::rune_ui::show(ui, crate::rune_ui::Destination::Skills, tx));
+    assert_eq!(rt.state.pane, Pane::Skills);
+}
