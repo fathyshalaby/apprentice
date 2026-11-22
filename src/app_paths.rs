@@ -6,25 +6,34 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use color_eyre::eyre::{Result, eyre};
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 
-/// Whether this is a local build (`HEX_LOCAL_BUILD=1`): made from a checkout
-/// for its owner's own machine, so it never checks for or offers updates.
+/// Apprentice's product name, and its data and config folder names. Apprentice
+/// is a fork of Hex (MIT); its own folders keep it apart from an installed
+/// Hex, so both run at once without sharing a lock, settings, or History.
+pub const PRODUCT_NAME: &str = "Apprentice";
+const DATA_FOLDER: &str = "apprentice";
+const TEST_DATA_FOLDER: &str = "apprentice-test";
+
+/// Whether this build never checks for or offers updates. Apprentice has no
+/// release service of its own, and Hex's would replace it with Hex, so every
+/// Apprentice build reads as a local build (`HEX_LOCAL_BUILD`).
 pub fn is_local_build() -> bool {
-    option_env!("HEX_LOCAL_BUILD") == Some("1")
+    true
 }
 
-/// Whether this is a macOS `Hex Test.app` build (`HEX_TEST_BUILD=1`), which
-/// keeps its data, settings, and user config apart from the installed Hex.
+/// Whether this is a macOS `Apprentice Test.app` build (`HEX_TEST_BUILD=1`),
+/// which keeps its data, settings, and user config apart from Apprentice.
 pub fn is_macos_test_build() -> bool {
     cfg!(target_os = "macos") && option_env!("HEX_TEST_BUILD") == Some("1")
 }
 
-/// The name menus show, so a test build running beside Hex reads as itself.
+/// The name menus show, so a test build running beside Apprentice reads as
+/// itself.
 #[cfg(target_os = "macos")]
 pub fn app_name() -> &'static str {
     if is_macos_test_build() {
-        "Hex Test"
+        "Apprentice Test"
     } else {
-        "Hex"
+        PRODUCT_NAME
     }
 }
 
@@ -35,9 +44,9 @@ pub fn support_dir() -> Result<PathBuf> {
     let data =
         dirs::data_dir().ok_or_else(|| eyre!("application data directory is unavailable"))?;
     let folder = if is_macos_test_build() {
-        "hex-test"
+        TEST_DATA_FOLDER
     } else {
-        "hex"
+        DATA_FOLDER
     };
     Ok(data.join(folder))
 }
@@ -79,7 +88,7 @@ fn local_support_dir() -> Option<PathBuf> {
     }
     std::env::var_os("LOCALAPPDATA")
         .filter(|value| !value.is_empty())
-        .map(|local| PathBuf::from(local).join("hex"))
+        .map(|local| PathBuf::from(local).join(DATA_FOLDER))
 }
 
 /// `local`, after moving `roaming` there if only `roaming` exists. A move that
@@ -274,7 +283,11 @@ pub fn audio_dir() -> Option<PathBuf> {
 
 fn user_config_dir_in(home: &std::path::Path, test_build: bool) -> PathBuf {
     home.join(".config")
-        .join(if test_build { "hex-test" } else { "hex" })
+        .join(if test_build {
+            TEST_DATA_FOLDER
+        } else {
+            DATA_FOLDER
+        })
 }
 
 #[cfg(test)]
@@ -339,11 +352,11 @@ mod tests {
         let home = std::path::Path::new("/Users/alex");
         assert_eq!(
             user_config_dir_in(home, false),
-            home.join(".config").join("hex")
+            home.join(".config").join("apprentice")
         );
         assert_eq!(
             user_config_dir_in(home, true),
-            home.join(".config").join("hex-test")
+            home.join(".config").join("apprentice-test")
         );
     }
 }

@@ -15,18 +15,18 @@ root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 if [ "${HEX_RELEASE_UNSIGNED:-}" = 1 ]; then
   team_id=
   identity=-
-  app_name=Hex
-  bundle_id=anomaly.hex
+  app_name=Apprentice
+  bundle_id=ai.apprentice.native
 elif [ "${HEX_TEST_BUILD:-}" = 1 ]; then
   team_id=
   identity=-
-  app_name="Hex Test"
-  bundle_id=anomaly.hex.test
+  app_name="Apprentice Test"
+  bundle_id=ai.apprentice.native.test
 else
   team_id=${HEX_TEAM_ID:?Set HEX_TEAM_ID to the Apple Developer signing team}
   identity=$(hex_codesign_identity "$team_id")
-  app_name=Hex
-  bundle_id=anomaly.hex
+  app_name=Apprentice
+  bundle_id=ai.apprentice.native
 fi
 # Every build carries the `capture` experiment (dormant until enabled), with
 # Scrawl's `scrawl-helper` beside `hex`, where the engine looks for it.
@@ -85,12 +85,12 @@ plutil -replace CFBundleName -string "$app_name" "$bundle/Contents/Info.plist"
 plutil -replace CFBundleDisplayName -string "$app_name" "$bundle/Contents/Info.plist"
 # Links into the playground (src/rune_ui/story_link.rs); a test build's own
 # scheme never opens the installed Hex.
-url_scheme=hex
-[ "${HEX_TEST_BUILD:-}" = 1 ] && url_scheme=hex-test
+url_scheme=apprentice
+[ "${HEX_TEST_BUILD:-}" = 1 ] && url_scheme=apprentice-test
 /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLName $bundle_id" "$bundle/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLSchemes:0 $url_scheme" "$bundle/Contents/Info.plist"
 # The helper mirrors a cabled iPhone as a camera; macOS asks on Hex's behalf.
-plutil -replace NSCameraUsageDescription -string "Hex mirrors and records a cabled iPhone's screen for a capture." "$bundle/Contents/Info.plist"
+plutil -replace NSCameraUsageDescription -string "Apprentice mirrors and records a cabled iPhone's screen for a capture." "$bundle/Contents/Info.plist"
 rm -rf "$icon_output"
 mkdir -p "$icon_output"
 xcrun actool "$root/app/AppIcon.icon" \

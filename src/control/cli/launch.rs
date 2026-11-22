@@ -221,9 +221,9 @@ fn open_arguments(
         None => arguments.extend([
             "-b".into(),
             if test_build {
-                "anomaly.hex.test"
+                "ai.apprentice.native.test"
             } else {
-                "anomaly.hex"
+                "ai.apprentice.native"
             }
             .into(),
         ]),
@@ -275,11 +275,11 @@ mod tests {
         );
         assert_eq!(
             strings(open_arguments(None, false, vars())),
-            [&env[..], &["-b", "anomaly.hex"]].concat()
+            [&env[..], &["-b", "ai.apprentice.native"]].concat()
         );
         assert_eq!(
             strings(open_arguments(None, true, [])),
-            ["-b", "anomaly.hex.test"]
+            ["-b", "ai.apprentice.native.test"]
         );
     }
 }
