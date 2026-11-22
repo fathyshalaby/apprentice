@@ -82,8 +82,8 @@ export function renderDevNotes(notes: DevNotes, downloadPath: string, sinceVersi
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hex dev builds</title>
-<meta name="description" content="What changed in each dev build of Hex.">
+<title>Apprentice dev builds</title>
+<meta name="description" content="What changed in each dev build of Apprentice.">
 <link rel="icon" href="/hex/favicon.svg" type="image/svg+xml">
 <style>
 body { margin: 0; background: #070707; color: #e8e8e8; font: 15px/1.55 Inter, ui-sans-serif, system-ui, sans-serif; }
@@ -103,7 +103,7 @@ h2 a { text-decoration: none; }
 </head>
 <body>
 <main>
-<h1>Hex dev builds</h1>
+<h1>Apprentice dev builds</h1>
 <p class="intro">What changed in each dev build. Dev builds update often and can break; <a href="/hex/">stable</a> is the safe choice. <a href="${escape(downloadPath)}">Download the latest Mac dev build</a>, or switch Settings › Update channel to Dev.</p>
 ${shown.summary}
 ${builds || `<p class="quiet">No dev build notes yet.</p>`}

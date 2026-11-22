@@ -1,5 +1,7 @@
-# Regenerates resources/windows/hex.ico, the executable, taskbar, and shortcut
-# icon: the macOS icon's glyph on a flat dark tile with a thin lighter rim, so
+# Legacy generator. The checked-in resources/windows/hex.ico now comes from
+# assets/apprentice-mark.svg via scripts/generate-apprentice-icons.sh, which
+# keeps the Windows tile identical to the macOS and Linux marks. This script
+# remains for the old Hex glyph's flat dark tile with a thin lighter rim, so
 # it reads on both dark and light taskbars. Windows icons are flat; the macOS
 # gradient collapses into a hard band at taskbar sizes.
 param([string]$Out)

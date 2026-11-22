@@ -1,12 +1,13 @@
-# Hex
+# Apprentice
 
-Hex is local voice dictation for Mac, Windows and Linux. Hold a key, speak, and
-it pastes.
+Apprentice is local voice dictation for Mac, Windows and Linux. Hold a key,
+speak, and it pastes. It can also learn a task from a narrated demonstration
+and write a skill file your coding agent can follow.
 
 ## How it works
 
 - hold the shortcut, speak, then let go
-- Hex transcribes on your device and pastes into whatever app you're in
+- Apprentice transcribes on your device and pastes into whatever app you're in
 - the first run downloads a speech model; after that nothing leaves your machine
 - experimental features live in Labs, at the bottom of the sidebar
 
@@ -20,7 +21,7 @@ it pastes.
 - Output runs every dictation through steps you choose (word replacements,
   built-in cleanups, your own scripts, an optional OpenCode rewrite), with
   different steps per app or website
-- Vocabulary is one list of names Hex should know; Whisper and Qwen3-ASR read
+- Vocabulary is one list of names Apprentice should know; Whisper and Qwen3-ASR read
   it while transcribing, Parakeet models read it with Labs › Vocabulary help
   on, and the OpenCode rewrite uses it
 - Annotate records the screen while you draw and talk, on macOS, Linux and
@@ -28,16 +29,19 @@ it pastes.
 - an authenticated local API and the [TypeScript SDK](sdk/typescript/README.md)
   transcribe with the same model, for your own tools
 - Meetings is a macOS lab that records a call and writes the transcript
+- Watch and learn is a macOS lab that turns a screen-and-voice lesson into a
+  skill for your coding agent; Notice patterns offers to record the next one
+  when it sees you repeat a task
 
 Output and History:
 
-<img src="docs/images/output.png" width="600" alt="Hex output: the steps every dictation runs, a Try box, and different steps per app">
+<img src="docs/images/output.png" width="600" alt="Apprentice output: the steps every dictation runs, a Try box, and different steps per app">
 
-<img src="docs/images/history.png" width="600" alt="Hex history: past dictations, a search field, and one entry's raw transcript, app, processing and model">
+<img src="docs/images/history.png" width="600" alt="Apprentice history: past dictations, a search field, and one entry's raw transcript, app, processing and model">
 
 ## Speech models
 
-Hex downloads one model the first time it runs and transcribes with it on your
+Apprentice downloads one model the first time it runs and transcribes with it on your
 machine from then on. On an English system that's Parakeet Unified English: it
 writes while you talk, so the text is ready when you let go. Other languages
 start with the model recommended for them. That model also serves meetings and
@@ -96,7 +100,7 @@ On macOS the CLI is inside the app. Homebrew links it for you; otherwise link
 it somewhere on your `PATH` that you own:
 
 ```sh
-ln -s /Applications/Hex.app/Contents/MacOS/hex ~/.local/bin/hex
+ln -s /Applications/Apprentice.app/Contents/MacOS/hex ~/.local/bin/hex
 ```
 
 Linux and Windows installs put `hex` on your `PATH`.

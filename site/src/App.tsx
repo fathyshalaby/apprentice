@@ -4,12 +4,11 @@ import { guessPlatform, refinePlatform, type Platform } from "./platform"
 import { OptionKey, SoundToggle, useShout } from "./Shout"
 import signature from "./footer-signature.svg"
 
-function HexMark() {
+function ApprenticeMark() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 64 64" className="wordmark__icon">
-      <path d="M32 4 57 18.5v27L32 60 7 45.5v-27Z" />
-      <path d="M32 15 48 24.25v15.5L32 49l-16-9.25v-15.5Z" />
-      <path className="wordmark__core" d="m32 24 7.5 4.25v8.5L32 41l-7.5-4.25v-8.5Z" />
+    <svg aria-hidden="true" viewBox="12 8 40 40" className="wordmark__icon">
+      <path d="M20 40 V28 A13 13 0 0 1 44 28 V40 A9 9 0 0 1 28 40 V30" />
+      <path d="M19 35 H45" />
     </svg>
   )
 }
@@ -48,9 +47,9 @@ export default function App() {
       <main className="page" ref={root} data-phase={shout.phase}>
         <canvas ref={canvas} className="stage" aria-hidden="true" />
         <header className="header">
-          <a className="wordmark" href={import.meta.env.BASE_URL} aria-label="Hex home" data-avoid>
-            <HexMark />
-            <span>Hex</span>
+          <a className="wordmark" href={import.meta.env.BASE_URL} aria-label="Apprentice home" data-avoid>
+            <ApprenticeMark />
+            <span>Apprentice</span>
           </a>
           <div className="header__tools" data-avoid>
             {shout.phase === "started" && <SoundToggle muted={shout.muted} onToggle={shout.toggleMuted} />}
@@ -83,7 +82,7 @@ export default function App() {
             </h1>
             <p>
               Local voice dictation for {PLATFORM_NAMES[platform]}. Hold {SHORTCUTS[platform]}, say what you mean, and
-              Hex pastes it where you are.
+              Apprentice pastes it where you are.
             </p>
           </div>
 

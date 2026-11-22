@@ -108,7 +108,7 @@ export const CONTENT = {
     ["Effect", "Effect Days speaker check-in", "Can you send your slides again?"],
   ],
   messages: [
-    ["Dax", "did you see the hex issues 😬"],
+    ["Dax", "did you see the apprentice issues 😬"],
     ["Jay", "opencode is trending again"],
     ["Jay", "lunch? (it's 4pm)"],
     ["Frank", "your phone is on silent right"],
@@ -116,7 +116,7 @@ export const CONTENT = {
   ],
   calendar: [
     ["OpenCode 2.0 launch sync", "Today · 9:00 – 9:30 AM", "Jay"],
-    ["Hex Linux triage", "Tomorrow · 8:00 – 8:30 AM", "Dax"],
+    ["Apprentice Linux triage", "Tomorrow · 8:00 – 8:30 AM", "Dax"],
     ["Effect office hours", "Thursday · 10:00 – 11:00 AM", "Effect"],
     ["Sync about the sync", "Friday · 4:30 – 5:30 PM", "Frank"],
   ],

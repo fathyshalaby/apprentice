@@ -1,4 +1,4 @@
-// The Hex hero: Kit's notifications (GitHub issues, X replies, Slack pings) pile up around a
+// The Apprentice hero: Kit's notifications (GitHub issues, X replies, Slack pings) pile up around a
 // floating head; it voices replies into them and dictates prompts into an OpenCode window that
 // fixes the complaints. The arc runs calm → clipped → SHOUTING → SUPER SAIYAN rapid-fire →
 // gibberish → the Tommy-gun wipe → dizzy exhale, then restarts.

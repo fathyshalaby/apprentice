@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="12 8 48 48">
+  <!-- The menu bar's recording state: the Apprentice glyph with a filled dot,
+       following the same convention as the earlier status icons. -->
+  <g fill="none" stroke="__INK__" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 40 V28 A13 13 0 0 1 44 28 V40 A9 9 0 0 1 28 40 V30"/>
+    <path d="M19 35 H45" stroke-width="3.6"/>
+  </g>
+  <circle cx="52" cy="48" r="5" fill="__INK__"/>
+</svg>

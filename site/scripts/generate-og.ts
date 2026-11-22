@@ -1,7 +1,6 @@
 // Renders the Open Graph / Twitter card (public/og.png, 1200 × 630): the app icon, the name,
-// and one line. scripts/og/hex-icon.png is the 1024 px icon exported from the built Hex.app
-// (iconutil -c iconset Hex.app/Contents/Resources/AppIcon.icns), so it carries Icon
-// Composer's glass and shadow.
+// and one line. scripts/og/hex-icon.png is the 1024 px Apprentice mark rendered
+// from assets/apprentice-mark.svg by scripts/generate-apprentice-icons.sh.
 import { chromium } from "playwright"
 import { readFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
@@ -24,7 +23,7 @@ const html = `<!doctype html>
   p { margin: 22px 0 0; color: #9b9da3; font-size: 32px; font-weight: 450; letter-spacing: -0.015em; line-height: 1.3; max-width: 15em; }
 </style>
 <img src="data:image/png;base64,${icon}" alt="">
-<div><h1>Hex</h1><p>Local voice dictation for Mac, Windows, and Linux.</p></div>`
+<div><h1>Apprentice</h1><p>Local voice dictation for Mac, Windows, and Linux.</p></div>`
 
 const browser = await chromium.launch({ headless: true })
 try {

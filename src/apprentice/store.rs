@@ -238,7 +238,7 @@ impl Store {
                 skill
             })
             .collect();
-        skills.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+        skills.sort_by_key(|skill| skill.name.to_lowercase());
         skills
     }
 

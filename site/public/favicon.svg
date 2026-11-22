@@ -1,4 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#0b0c0e"/>
-  <path d="M17 16v32M47 16v32M17 32h30" fill="none" stroke="#f2f2ef" stroke-width="6" stroke-linecap="round"/>
+  <!-- Apprentice app mark: the glyph on a native tile. #ffffff is a template
+       placeholder that scripts/generate-apprentice-icons.sh substitutes. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#5b5bd6"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#tile)"/>
+  <g transform="translate(32 32) scale(1.1) translate(-32 -32)"
+     fill="none" stroke="#ffffff" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 40 V28 A13 13 0 0 1 44 28 V40 A9 9 0 0 1 28 40 V30"/>
+    <path d="M19 35 H45" stroke-width="3.6"/>
+  </g>
 </svg>

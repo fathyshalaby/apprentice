@@ -301,7 +301,10 @@ Notice patterns                          // apprentice.notice
 │   │   it asks the listener for a lesson (lessons::start_confirmed ->
 │   │   capture_host::ask_listener) and waits at most 2 s (LESSON_ANSWER)
 │   │   for its answer. Only an answer that the lesson started recording
-│   │   marks the routine Shown (no more offers); a refusal, a listener that
+│   │   marks the routine Shown (no more offers): a capture reply with
+│   │   changed: false means a capture or replay had already started between
+│   │   the pane's check and the listener's command, so it counts as a refused
+│   │   start, not a lesson. A refusal, that busy answer, a listener that
 │   │   doesn't answer in time, or a refused start is logged and the routine
 │   │   stays offerable (a lesson the listener starts after the 2 s still
 │   │   records, and the routine may be offered again). The lesson is the
@@ -350,6 +353,7 @@ Notice patterns                          // apprentice.notice
 // an_unreadable_root_is_reported_and_skipped, the_thread_stops_when_the_gate_closes,
 // removing_a_folder_remaps_the_log, ignoring_forgets_the_routine_and_its_events,
 // show_me_marks_the_routine_shown_only_once_the_lesson_starts,
+// apprentice::lessons::tests::only_the_listeners_yes_counts_as_started,
 // show_me_refuses_as_the_pane_does_while_annotate_is_off_or_a_capture_records,
 // answers_tell_an_open_pane_to_read_again,
 // broken_settings_keep_the_folders_and_the_log, only_a_file_in_the_root_itself_offers,
@@ -401,6 +405,16 @@ feature's OS list (`labs::Feature::oses`), so it has no entry there.
 ├─ cargo test (crates/capture)         passing
 ├─ scripts/code-shape.py --check       passing
 └─ Skills scenes rendered with --snap  looked at, light appearance
+
+2026-11-22, the answered-reply follow-up
+├─ cargo test --bin hex apprentice::   139 passed, including the real
+│                                      ScrawlCapture reply-shape test
+├─ cargo clippy --locked --bin hex     clean with -D warnings (after the
+│                                      store.rs sort_by_key lint fix)
+├─ bun test (site)                     13 passed
+└─ scripts/check                       blocked before tests by 55 files with
+                                       rustfmt diffs left by the rename commit;
+                                       the tests above were run directly
 
 2026-11-22, the installed app (/Applications, German interface), driven
 through its accessibility tree, Apple M6, 32 GB, Ollama 0.40.17

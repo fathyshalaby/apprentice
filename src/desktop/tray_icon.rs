@@ -1,4 +1,4 @@
-//! The tray mark Linux and Windows share: the white Hex mark, drawn in black
+//! The tray mark Linux and Windows share: the white Apprentice mark, drawn in black
 //! on a light panel or taskbar, where white would vanish.
 
 /// The mark's edge, in pixels.

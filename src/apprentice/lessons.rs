@@ -89,9 +89,18 @@ pub fn start_confirmed(wait: std::time::Duration) -> Result<(), String> {
 }
 
 /// The listener's answer to a lesson: started, or why not.
+///
+/// A capture reply with `changed: false` means the command found nothing to
+/// do — a capture or replay was already running when the listener received
+/// it. That is not a started lesson: the pane's pre-check can see an idle
+/// recorder and still race the listener, and marking the routine Shown then
+/// would silently lose the lesson.
 fn answered(reply: color_eyre::Result<crate::control::ControlReply>) -> Result<(), String> {
     match reply {
         Ok(crate::control::ControlReply::Error { message, .. }) => Err(message),
+        Ok(crate::control::ControlReply::ScrawlCapture(report)) if !report.changed => {
+            Err("a lesson was already recording".to_owned())
+        }
         Ok(_) => Ok(()),
         Err(error) => Err(error.to_string()),
     }
@@ -210,12 +219,25 @@ mod tests {
 
     #[test]
     fn only_the_listeners_yes_counts_as_started() {
-        use crate::control::ControlReply;
-        let started = ControlReply::Done {
-            message: "recording".into(),
+        use crate::control::{ControlReply, ScrawlCaptureReport, ScrawlCaptureState};
+        let started = ControlReply::ScrawlCapture(Box::new(ScrawlCaptureReport {
             changed: true,
-        };
+            state: ScrawlCaptureState::Recording,
+            bundle: Some(PathBuf::from("/captures/lesson.scrawl")),
+            elapsed_ms: Some(0),
+            ..ScrawlCaptureReport::default()
+        }));
         assert_eq!(answered(Ok(started)), Ok(()));
+        // The listener found a capture already running: the pane raced it,
+        // and no lesson began.
+        let busy = ControlReply::ScrawlCapture(Box::new(ScrawlCaptureReport {
+            state: ScrawlCaptureState::Recording,
+            ..ScrawlCaptureReport::default()
+        }));
+        assert_eq!(
+            answered(Ok(busy)),
+            Err("a lesson was already recording".to_owned())
+        );
         let refused = ControlReply::error("feature-off", "captures are off");
         assert_eq!(answered(Ok(refused)), Err("captures are off".to_owned()));
         let silent = Err(color_eyre::eyre::eyre!("Apprentice didn't answer in time"));
