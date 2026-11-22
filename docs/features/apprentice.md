@@ -187,6 +187,168 @@ Events                                   // apprentice.events
     answers, paths, or addresses
 // apprentice::events::tests::emitting_writes_only_the_action_id_and_count,
 // desktop::events::tests::apprentice_events_round_trip
+
+Notice patterns                          // apprentice.notice
+├── Turn it on
+│   ├── Labs › Notice patterns (labs.notice_patterns, off by default, macOS,
+│   │   group Annotate, added 20261122; `hex settings set labs.notice_patterns`,
+│   │   `hex labs on|off notice-patterns`) -> labs::notice_patterns()
+│   ├── Needs Watch and learn on too (labs::gates::notice_patterns_gate:
+│   │   its own switch and Watch and learn's, no lock); the DisableAnnotate
+│   │   lock holds both off (policy.rs), and the card reads managed
+│   ├── Adds the Noticing section to the Skills pane (rune_ui/skills/
+│   │   noticing.rs); no folder is watched until the person adds one
+│   └── Not on Hex's website, like Watch and learn (labs::web leaves it out)
+├── Watch
+│   ├── Folders: `apprentice.watched_folders`, absolute paths only, each one
+│   │   the person added (Add folder… in the pane, or `hex settings set`,
+│   │   which refuses a relative path; settings.json is not validated, so
+│   │   the watcher skips a relative path and the pane shows it unreadable)
+│   ├── The `apprentice-notice` thread starts at launch (macos_rune) and
+│   │   idles while the gate is closed: one gate check per 5 s, no folder,
+│   │   front-app, or settings read, and a closed gate forgets its
+│   │   snapshots, so what happens while it is closed is never noticed
+│   ├── Open gate and a folder: every 5 s (watch::POLL) each folder is read
+│   │   (snapshot::read): 2 levels deep (DEPTH), at most 5,000 entries
+│   │   (MAX_ENTRIES, cut off in name order; nothing past the cut reads as
+│   │   added or removed), never following links
+│   ├── Skipped: hidden entries, package folders (.app .scrawl .bundle
+│   │   .photoslibrary .pkg .framework .xcodeproj), browser partial downloads
+│   │   (*.crdownload .part .partial .download, so the finished file is one
+│   │   plain Added), and a hard link's later names
+│   ├── Files are matched by identity (device, inode), so a rename or move is
+│   │   one event: Added, Removed, Renamed, Moved (a move that renames is
+│   │   Moved); a renamed or moved folder is one change; of folders only a
+│   │   new one is kept; a file whose name, size, and time all changed under
+│   │   one identity is a Removed and an Added
+│   └── A folder that can't be read (missing, or macOS refuses it) is
+│       reported unreadable and keeps its last snapshot; settings that
+│       can't be read keep the last good folder list (never read as "no
+│       folders", which would drop the log); with none yet the tick waits
+├── Kept (owner-only, <Application Support>/hex/noticed/; without a data
+│   folder nothing is noticed)
+│   ├── events.ndjson: one line per event {t, root, kind, folder, ext, from,
+│   │   to, name, app?}; `from` and `to` are folder paths relative to the
+│   │   watched folder, as the person named them; `name` is a shape
+│   │   (name_shape: letters become a, digits #, so `2026-11-03 Telekom.pdf`
+│   │   reads `#-#-# a.pdf`); `ext` only from an allow-list of common
+│   │   extensions (snapshot::KNOWN_EXTENSIONS, lowercased; any other
+│   │   extension is shaped like the rest of the name, so a surname after a
+│   │   dot never leaks); `app` is the front app's name when the change was
+│   │   seen, never its window
+│   ├── Never file contents, never file names; no page address or title
+│   ├── 14 days (log::KEEP_MS) and the newest 20,000 lines (MAX_LINES),
+│   │   pruned when the gate opens and hourly
+│   ├── roots.json: the folder list the events' `root` indexes refer to;
+│   │   a changed list re-indexes the log, and a removed folder's events are
+│   │   dropped at the next tick
+│   ├── routines.json: each routine's steps, sentence, days, last seen,
+│   │   trigger, and state (New, Offered{last_ms}, Shown, Ignored)
+│   └── Torn or invalid log lines are skipped; no log line, routine, or
+│       folder is written to live.ndjson (only ids, below)
+├── A routine (routine.rs; pure)
+│   ├── An episode is one watched folder's events with no gap over 10 minutes
+│   │   (EPISODE_GAP_MS); one still within 10 minutes of now may be going and
+│   │   waits
+│   ├── Its signature is the ordered, de-duplicated steps: kind, folder?,
+│   │   ext, the destination folder's shape (numbers abstracted, words kept:
+│   │   `Invoices 2026-11` is `Invoices #-#`), and for a rename or new folder
+│   │   the name's shape; a new file is not a step (downloads arrive on
+│   │   their own), a new folder is
+│   ├── A routine is a signature repeated in at least 3 distinct local days
+│   │   (MIN_DAYS) within 14 days (WINDOW_MS) in one folder: three episodes
+│   │   on one day, or days older than 14, don't count
+│   ├── It must contain a filing step: a move into a non-root folder, a
+│   │   rename, or a new folder; deleting alone, or moving to the root, never
+│   │   is one
+│   ├── Its id is the first 8 bytes of SHA-256(folder path, steps) in hex,
+│   │   stable across runs and different per folder
+│   ├── Its trigger is the extension of the new file that arrived in the root
+│   │   within 2 hours before (TRIGGER_WINDOW_MS, counting the episode's own
+│   │   first event) most episodes, when at least half have one; ties go to
+│   │   the alphabetically first
+│   ├── Looked for when the gate opens and once an episode has been quiet for
+│   │   10 minutes, over the whole log; a known routine keeps its state and
+│   │   gets new days, last seen, trigger, and sentence
+│   └── Its sentence is one line in the interface language, such as "Moves
+│       PDFs from Downloads into folders like Invoices 2026-11, then renames
+│       them like #-#-# a.pdf" (the latest real folder name is the
+│       example), "Renames …", or "Makes folders like …"
+├── The offer (offer::pick, watch.rs; routine_offer.rs)
+│   ├── Only a new file with an allow-listed extension in the watched folder
+│   │   itself (not a subfolder) can start one, and only for a routine of
+│   │   that folder whose trigger is that extension; the one seen on the most
+│   │   days wins
+│   ├── State New, or Offered at least 24 h ago (REOFFER_MS); never Shown or
+│   │   Ignored; at most 3 offers a local day across routines (MAX_PER_DAY)
+│   ├── Never while dictating, a meeting records, or a capture or lesson
+│   │   records (offer::Busy); the offer is not queued
+│   ├── One capsule at the top of the screen: "New PDF in Downloads" and "You
+│   │   usually file these (3 days). Show me how?", with Show me, Not now, and
+│   │   Stop asking; it takes no focus, takes the pointer only where it
+│   │   draws, is left out of screen recordings, and sits clear of the
+│   │   meeting capsule's corner; a new offer replaces the one shown
+│   ├── Closes by itself after 30 s (TIMEOUT), doing nothing and staying
+│   │   offerable again after 24 h; Not now only closes; closing the gate
+│   │   closes it at once
+│   ├── Show me starts a lesson (watch::accept -> lessons::start), and only
+│   │   once it started marks the routine Shown (no more offers); a lesson
+│   │   that can't start (Annotate off, a capture recording) is logged and
+│   │   the routine stays offerable; the lesson is the usual Watch and learn
+│   │   lesson (whole display, narrated), never started by the watcher alone
+│   └── Stop asking marks it Ignored and drops its episodes' events
+├── The pane (Skills › Noticing, while the lab is on)
+│   ├── Watched folders: each with Remove, and Add folder… (the folder
+│   │   dialog from the home folder); a folder that can't be read says "Can't
+│   │   read this folder" with Open Settings (Files and Folders in System
+│   │   Settings › Privacy & Security)
+│   ├── Routines: each routine's sentence and "(3 days)", with Show me
+│   │   (the same refusals as Watch this: "Turn on Annotate to record a
+│   │   lesson", "Recording… stop it from the capsule"; a start failure
+│   │   shows in the pane's error line) and Forget
+│   ├── "Apprentice keeps file kinds, folder names and times for 14 days, on
+│   │   this Mac." and Forget everything…, which asks again with Cancel in
+│   │   its place, then empties the event log and the routines; folders stay
+│   │   watched
+│   ├── Reads what was noticed off the UI thread when the pane opens and each
+│   │   time the watcher reports a change; Remove drops the folder's
+│   │   routines from the list at once and its events at the next tick
+│   └── Scenes mac-skills-noticing-empty, mac-skills-noticing
+├── Recover
+│   ├── Settings or routines.json that can't be read stop the tick and are
+│   │   logged once; nothing saves over them, and the log is never dropped
+│   │   for it; a routines.json or roots.json that is not valid JSON is set
+│   │   aside as <name>.unreadable-<sha256 prefix> and state starts empty
+│   │   (an unparsable roots.json also empties the log, whose indexes can't
+│   │   be trusted)
+│   ├── No Files and Folders permission: the folder is unreadable and keeps
+│   │   its last snapshot; granting it in System Settings is picked up on the
+│   │   next 5 s read
+│   └── Ignore, Forget, and Forget everything are the person's only controls
+│       over what is kept; turning the lab off stops the watcher and the
+│       offers but leaves what was kept (it ages out in 14 days or goes with
+│       Forget everything)
+└── Events: routine_noticed, routine_offered, routine_accepted,
+    routine_ignored, each with the routine's hash as id; no count, folder, or
+    name (desktop/events.rs)
+// apprentice::notice::snapshot::tests::*, log::tests::*, routine::tests::*,
+// state::tests::*, offer::tests::*,
+// watch::tests::a_routine_replayed_on_three_days_then_a_new_pdf_offers,
+// an_unreadable_root_is_reported_and_skipped, the_thread_stops_when_the_gate_closes,
+// removing_a_folder_remaps_the_log, ignoring_forgets_the_routine_and_its_events,
+// show_me_marks_the_routine_shown_only_once_the_lesson_starts,
+// broken_settings_keep_the_folders_and_the_log, only_a_file_in_the_root_itself_offers,
+// an_unparsable_folder_list_is_set_aside_and_the_log_dropped,
+// a_state_file_that_cant_be_read_skips_the_tick,
+// rune_ui::skills::routine_offer::tests::*,
+// rune_ui::skills::tests::noticing_is_hidden_while_the_lab_is_off,
+// noticing_lists_folders_and_routines, forget_everything_asks_twice,
+// show_me_and_forget_answer_their_routine, adding_a_folder_saves_the_setting,
+// removing_a_folder_saves_the_setting, show_me_waits_like_watch_this,
+// a_lesson_show_me_could_not_start_is_shown,
+// control::settings::tests::watched_folders_key_takes_a_list_of_absolute_paths,
+// desktop::events::tests::routine_actions_name_only_the_routine,
+// labs::tests (feature registry)
 ```
 
 ## Entry points
@@ -197,8 +359,14 @@ Events                                   // apprentice.events
   `rune_ui/skills/`); scenes `mac-skills-empty`, `mac-skills-lesson`,
   `mac-skills-draft`, `mac-skills-models`, `mac-skills-list`.
 - The menu bar's Watch This… (`macos_rune/status_item.rs`).
+- Notice patterns: Settings › Labs › Annotate group, its card (row key
+  `lab-notice-patterns`, needs Watch and learn); the Skills pane's Noticing
+  section (`rune_ui/skills/noticing.rs`, scenes `mac-skills-noticing-empty`,
+  `mac-skills-noticing`); the offer capsule (`rune_ui/skills/routine_offer.rs`,
+  no scene); the watcher (`apprentice/notice/`, started in `macos_rune.rs`).
 - `hex labs on|off watch-and-learn`; `hex settings set labs.watch_and_learn`,
-  `apprentice.model`, `apprentice.ollama_url`.
+  `apprentice.model`, `apprentice.ollama_url`; `hex labs on|off notice-patterns`,
+  `hex settings set labs.notice_patterns`, `apprentice.watched_folders`.
 
 ## Platforms
 
@@ -255,6 +423,15 @@ the fixed build, installed, same lesson, gemma4:12b with screenshots
 ```
 
 ### Not verified
+
+- Notice patterns has had no live run on a real Mac: no real folder was
+  watched, no capsule was shown on screen, and no Files and Folders
+  permission prompt was seen. Every behavior in its tree is read from the
+  code and its tests (fixture folders and replayed events), not observed in
+  the installed app; the pane was seen only as `--snap` scenes.
+- Whether a person's real filing (Finder moves, browser downloads, Preview
+  renames) produces the events and routines the tests replay is unchecked,
+  as is the 5 s poll's cost on a large folder.
 
 - Recording a real lesson: Screen Recording, Microphone, and Accessibility
   were not granted to the new build, so Watch this and the capsule, a

@@ -87,7 +87,10 @@ links `hex` onto PATH.
 [Watch and learn](apprentice.md) (Labs, macOS, off by default) records a
 narrated lesson and drafts a skill for coding agents from it with a local model
 you choose, asks why? at its decisions, and installs the approved skill into
-coding agents.
+coding agents. Its Labs › Notice patterns (off by default, needs Watch and
+learn) watches only folders you add, keeps file kinds, folder names, and times
+for 14 days on this Mac, and offers to learn a filing routine you repeat on
+three days.
 [Screenshots](labs.md) (Labs, macOS) takes CleanShot-style ⌘⇧4 area and
 window screenshots, and with Annotate on records from a ⌘⇧5 toolbar.
 The other capabilities stay here until they need their own verification recipe.
