@@ -728,7 +728,7 @@ fn noticing_lists_folders_and_routines() {
         "Open Settings",
         "Show me",
         "Forget",
-        "Forget everything",
+        "Forget everything…",
     ] {
         assert!(button_named(&rt, label), "no button named {label:?}");
     }
@@ -831,4 +831,54 @@ fn removing_a_folder_saves_the_setting() {
     assert!(!texts(&rt).iter().any(|t| t == "~/Downloads"));
     // Its routine goes with it.
     assert!(rt.find("routines").is_none());
+}
+
+#[test]
+fn show_me_waits_like_watch_this() {
+    // Annotate off: no lesson can record, so nothing is accepted and the
+    // pane says why.
+    let mut rt = runtime("mac-skills-noticing");
+    rt.state.settings.capture.enabled = false;
+    refresh(&mut rt);
+    tap(&mut rt, "show-me");
+    assert!(recorded(&rt).noticing.is_empty(), "nothing accepted");
+    assert!(
+        rt.state
+            .skills
+            .error
+            .as_deref()
+            .is_some_and(|error| error.starts_with("Apprentice couldn't start the lesson")),
+        "{:?}",
+        rt.state.skills.error
+    );
+    assert!(shows(&rt, rt.state.skills.error.clone().unwrap().as_str()));
+
+    // While a capture records, the same.
+    let mut rt = runtime("mac-skills-noticing");
+    rt.state.skills.recording = true;
+    refresh(&mut rt);
+    tap(&mut rt, "show-me");
+    assert!(recorded(&rt).noticing.is_empty());
+    assert!(rt.state.skills.error.is_some());
+}
+
+#[test]
+fn a_lesson_show_me_could_not_start_is_shown() {
+    let mut rt = runtime("mac-skills-noticing");
+    noticing::refused(&mut rt.state, "The capture engine isn't running");
+    refresh(&mut rt);
+    assert!(
+        shows(
+            &rt,
+            "Apprentice couldn't start the lesson: The capture engine isn't running"
+        ),
+        "{:?}",
+        texts(&rt)
+    );
+}
+
+#[test]
+fn forget_everything_ends_in_an_ellipsis() {
+    let rt = runtime("mac-skills-noticing");
+    assert!(button_named(&rt, "Forget everything…"));
 }

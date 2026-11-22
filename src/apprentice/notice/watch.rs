@@ -109,16 +109,27 @@ pub fn start(events: SyncSender<NoticeEvent>, wake: impl Fn() + Send + 'static) 
         .expect("the apprentice-notice thread starts")
 }
 
-/// Show me: no more offers, and a lesson starts.
-pub fn accept(id: &str) {
-    if let Some(dir) = log::noticed_dir()
-        && set_state(&dir, id, RoutineState::Shown)
+/// Show me: a lesson starts, and only then are there no more offers. A
+/// lesson that can't start (Annotate off, a capture recording) leaves the
+/// routine offerable and returns why.
+pub fn accept(id: &str) -> Result<(), String> {
+    accept_in(log::noticed_dir().as_deref(), id, || {
+        crate::apprentice::lessons::start().map_err(|error| error.to_string())
+    })
+}
+
+fn accept_in(
+    dir: Option<&Path>,
+    id: &str,
+    start: impl FnOnce() -> Result<(), String>,
+) -> Result<(), String> {
+    start()?;
+    if let Some(dir) = dir
+        && set_state(dir, id, RoutineState::Shown)
     {
         events::emit(ApprenticeAction::RoutineAccepted, id, None);
     }
-    if let Err(error) = crate::apprentice::lessons::start() {
-        tracing::warn!(%error, "could not start a lesson for a noticed routine");
-    }
+    Ok(())
 }
 
 /// Stop asking or Forget: never offered or listed again, and its events are
@@ -1078,6 +1089,33 @@ mod tests {
         forget_everything_in(&data);
         assert!(log.read().is_empty());
         assert!(Routines::load(&data).known.is_empty());
+    }
+
+    #[test]
+    fn show_me_marks_the_routine_shown_only_once_the_lesson_starts() {
+        let dir = Dir::new("accept");
+        let data = dir.0.join("noticed");
+        let downloads = dir.0.join("Downloads");
+        std::fs::create_dir_all(&downloads).unwrap();
+        let log = Log::open(&data).unwrap();
+        for (days_ago, month) in [(3, "09"), (2, "10"), (1, "11")] {
+            log.append(&invoice_episode(NOW - days_ago * DAY, month))
+                .unwrap();
+        }
+        let (mut watcher, _receiver) = watcher(&data, vec![downloads]);
+        watcher.tick(NOW);
+        let id = Routines::load(&data).known[0].id.clone();
+        let before = Routines::load(&data).known[0].state.clone();
+        assert_ne!(before, RoutineState::Shown);
+
+        // A lesson that can't start (Annotate off, a capture recording)
+        // leaves the routine as it was, still offerable, and says why.
+        let failed = accept_in(Some(&data), &id, || Err("Annotate is off".into()));
+        assert_eq!(failed, Err("Annotate is off".into()));
+        assert_eq!(Routines::load(&data).known[0].state, before);
+
+        assert_eq!(accept_in(Some(&data), &id, || Ok(())), Ok(()));
+        assert_eq!(Routines::load(&data).known[0].state, RoutineState::Shown);
     }
 
     #[test]

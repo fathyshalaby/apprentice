@@ -50,7 +50,9 @@ pub(in crate::rune_ui) struct Noticing {
     pub(in crate::rune_ui) folder_choice: Option<Pending>,
     /// Forget everything waits for its second click.
     pub(in crate::rune_ui) confirm_forget: bool,
-    reading: Option<Receiver<NoticeStatus>>,
+    /// What was noticed, after an answer and why the answer failed, if it
+    /// did.
+    reading: Option<Receiver<(NoticeStatus, Option<String>)>>,
     /// [`watch::changed_generation`] at the last read; `None` reads again
     /// when the pane next shows.
     seen: Option<u64>,
@@ -58,14 +60,14 @@ pub(in crate::rune_ui) struct Noticing {
 
 impl Noticing {
     /// Runs `act` and then reads what was noticed, on a thread of its own;
-    /// a read under way is dropped for it.
-    fn run(&mut self, act: impl FnOnce() + Send + 'static) {
+    /// a read under way is dropped for it. `act` returns why it failed.
+    fn run(&mut self, act: impl FnOnce() -> Option<String> + Send + 'static) {
         let (send, reading) = mpsc::sync_channel(1);
         let spawned = std::thread::Builder::new()
             .name("apprentice-noticing".into())
             .spawn(move || {
-                act();
-                let _ = send.send(watch::status());
+                let failed = act();
+                let _ = send.send((watch::status(), failed));
             });
         match spawned {
             Ok(_) => self.reading = Some(reading),
@@ -97,9 +99,13 @@ pub(in crate::rune_ui) fn poll(ui: &mut Ui, visible: bool) -> bool {
     let noticing = &mut ui.skills.noticing;
     if let Some(reading) = &noticing.reading {
         match reading.try_recv() {
-            Ok(status) => {
+            Ok((status, failed)) => {
                 noticing.status = Some(status);
                 noticing.reading = None;
+                if let Some(error) = failed {
+                    refused(ui, &error);
+                    return true;
+                }
                 changed = true;
             }
             Err(TryRecvError::Empty) => return changed,
@@ -109,7 +115,7 @@ pub(in crate::rune_ui) fn poll(ui: &mut Ui, visible: bool) -> bool {
     let generation = watch::changed_generation();
     if noticing.seen != Some(generation) {
         noticing.seen = Some(generation);
-        noticing.run(|| {});
+        noticing.run(|| None);
     }
     changed
 }
@@ -187,7 +193,7 @@ fn remove(ui: &mut Ui, folder: &Path) {
 /// Reads again after a settings change, outside scenes.
 fn reread(ui: &mut Ui) {
     if ui.skills.fixture.is_none() {
-        ui.skills.noticing.run(|| {});
+        ui.skills.noticing.run(|| None);
     }
 }
 
@@ -201,18 +207,33 @@ fn open_settings(ui: &mut Ui) {
     }
 }
 
-/// Show me: no more offers for the routine, and a lesson starts (it waits
-/// for a model, as every lesson does).
+/// Show me: a lesson starts (it waits for a model, as every lesson does),
+/// and then the routine is offered no more. Like Watch this, nothing starts
+/// while Annotate is off or a capture records; the pane says why.
 fn show_me(ui: &mut Ui, id: &str) {
     if !open(ui) {
         return;
     }
+    if !ui.settings.capture.enabled {
+        refused(ui, tr("Turn on Annotate to record a lesson"));
+        return;
+    }
+    if ui.skills.recording {
+        refused(ui, tr("Recording… stop it from the capsule"));
+        return;
+    }
+    ui.skills.error = None;
     if let Some(recorded) = &mut ui.skills.fixture {
         recorded.noticing.push(Asked::ShowMe(id.to_owned()));
         return;
     }
     let id = id.to_owned();
-    ui.skills.noticing.run(move || watch::accept(&id));
+    ui.skills.noticing.run(move || watch::accept(&id).err());
+}
+
+/// Shows why Show me's lesson didn't start in the pane's error line.
+pub(super) fn refused(ui: &mut Ui, why: &str) {
+    ui.skills.error = Some(tr_fill("Apprentice couldn't start the lesson: {}", why));
 }
 
 /// Forget: the routine is never offered or listed again.
@@ -229,7 +250,10 @@ fn forget(ui: &mut Ui, id: &str) {
         return;
     }
     let id = id.to_owned();
-    noticing.run(move || watch::ignore(&id));
+    noticing.run(move || {
+        watch::ignore(&id);
+        None
+    });
 }
 
 /// Forget everything: the first click asks, the second empties the event
@@ -251,7 +275,10 @@ fn forget_everything(ui: &mut Ui) {
         recorded.noticing.push(Asked::ForgetEverything);
         return;
     }
-    noticing.run(watch::forget_everything);
+    noticing.run(|| {
+        watch::forget_everything();
+        None
+    });
 }
 
 /// The routines listed for folders still watched.
@@ -427,7 +454,7 @@ fn privacy(ui: &Ui, p: Paint) -> El {
         actions = actions.child(small_button(
             p,
             "forget-everything",
-            tr("Forget everything"),
+            tr("Forget everything…"),
             |ui: &mut Ui, _| forget_everything(ui),
         ));
     }

@@ -51,7 +51,7 @@ struct Offer {
 pub(crate) struct OfferState {
     offer: Option<Offer>,
     /// Show me: [`crate::apprentice::notice::watch::accept`].
-    accept: fn(&str),
+    accept: fn(&str) -> Result<(), String>,
     /// Stop asking: [`crate::apprentice::notice::watch::ignore`].
     ignore: fn(&str),
     /// Hides the overlay's window; none offscreen.
@@ -59,7 +59,7 @@ pub(crate) struct OfferState {
 }
 
 impl OfferState {
-    pub(crate) fn new(accept: fn(&str), ignore: fn(&str)) -> Self {
+    pub(crate) fn new(accept: fn(&str) -> Result<(), String>, ignore: fn(&str)) -> Self {
         Self {
             offer: None,
             accept,
@@ -107,21 +107,27 @@ impl OfferState {
     /// The drawn offer's buttons answer only that offer, even when a press
     /// lands after a replacement. Accepting and ignoring take the notice
     /// store's lock and may sync to disk, so they run on a thread of their
-    /// own, never the main thread's.
+    /// own, never the main thread's. A lesson Show me couldn't start is
+    /// logged; the routine stays offerable.
     fn answer(&mut self, id: &str, answer: Answer) {
         if self.offer.as_ref().is_none_or(|offer| offer.id != id) {
             return;
         }
         self.close();
-        let act = match answer {
-            Answer::NotNow => return,
-            Answer::StopAsking => self.ignore,
-            Answer::ShowMe => self.accept,
-        };
+        let (accept, ignore) = (self.accept, self.ignore);
         let id = id.to_owned();
+        let act: Box<dyn FnOnce() + Send> = match answer {
+            Answer::NotNow => return,
+            Answer::StopAsking => Box::new(move || ignore(&id)),
+            Answer::ShowMe => Box::new(move || {
+                if let Err(error) = accept(&id) {
+                    tracing::warn!(%error, "could not start a lesson for a noticed routine");
+                }
+            }),
+        };
         if let Err(error) = std::thread::Builder::new()
             .name("apprentice-offer".into())
-            .spawn(move || act(&id))
+            .spawn(act)
         {
             tracing::warn!(%error, "could not answer the routine offer");
         }
@@ -310,8 +316,9 @@ mod tests {
     /// Every answer handed on, by routine id. Each test uses its own ids.
     static CALLS: Mutex<Vec<(&str, String)>> = Mutex::new(Vec::new());
 
-    fn accept(id: &str) {
+    fn accept(id: &str) -> Result<(), String> {
         CALLS.lock().unwrap().push(("accept", id.to_owned()));
+        Ok(())
     }
 
     fn ignore(id: &str) {

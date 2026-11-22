@@ -124,6 +124,7 @@ pub(super) const TRANSLATIONS: &[(&str, [&str; 6])] = &[
     ("Routines", ["Rutyny", "例行操作", "いつもの作業", "Routinen", "Rutinas", "Рутини"]),
     ("({days} days)", ["(dni: {days})", "（{days} 天）", "（{days} 日）", "({days} Tage)", "({days} días)", "({days} дн.)"]),
     ("Forget everything", ["Zapomnij wszystko", "全部忘记", "すべて忘れる", "Alles vergessen", "Olvidar todo", "Забути все"]),
+    ("Forget everything…", ["Zapomnij wszystko…", "全部忘记…", "すべて忘れる…", "Alles vergessen…", "Olvidar todo…", "Забути все…"]),
     ("Apprentice keeps file kinds, folder names and times for 14 days, on this Mac.", ["Apprentice przechowuje rodzaje plików, nazwy folderów i godziny przez 14 dni, na tym Macu.", "Apprentice 会在这台 Mac 上保留文件类型、文件夹名称和时间，为期 14 天。", "Apprentice はファイルの種類、フォルダ名、時刻をこの Mac に 14 日間保存します。", "Apprentice speichert Dateiarten, Ordnernamen und Zeiten 14 Tage lang auf diesem Mac.", "Apprentice guarda tipos de archivo, nombres de carpetas y horas durante 14 días, en este Mac.", "Apprentice зберігає типи файлів, назви папок і час протягом 14 днів на цьому Mac."]),
 ];
 
@@ -252,6 +253,7 @@ pub(super) const PORTUGUESE: &[(&str, &str)] = &[
     ("Routines", "Rotinas"),
     ("({days} days)", "({days} dias)"),
     ("Forget everything", "Esquecer tudo"),
+    ("Forget everything…", "Esquecer tudo…"),
     ("Apprentice keeps file kinds, folder names and times for 14 days, on this Mac.", "O Apprentice guarda tipos de arquivo, nomes de pastas e horários por 14 dias, neste Mac."),
 ];
 
@@ -380,6 +382,7 @@ pub(super) const FRENCH: &[(&str, &str)] = &[
     ("Routines", "Routines"),
     ("({days} days)", "({days} jours)"),
     ("Forget everything", "Tout oublier"),
+    ("Forget everything…", "Tout oublier…"),
     ("Apprentice keeps file kinds, folder names and times for 14 days, on this Mac.", "Apprentice conserve les types de fichiers, les noms de dossiers et les heures pendant 14 jours, sur ce Mac."),
 ];
 
@@ -508,5 +511,6 @@ pub(super) const RUSSIAN: &[(&str, &str)] = &[
     ("Routines", "Рутины"),
     ("({days} days)", "({days} дн.)"),
     ("Forget everything", "Забыть всё"),
+    ("Forget everything…", "Забыть всё…"),
     ("Apprentice keeps file kinds, folder names and times for 14 days, on this Mac.", "Apprentice хранит типы файлов, названия папок и время 14 дней на этом Mac."),
 ];
