@@ -41,6 +41,8 @@ pub(in crate::rune_ui) struct Editor {
     pub(in crate::rune_ui) source: Source,
     /// The skill as opened, with the why? answers given since.
     pub(in crate::rune_ui) base: Skill,
+    /// The skill as last saved, to tell unsaved typing apart.
+    saved: Skill,
     pub(in crate::rune_ui) name: TextEdit,
     pub(in crate::rune_ui) description: TextEdit,
     pub(in crate::rune_ui) when_to_use: TextEdit,
@@ -54,14 +56,17 @@ pub(in crate::rune_ui) struct Editor {
     /// Keep both.
     pub(in crate::rune_ui) clash: Option<String>,
     pub(in crate::rune_ui) discard_armed: bool,
+    /// Review or Edit pressed over unsaved typing: what it would open.
+    pub(in crate::rune_ui) switching: Option<Opening>,
     pub(in crate::rune_ui) error: Option<String>,
 }
 
 impl Editor {
     fn new(source: Source, skill: &Skill) -> Self {
-        Self {
+        let mut editor = Self {
             source,
             base: skill.clone(),
+            saved: skill.clone(),
             name: TextEdit::new(skill.name.clone()),
             description: TextEdit::new(skill.description.clone()),
             when_to_use: TextEdit::new(skill.when_to_use.clone()),
@@ -79,8 +84,12 @@ impl Editor {
             skipped: Vec::new(),
             clash: None,
             discard_armed: false,
+            switching: None,
             error: None,
-        }
+        };
+        // As the fields read it back, so untouched trimming isn't a change.
+        editor.saved = editor.skill();
+        editor
     }
 
     pub(in crate::rune_ui) fn for_draft(draft: &Draft) -> Self {
@@ -121,6 +130,11 @@ impl Editor {
         skill.verification = lines(&self.verification);
         skill.edge_cases = lines(&self.edge_cases);
         skill
+    }
+
+    /// Whether anything typed here isn't saved yet.
+    pub(in crate::rune_ui) fn unsaved(&self) -> bool {
+        self.skill() != self.saved || !self.answer.text.trim().is_empty()
     }
 
     /// The draft as it would be saved now.
@@ -209,6 +223,7 @@ fn persist(ui: &mut Ui) -> bool {
     };
     match store.save_draft(&draft) {
         Ok(()) => {
+            editor.saved = draft.skill.clone();
             if let Some(shown) = pane.drafts.iter_mut().find(|d| d.id == draft.id) {
                 *shown = draft;
             }
@@ -362,17 +377,93 @@ fn discard(ui: &mut Ui) {
     pane.changed();
 }
 
-/// Opens a saved draft or skill in the view.
-pub(super) fn open_draft(ui: &mut Ui, id: &str) {
-    if let Some(draft) = ui.skills.drafts.iter().find(|d| d.id == id) {
-        ui.skills.editor = Some(Editor::for_draft(draft));
+/// What Review or Edit asks to open in place of the open editor.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(in crate::rune_ui) enum Opening {
+    Draft(String),
+    Skill(String),
+}
+
+/// Opens a saved draft or skill in the view. Over unsaved typing it asks
+/// first, in the open editor; `confirmed` is the answer.
+fn open(ui: &mut Ui, opening: Opening, confirmed: bool) {
+    let pane = &mut ui.skills;
+    if !confirmed
+        && let Some(editor) = &mut pane.editor
+        && editor.unsaved()
+    {
+        editor.switching = Some(opening);
+        return;
+    }
+    let editor = match &opening {
+        Opening::Draft(id) => pane
+            .drafts
+            .iter()
+            .find(|d| &d.id == id)
+            .map(Editor::for_draft),
+        Opening::Skill(slug) => pane
+            .skills
+            .iter()
+            .find(|s| &s.slug == slug)
+            .map(Editor::for_skill),
+    };
+    if editor.is_some() {
+        pane.editor = editor;
     }
 }
 
+pub(super) fn open_draft(ui: &mut Ui, id: &str) {
+    open(ui, Opening::Draft(id.to_owned()), false);
+}
+
 pub(super) fn open_skill(ui: &mut Ui, slug: &str) {
-    if let Some(skill) = ui.skills.skills.iter().find(|s| s.slug == slug) {
-        ui.skills.editor = Some(Editor::for_skill(skill));
-    }
+    open(ui, Opening::Skill(slug.to_owned()), false);
+}
+
+/// The question Review or Edit asked over unsaved typing, at the top of
+/// the open editor.
+fn switching_rows(p: Paint, editor: &Editor) -> Option<El> {
+    let opening = editor.switching.clone()?;
+    Some(
+        col()
+            .key("switching")
+            .px(METRICS.row_px)
+            .py(12.0)
+            .gap(8.0)
+            .child(
+                text(tr_fill(
+                    "Discard your changes to {}?",
+                    editor.name.text.trim(),
+                ))
+                .key("question")
+                .font(p.k.ty.ui_medium)
+                .color(p.text())
+                .wrap(),
+            )
+            .child(
+                row()
+                    .key("choices")
+                    .gap(8.0)
+                    .child(button(
+                        p,
+                        "confirm-switch",
+                        tr("Discard changes"),
+                        ButtonKind::Danger,
+                        move |ui: &mut Ui, _| open(ui, opening.clone(), true),
+                    ))
+                    .child(button(
+                        p,
+                        "keep-editing",
+                        tr("Keep editing"),
+                        ButtonKind::Secondary,
+                        |ui: &mut Ui, _| {
+                            if let Some(editor) = &mut ui.skills.editor {
+                                editor.switching = None;
+                            }
+                        },
+                    )),
+            ),
+    )
 }
 
 /// A labelled field: the label over its input.
@@ -412,7 +503,8 @@ fn area(
 pub(super) fn section(ui: &Ui, p: Paint) -> Option<El> {
     let editor = ui.skills.editor.as_ref()?;
     let drafting = matches!(editor.source, Source::Draft { .. });
-    let mut rows: Vec<El> = why_rows(p, editor).into_iter().collect();
+    let mut rows: Vec<El> = switching_rows(p, editor).into_iter().collect();
+    rows.extend(why_rows(p, editor));
     rows.extend([
         labelled(
             p,

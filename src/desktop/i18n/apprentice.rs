@@ -100,6 +100,9 @@ pub(super) const TRANSLATIONS: &[(&str, [&str; 6])] = &[
     ("On this Mac · text only", ["Na tym Macu · tylko tekst", "在这台 Mac 上 · 仅文本", "この Mac 上 · テキストのみ", "Auf diesem Mac · nur Text", "En este Mac · solo texto", "На цьому Mac · лише текст"]),
     ("Ollama's address", ["Adres Ollamy", "Ollama 的地址", "Ollama のアドレス", "Adresse von Ollama", "Dirección de Ollama", "Адреса Ollama"]),
     ("On this computer only", ["Tylko na tym komputerze", "仅限这台电脑", "このコンピュータのみ", "Nur auf diesem Computer", "Solo en este ordenador", "Лише на цьому комп'ютері"]),
+    ("Discard your changes to {}?", ["Odrzucić zmiany w: {}?", "放弃对 {} 的更改？", "{} への変更を破棄しますか？", "Deine Änderungen an {} verwerfen?", "¿Descartar tus cambios en {}?", "Відкинути ваші зміни в {}?"]),
+    ("Discard changes", ["Odrzuć zmiany", "放弃更改", "変更を破棄", "Änderungen verwerfen", "Descartar cambios", "Відкинути зміни"]),
+    ("Keep editing", ["Edytuj dalej", "继续编辑", "編集を続ける", "Weiter bearbeiten", "Seguir editando", "Продовжити редагування"]),
 ];
 
 /// Brazilian Portuguese, for the card and the pane.
@@ -201,6 +204,9 @@ pub(super) const PORTUGUESE: &[(&str, &str)] = &[
     ("On this Mac · text only", "Neste Mac · só texto"),
     ("Ollama's address", "Endereço do Ollama"),
     ("On this computer only", "Somente neste computador"),
+    ("Discard your changes to {}?", "Descartar suas alterações em {}?"),
+    ("Discard changes", "Descartar alterações"),
+    ("Keep editing", "Continuar editando"),
 ];
 
 /// French, for the card and the pane.
@@ -302,6 +308,9 @@ pub(super) const FRENCH: &[(&str, &str)] = &[
     ("On this Mac · text only", "Sur ce Mac · texte seulement"),
     ("Ollama's address", "Adresse d'Ollama"),
     ("On this computer only", "Sur cet ordinateur uniquement"),
+    ("Discard your changes to {}?", "Abandonner vos modifications de {} ?"),
+    ("Discard changes", "Abandonner les modifications"),
+    ("Keep editing", "Continuer à modifier"),
 ];
 
 /// Russian, for the card and the pane.
@@ -403,4 +412,7 @@ pub(super) const RUSSIAN: &[(&str, &str)] = &[
     ("On this Mac · text only", "На этом Mac · только текст"),
     ("Ollama's address", "Адрес Ollama"),
     ("On this computer only", "Только на этом компьютере"),
+    ("Discard your changes to {}?", "Отменить ваши изменения в {}?"),
+    ("Discard changes", "Отменить изменения"),
+    ("Keep editing", "Продолжить редактирование"),
 ];

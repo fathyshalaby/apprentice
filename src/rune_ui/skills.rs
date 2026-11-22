@@ -305,7 +305,11 @@ impl SkillsPane {
             self.failed = Some((lesson, Failure::Message(message)));
             return;
         }
-        self.editor = Some(draft_view::Editor::for_draft(&draft));
+        // An open draft or skill keeps its typing: the new draft waits
+        // under Drafts waiting instead.
+        if self.editor.is_none() {
+            self.editor = Some(draft_view::Editor::for_draft(&draft));
+        }
         self.drafts.insert(0, draft);
         self.changed();
     }

@@ -294,3 +294,210 @@ fn a_remote_ollama_address_is_refused() {
         "http://localhost:11500"
     );
 }
+
+// ---------------------------------------------------------------------------
+// A running draft, fed by hand: what each of its last words leaves behind.
+
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
+use std::sync::mpsc::{self, Sender};
+
+use crate::apprentice::draft::ParseError;
+use crate::apprentice::run::Progress;
+use crate::apprentice::skill::Skill;
+
+/// Starts a hand-fed draft of the scene's first lesson, with the pane
+/// saving into a store at `root`.
+fn running(rt: &mut Runtime<Ui>, root: &std::path::Path) -> Sender<Progress> {
+    let (send, rx) = mpsc::channel();
+    let pane = &mut rt.state.skills;
+    pane.store = Some(Store::at(root.to_path_buf()));
+    pane.drafting = Some(super::Drafting {
+        lesson: pane.lessons[0].id.clone(),
+        stage: super::Stage::Starting,
+        rx: Some(rx),
+        cancel: Arc::new(AtomicBool::new(false)),
+    });
+    refresh(rt);
+    send
+}
+
+fn drafted_skill(lesson: &str) -> Skill {
+    let mut skill = super::SkillsPane::fixture(super::Fixture::Draft).drafts[0]
+        .skill
+        .clone();
+    skill.lesson_id = lesson.into();
+    skill
+}
+
+fn shows(rt: &Runtime<Ui>, copy: &str) -> bool {
+    texts(rt).iter().any(|t| t == copy)
+}
+
+#[test]
+fn a_finished_draft_is_saved_with_its_text_and_opens() {
+    let root = temp("done");
+    let mut rt = runtime("mac-skills-lesson");
+    let lesson = rt.state.skills.lessons[0].id.clone();
+    if let Some(Some(notes)) = rt.state.skills.notes.get_mut(&lesson) {
+        notes.text = "[00:01] said: rename the files".into();
+    }
+    let send = running(&mut rt, &root);
+    send.send(Progress::Segment { n: 2, of: 3 }).unwrap();
+    refresh(&mut rt);
+    assert!(shows(&rt, "Drafting · part 2 of 3"), "{:?}", texts(&rt));
+    send.send(Progress::Merging).unwrap();
+    refresh(&mut rt);
+    assert!(shows(&rt, "Putting it together…"));
+
+    send.send(Progress::Done(drafted_skill(&lesson))).unwrap();
+    refresh(&mut rt);
+    assert!(rt.state.skills.drafting.is_none());
+    let saved = Store::at(root.clone()).drafts();
+    assert_eq!(saved.len(), 1);
+    assert_eq!(saved[0].lesson_id, lesson);
+    assert_eq!(saved[0].evidence_text, "[00:01] said: rename the files");
+    let editor = rt.state.skills.editor.as_ref().expect("the draft opens");
+    assert_eq!(editor.base.name, saved[0].skill.name);
+    assert!(rt.find("approve-skill").is_some());
+    assert!(rt.find("draft-skill").is_none(), "the lesson is drafted");
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn a_failed_draft_says_why_and_offers_try_again() {
+    let root = temp("failed");
+    let mut rt = runtime("mac-skills-lesson");
+    let send = running(&mut rt, &root);
+    send.send(Progress::Failed("Ollama isn't running".into()))
+        .unwrap();
+    refresh(&mut rt);
+    assert!(rt.state.skills.drafting.is_none());
+    assert!(shows(&rt, "Ollama isn't running"), "{:?}", texts(&rt));
+    assert!(rt.find("try-again").is_some());
+    assert!(rt.state.skills.editor.is_none());
+
+    tap(&mut rt, "try-again");
+    assert_eq!(recorded(&rt).drafts.len(), 1, "Try again is one more run");
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn an_unreadable_answer_shows_the_raw_text_and_offers_try_again() {
+    let root = temp("unparsed");
+    let mut rt = runtime("mac-skills-lesson");
+    let send = running(&mut rt, &root);
+    send.send(Progress::Unparsed(ParseError {
+        raw: "I think the steps are: open Mail".into(),
+        reason: "not JSON".into(),
+    }))
+    .unwrap();
+    refresh(&mut rt);
+    assert!(shows(&rt, "The model's answer couldn't be read"));
+    assert!(shows(&rt, "I think the steps are: open Mail"));
+    assert!(rt.find("try-again").is_some());
+    assert!(Store::at(root.clone()).drafts().is_empty());
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn a_draft_that_ends_without_a_last_word_reads_as_stopped() {
+    let root = temp("gone");
+    let mut rt = runtime("mac-skills-lesson");
+    let send = running(&mut rt, &root);
+    send.send(Progress::Segment { n: 1, of: 2 }).unwrap();
+    drop(send);
+    refresh(&mut rt);
+    assert!(rt.state.skills.drafting.is_none());
+    assert!(
+        shows(&rt, "Drafting stopped unexpectedly"),
+        "{:?}",
+        texts(&rt)
+    );
+    assert!(rt.find("try-again").is_some());
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn a_cancelled_draft_returns_quietly_to_its_lesson() {
+    let root = temp("cancelled");
+    let mut rt = runtime("mac-skills-lesson");
+    let send = running(&mut rt, &root);
+    tap(&mut rt, "cancel-draft");
+    assert!(shows(&rt, "Stopping…"));
+    // The run stops before its next call and says so.
+    send.send(Progress::Failed("Cancelled".into())).unwrap();
+    refresh(&mut rt);
+    assert!(rt.state.skills.drafting.is_none());
+    assert!(rt.state.skills.failed.is_none());
+    assert!(!shows(&rt, "Cancelled"));
+    assert!(rt.find("draft-skill").is_some());
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn a_draft_finishing_under_an_open_editor_leaves_it_alone() {
+    let root = temp("busy");
+    let mut rt = runtime("mac-skills-draft");
+    // A second lesson drafts while the first draft is being edited.
+    let mut other = rt.state.skills.lessons[0].clone();
+    other.id = "lesson-9".into();
+    rt.state.skills.lessons.insert(0, other);
+    rt.state.skills.editor.as_mut().unwrap().name = TextEdit::new("Typed, not saved");
+    let open_id = rt.state.skills.drafts[0].id.clone();
+    let send = running(&mut rt, &root);
+    send.send(Progress::Done(drafted_skill("lesson-9")))
+        .unwrap();
+    refresh(&mut rt);
+
+    let editor = rt.state.skills.editor.as_ref().unwrap();
+    assert!(
+        matches!(&editor.source, super::draft_view::Source::Draft { id, .. } if *id == open_id)
+    );
+    assert_eq!(editor.name.text, "Typed, not saved");
+    assert_eq!(
+        Store::at(root.clone()).drafts().len(),
+        1,
+        "the new draft is saved"
+    );
+    assert!(
+        rt.find("review-draft").is_some(),
+        "and waits to be reviewed"
+    );
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn review_over_unsaved_typing_asks_first() {
+    let mut rt = runtime("mac-skills-draft");
+    let mut second = rt.state.skills.drafts[0].clone();
+    second.id = "1763800000001-cd34".into();
+    second.skill.name = "Send the weekly report".into();
+    rt.state.skills.drafts.push(second.clone());
+    refresh(&mut rt);
+    // Nothing typed: Review just opens.
+    tap(&mut rt, "review-draft");
+    assert_eq!(
+        rt.state.skills.editor.as_ref().unwrap().base.name,
+        second.skill.name
+    );
+
+    rt.state.skills.editor.as_mut().unwrap().name = TextEdit::new("Typed, not saved");
+    refresh(&mut rt);
+    tap(&mut rt, "review-draft");
+    let editor = rt.state.skills.editor.as_ref().unwrap();
+    assert_eq!(editor.name.text, "Typed, not saved", "nothing replaced yet");
+    tap(&mut rt, "keep-editing");
+    assert_eq!(
+        rt.state.skills.editor.as_ref().unwrap().name.text,
+        "Typed, not saved"
+    );
+    assert!(rt.find("confirm-switch").is_none());
+
+    tap(&mut rt, "review-draft");
+    tap(&mut rt, "confirm-switch");
+    assert_eq!(
+        rt.state.skills.editor.as_ref().unwrap().base.name,
+        "File the monthly invoice"
+    );
+}

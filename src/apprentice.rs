@@ -1,4 +1,4 @@
-mod draft;
+pub(crate) mod draft;
 pub(crate) mod events;
 pub(crate) mod evidence;
 pub(crate) mod install;
