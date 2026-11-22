@@ -19,7 +19,7 @@ use super::log::{self, Event, Log};
 use super::offer::{self, Busy};
 use super::routine::{self, EPISODE_GAP_MS, Routine};
 use super::snapshot::{self, Change, ChangeKind, Snapshot};
-use super::state::{Known, RoutineState, Routines};
+use super::state::{Known, RoutineState, Routines, set_aside};
 use crate::apprentice::events::{self, ApprenticeAction};
 use crate::desktop::i18n::tr_named;
 
@@ -67,6 +67,8 @@ pub struct NoticeStatus {
 static STORE: Mutex<()> = Mutex::new(());
 /// Folder health as the thread last read it.
 static HEALTH: Mutex<Vec<(PathBuf, FolderHealth)>> = Mutex::new(Vec::new());
+/// The watched folders from the last settings file that read cleanly.
+static LAST_GOOD: Mutex<Option<Vec<PathBuf>>> = Mutex::new(None);
 
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(|error| error.into_inner())
@@ -135,7 +137,10 @@ pub fn forget_everything() {
 // Its callers, the offer capsule and the Skills pane, come later.
 #[allow(dead_code)]
 pub fn status() -> NoticeStatus {
-    status_in(log::noticed_dir().as_deref(), &settings_folders())
+    let saved = settings_folders()
+        .or_else(|| lock(&LAST_GOOD).clone())
+        .unwrap_or_default();
+    status_in(log::noticed_dir().as_deref(), &saved)
 }
 
 fn status_in(dir: Option<&Path>, saved: &[PathBuf]) -> NoticeStatus {
@@ -166,9 +171,19 @@ fn status_in(dir: Option<&Path>, saved: &[PathBuf]) -> NoticeStatus {
     NoticeStatus { folders, routines }
 }
 
+/// The routines to change, or `None` (logged) when the file can't be read,
+/// so nothing saves over it.
+fn routines_to_change(dir: &Path) -> Option<Routines> {
+    Routines::try_load(dir)
+        .inspect_err(|error| tracing::warn!(%error, "could not read the noticed routines"))
+        .ok()
+}
+
 fn set_state(dir: &Path, id: &str, state: RoutineState) -> bool {
     let _store = lock(&STORE);
-    let mut routines = Routines::load(dir);
+    let Some(mut routines) = routines_to_change(dir) else {
+        return false;
+    };
     if !routines.known.iter().any(|known| known.id == id) {
         return false;
     }
@@ -181,7 +196,9 @@ fn set_state(dir: &Path, id: &str, state: RoutineState) -> bool {
 
 fn ignore_in(dir: &Path, id: &str) -> bool {
     let _store = lock(&STORE);
-    let mut routines = Routines::load(dir);
+    let Some(mut routines) = routines_to_change(dir) else {
+        return false;
+    };
     let Some(known) = routines.known.iter().find(|known| known.id == id).cloned() else {
         return false;
     };
@@ -228,17 +245,39 @@ fn forget_everything_in(dir: &Path) {
     if let Err(error) = Log::open(dir).and_then(|log| log.clear()) {
         tracing::warn!(%error, "could not empty the noticed events");
     }
-    let mut routines = Routines::load(dir);
-    routines.known.clear();
-    if let Err(error) = routines.save() {
-        tracing::warn!(%error, "could not empty the noticed routines");
+    if let Some(mut routines) = routines_to_change(dir) {
+        routines.known.clear();
+        if let Err(error) = routines.save() {
+            tracing::warn!(%error, "could not empty the noticed routines");
+        }
     }
 }
 
-/// The folder list the log was written against, if one was saved.
+/// `roots.json` as found on disk.
+enum SavedRoots {
+    Missing,
+    List(Vec<PathBuf>),
+    /// There, but not a list: the bytes, to set aside.
+    Unparsable(Vec<u8>),
+}
+
+fn read_saved_roots(dir: &Path) -> std::io::Result<SavedRoots> {
+    match std::fs::read(dir.join(ROOTS_FILE)) {
+        Ok(bytes) => Ok(match serde_json::from_slice(&bytes) {
+            Ok(list) => SavedRoots::List(list),
+            Err(_) => SavedRoots::Unparsable(bytes),
+        }),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(SavedRoots::Missing),
+        Err(error) => Err(error),
+    }
+}
+
+/// The folder list the log was written against, if one reads.
 fn read_roots(dir: &Path) -> Option<Vec<PathBuf>> {
-    let bytes = std::fs::read(dir.join(ROOTS_FILE)).ok()?;
-    serde_json::from_slice(&bytes).ok()
+    match read_saved_roots(dir) {
+        Ok(SavedRoots::List(list)) => Some(list),
+        _ => None,
+    }
 }
 
 fn write_roots(dir: &Path, roots: &[PathBuf]) -> std::io::Result<()> {
@@ -247,13 +286,13 @@ fn write_roots(dir: &Path, roots: &[PathBuf]) -> std::io::Result<()> {
 }
 
 /// `apprentice.watched_folders` as saved, read again only when the settings
-/// file changes.
-fn settings_folders() -> Vec<PathBuf> {
+/// file changes. `None` when it can't be known: no data folder, or a
+/// settings file that can't be read or isn't JSON (whose defaults would
+/// read as "no folders").
+fn settings_folders() -> Option<Vec<PathBuf>> {
     type Stamp = (Option<SystemTime>, u64);
-    static CACHE: Mutex<Option<(Stamp, Vec<PathBuf>)>> = Mutex::new(None);
-    let Ok(path) = crate::app_settings::path() else {
-        return Vec::new();
-    };
+    static CACHE: Mutex<Option<(Stamp, Option<Vec<PathBuf>>)>> = Mutex::new(None);
+    let path = crate::app_settings::path().ok()?;
     let stamp: Option<Stamp> = std::fs::metadata(&path)
         .ok()
         .map(|meta| (meta.modified().ok(), meta.len()));
@@ -263,11 +302,21 @@ fn settings_folders() -> Vec<PathBuf> {
     {
         return folders.clone();
     }
-    let folders = crate::app_settings::AppSettings::read_from(&path)
-        .map(|(settings, _)| settings.apprentice.watched_folders)
-        .unwrap_or_default();
+    let folders = folders_from(&path);
     *cache = stamp.map(|stamp| (stamp, folders.clone()));
+    if folders.is_some() {
+        *lock(&LAST_GOOD) = folders.clone();
+    }
     folders
+}
+
+/// The watched folders in the settings file at `path`; `None` when it is
+/// there but doesn't read cleanly. A missing file watches nothing.
+fn folders_from(path: &Path) -> Option<Vec<PathBuf>> {
+    crate::app_settings::AppSettings::read_trusted_from(path)
+        .ok()
+        .flatten()
+        .map(|settings| settings.apprentice.watched_folders)
 }
 
 /// The folders to watch: absolute paths only (`settings.json` may hold
@@ -331,12 +380,17 @@ fn kept(change: &Change) -> bool {
 pub struct Watcher {
     dir: PathBuf,
     gate: fn() -> bool,
-    folders: Box<dyn Fn() -> Vec<PathBuf> + Send>,
+    folders: Box<dyn Fn() -> Option<Vec<PathBuf>> + Send>,
     front_app: fn() -> Option<String>,
     busy: fn() -> Busy,
     day_of: fn(u64) -> i64,
     events: SyncSender<NoticeEvent>,
     wake: Box<dyn Fn() + Send>,
+    /// The saved folder list last read cleanly, used while settings can't
+    /// be read.
+    last_folders: Option<Vec<PathBuf>>,
+    /// The last problem that stopped a tick, so it is logged once.
+    trouble: Option<&'static str>,
     /// The folders being read, and their last good snapshots.
     roots: Vec<PathBuf>,
     snapshots: Vec<Option<Snapshot>>,
@@ -358,7 +412,7 @@ pub struct Watcher {
 impl Watcher {
     fn new(
         dir: PathBuf,
-        folders: Box<dyn Fn() -> Vec<PathBuf> + Send>,
+        folders: Box<dyn Fn() -> Option<Vec<PathBuf>> + Send>,
         events: SyncSender<NoticeEvent>,
         wake: Box<dyn Fn() + Send>,
     ) -> Watcher {
@@ -371,6 +425,8 @@ impl Watcher {
             day_of: routine::local_day,
             events,
             wake,
+            last_folders: None,
+            trouble: None,
             roots: Vec::new(),
             snapshots: Vec::new(),
             health: Vec::new(),
@@ -391,7 +447,20 @@ impl Watcher {
             self.close();
             return;
         }
-        let folders = watchable(&(self.folders)());
+        // Settings that can't be read keep the last list that could; with
+        // none yet, the tick waits. A broken file never reads as "no
+        // folders", which would drop the log.
+        let saved = match (self.folders)() {
+            Some(saved) => {
+                self.last_folders = Some(saved.clone());
+                saved
+            }
+            None => match &self.last_folders {
+                Some(saved) => saved.clone(),
+                None => return self.stop("the watched folders can't be read from settings", None),
+            },
+        };
+        let folders = watchable(&saved);
         // Folders are read before the lock, so the pane never waits on a
         // slow one.
         let (changes, mut changed) = if folders.is_empty() {
@@ -402,10 +471,7 @@ impl Watcher {
         let _store = lock(&STORE);
         let log = match Log::open(&self.dir) {
             Ok(log) => log,
-            Err(error) => {
-                tracing::warn!(%error, "could not open the noticed events");
-                return;
-            }
+            Err(error) => return self.stop("could not open the noticed events", Some(&error)),
         };
         if !self.adopt(&log, &folders) {
             return;
@@ -414,15 +480,26 @@ impl Watcher {
             self.close();
             return;
         }
+        // A state file that can't be read stops the tick, so nothing saves
+        // over it.
+        let mut routines = match Routines::try_load(&self.dir) {
+            Ok(routines) => routines,
+            Err(error) => return self.stop("could not read the noticed routines", Some(&error)),
+        };
         if !self.started || now_ms.saturating_sub(self.pruned_ms) >= PRUNE_EVERY_MS {
             if let Err(error) = log.prune(now_ms) {
                 tracing::warn!(%error, "could not prune the noticed events");
             }
             self.pruned_ms = now_ms;
         }
+        // Only a file that arrives in the root itself can start a routine.
         let added: Vec<(usize, String)> = changes
             .iter()
-            .filter(|(_, change)| !change.folder && change.kind == ChangeKind::Added)
+            .filter(|(_, change)| {
+                !change.folder
+                    && change.kind == ChangeKind::Added
+                    && change.to.as_os_str().is_empty()
+            })
             .filter_map(|(index, change)| Some((*index, snapshot::known_extension(&change.name)?)))
             .collect();
         if !changes.is_empty() {
@@ -440,13 +517,25 @@ impl Watcher {
             now_ms.saturating_sub(newest) >= EPISODE_GAP_MS && self.detected_ms != Some(newest)
         });
         if !self.started || quiet {
-            changed |= self.detect(&log, now_ms);
+            changed |= self.detect(&log, &mut routines, now_ms);
             self.detected_ms = self.newest_ms;
             self.started = true;
         }
-        self.offer(&added, now_ms);
+        self.offer(&added, &mut routines, now_ms);
         if changed {
             self.send(NoticeEvent::Changed);
+        }
+        self.trouble = None;
+    }
+
+    /// Ends a tick early, logging `what` once until a tick completes.
+    fn stop(&mut self, what: &'static str, error: Option<&dyn std::fmt::Display>) {
+        if self.trouble != Some(what) {
+            match error {
+                Some(error) => tracing::warn!(%error, "{what}; Notice patterns waits"),
+                None => tracing::warn!("{what}; Notice patterns waits"),
+            }
+            self.trouble = Some(what);
         }
     }
 
@@ -462,10 +551,28 @@ impl Watcher {
     /// Re-indexes the log when the folder list differs from the one it was
     /// written against; false when that failed and the tick must stop. A
     /// log without a saved list (the first run, events written by hand) is
-    /// taken as written against this one.
+    /// taken as written against this one. A saved list that doesn't parse
+    /// is set aside and the log emptied, since its indexes can't be trusted.
     fn adopt(&mut self, log: &Log, folders: &[PathBuf]) -> bool {
         if self.logged_roots.is_none() {
-            self.logged_roots = read_roots(&self.dir);
+            match read_saved_roots(&self.dir) {
+                Ok(SavedRoots::List(list)) => self.logged_roots = Some(list),
+                Ok(SavedRoots::Missing) => {}
+                Ok(SavedRoots::Unparsable(bytes)) => {
+                    if let Err(error) = log.clear() {
+                        self.stop("could not empty the noticed events", Some(&error));
+                        return false;
+                    }
+                    tracing::warn!(
+                        "the watched folder list doesn't read; the noticed events were dropped"
+                    );
+                    set_aside(&self.dir.join(ROOTS_FILE), &bytes);
+                }
+                Err(error) => {
+                    self.stop("could not read the watched folder list", Some(&error));
+                    return false;
+                }
+            }
         }
         match &self.logged_roots {
             Some(old) if old.as_slice() == folders => return true,
@@ -540,9 +647,8 @@ impl Watcher {
 
     /// Looks for routines in the whole log and takes them in; true when the
     /// known routines changed.
-    fn detect(&self, log: &Log, now_ms: u64) -> bool {
+    fn detect(&self, log: &Log, routines: &mut Routines, now_ms: u64) -> bool {
         let found = routine::detect(&log.read(), &self.roots, now_ms, self.day_of);
-        let mut routines = Routines::load(&self.dir);
         let before = routines.known.clone();
         let roots = &self.roots;
         let describe = |found: &Routine| {
@@ -563,7 +669,7 @@ impl Watcher {
     }
 
     /// Offers a known routine for each new file whose kind starts one.
-    fn offer(&mut self, added: &[(usize, String)], now_ms: u64) {
+    fn offer(&mut self, added: &[(usize, String)], routines: &mut Routines, now_ms: u64) {
         if added.is_empty() {
             return;
         }
@@ -572,7 +678,6 @@ impl Watcher {
             self.offers = (day, 0);
         }
         let busy = (self.busy)();
-        let mut routines = Routines::load(&self.dir);
         let mut offered = false;
         for (index, ext) in added {
             let Some(root) = self.roots.get(*index) else {
@@ -668,7 +773,7 @@ mod tests {
         let (sender, receiver) = sync_channel(16);
         let mut watcher = Watcher::new(
             data.to_path_buf(),
-            Box::new(move || folders.clone()),
+            Box::new(move || Some(folders.clone())),
             sender,
             Box::new(|| {}),
         );
@@ -916,7 +1021,7 @@ mod tests {
         let (sender, _receiver) = sync_channel(16);
         let mut watcher = Watcher::new(
             data.clone(),
-            Box::new(move || lock(&shared).clone()),
+            Box::new(move || Some(lock(&shared).clone())),
             sender,
             Box::new(|| {}),
         );
@@ -969,5 +1074,129 @@ mod tests {
         forget_everything_in(&data);
         assert!(log.read().is_empty());
         assert!(Routines::load(&data).known.is_empty());
+    }
+
+    #[test]
+    fn broken_settings_keep_the_folders_and_the_log() {
+        let dir = Dir::new("settings");
+        let data = dir.0.join("noticed");
+        let root = dir.0.join("Root");
+        std::fs::create_dir_all(&root).unwrap();
+        let settings = dir.0.join("settings.json");
+        let valid = serde_json::json!({ "apprentice": { "watched_folders": [root] } });
+        std::fs::write(&settings, serde_json::to_vec(&valid).unwrap()).unwrap();
+        assert_eq!(folders_from(&settings), Some(vec![root.clone()]));
+        let (sender, _receiver) = sync_channel(16);
+        let path = settings.clone();
+        let mut watcher = Watcher::new(
+            data.clone(),
+            Box::new(move || folders_from(&path)),
+            sender,
+            Box::new(|| {}),
+        );
+        watcher.gate = open;
+        watcher.front_app = finder;
+        watcher.busy = idle;
+        watcher.tick(NOW);
+        std::fs::write(root.join("a.pdf"), b"x").unwrap();
+        watcher.tick(NOW + 5_000);
+        let log = Log::open(&data).unwrap();
+        assert_eq!(log.read().len(), 1);
+        let roots = std::fs::read(data.join(ROOTS_FILE)).unwrap();
+
+        std::fs::write(&settings, b"{ \"apprentice\": ").unwrap();
+        assert_eq!(folders_from(&settings), None);
+        watcher.tick(NOW + 10_000);
+        assert_eq!(log.read().len(), 1);
+        assert_eq!(std::fs::read(data.join(ROOTS_FILE)).unwrap(), roots);
+        assert_eq!(watcher.roots, vec![root.clone()]);
+
+        std::fs::write(&settings, serde_json::to_vec(&valid).unwrap()).unwrap();
+        watcher.tick(NOW + 15_000);
+        assert_eq!(log.read().len(), 1);
+        assert_eq!(std::fs::read(data.join(ROOTS_FILE)).unwrap(), roots);
+
+        // Unknown from the start: the tick waits and touches nothing.
+        let fresh = dir.0.join("fresh");
+        let (sender, _receiver) = sync_channel(16);
+        let mut waiting = Watcher::new(fresh.clone(), Box::new(|| None), sender, Box::new(|| {}));
+        waiting.gate = open;
+        waiting.tick(NOW);
+        assert!(!fresh.exists());
+    }
+
+    #[test]
+    fn only_a_file_in_the_root_itself_offers() {
+        let dir = Dir::new("rootonly");
+        let data = dir.0.join("noticed");
+        let downloads = dir.0.join("Downloads");
+        std::fs::create_dir_all(downloads.join("Invoices 2026-11")).unwrap();
+        let log = Log::open(&data).unwrap();
+        for (days_ago, month) in [(3, "09"), (2, "10"), (1, "11")] {
+            log.append(&invoice_episode(NOW - days_ago * DAY, month))
+                .unwrap();
+        }
+        let (mut watcher, receiver) = watcher(&data, vec![downloads.clone()]);
+        watcher.tick(NOW);
+        drain(&receiver);
+        std::fs::write(downloads.join("Invoices 2026-11/deep.pdf"), b"x").unwrap();
+        watcher.tick(NOW + 5_000);
+        assert!(offers(&drain(&receiver)).is_empty());
+        std::fs::write(downloads.join("top.pdf"), b"x").unwrap();
+        watcher.tick(NOW + 10_000);
+        assert_eq!(offers(&drain(&receiver)).len(), 1);
+    }
+
+    #[test]
+    fn an_unparsable_folder_list_is_set_aside_and_the_log_dropped() {
+        let dir = Dir::new("badroots");
+        let data = dir.0.join("noticed");
+        let root = dir.0.join("Root");
+        std::fs::create_dir_all(&root).unwrap();
+        let log = Log::open(&data).unwrap();
+        log.append(&invoice_episode(NOW - DAY, "11")).unwrap();
+        std::fs::write(data.join(ROOTS_FILE), b"{bad").unwrap();
+        let (mut watcher, _receiver) = watcher(&data, vec![root.clone()]);
+        watcher.tick(NOW);
+        assert!(log.read().is_empty());
+        assert_eq!(read_roots(&data), Some(vec![root]));
+        let aside: Vec<PathBuf> = std::fs::read_dir(&data)
+            .unwrap()
+            .flatten()
+            .map(|entry| entry.path())
+            .filter(|path| {
+                path.file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .starts_with("roots.json.unreadable-")
+            })
+            .collect();
+        assert_eq!(aside.len(), 1);
+        assert_eq!(std::fs::read(&aside[0]).unwrap(), b"{bad");
+    }
+
+    #[test]
+    fn a_state_file_that_cant_be_read_skips_the_tick() {
+        let dir = Dir::new("stateio");
+        let data = dir.0.join("noticed");
+        let downloads = dir.0.join("Downloads");
+        std::fs::create_dir_all(&downloads).unwrap();
+        let log = Log::open(&data).unwrap();
+        for (days_ago, month) in [(3, "09"), (2, "10"), (1, "11")] {
+            log.append(&invoice_episode(NOW - days_ago * DAY, month))
+                .unwrap();
+        }
+        let events = log.read();
+        std::fs::create_dir(data.join("routines.json")).unwrap();
+        let (mut watcher, receiver) = watcher(&data, vec![downloads.clone()]);
+        watcher.tick(NOW);
+        std::fs::write(downloads.join("a.pdf"), b"x").unwrap();
+        watcher.tick(NOW + 5_000);
+        assert!(data.join("routines.json").is_dir());
+        assert!(drain(&receiver).is_empty());
+        assert_eq!(log.read(), events);
+        assert!(!ignore_in(&data, "anything"));
+        forget_everything_in(&data);
+        assert!(data.join("routines.json").is_dir());
     }
 }

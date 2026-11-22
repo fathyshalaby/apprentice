@@ -49,10 +49,23 @@ pub struct Routines {
 }
 
 impl Routines {
+    /// The routines in `dir`, for reading only: like [`Routines::try_load`],
+    /// but a file that can't be read reads as empty.
+    pub fn load(dir: &Path) -> Routines {
+        Routines::try_load(dir).unwrap_or_else(|error| {
+            tracing::warn!(%error, "could not read the noticed routines");
+            Routines {
+                path: dir.join(FILE),
+                known: Vec::new(),
+            }
+        })
+    }
+
     /// The routines in `dir`. A missing file is empty; a file that doesn't
     /// parse is set aside as `routines.json.unreadable-<sha256 prefix>` and
-    /// the state starts empty.
-    pub fn load(dir: &Path) -> Routines {
+    /// the state starts empty. Any other read error is an error, so nothing
+    /// saves over a file that may be fine.
+    pub fn try_load(dir: &Path) -> io::Result<Routines> {
         let path = dir.join(FILE);
         let known = match std::fs::read(&path) {
             Ok(bytes) => match serde_json::from_slice::<File>(&bytes) {
@@ -64,12 +77,9 @@ impl Routines {
                 }
             },
             Err(error) if error.kind() == io::ErrorKind::NotFound => Vec::new(),
-            Err(error) => {
-                tracing::warn!(%error, "could not read the noticed routines");
-                Vec::new()
-            }
+            Err(error) => return Err(error),
         };
-        Routines { path, known }
+        Ok(Routines { path, known })
     }
 
     pub fn save(&self) -> io::Result<()> {
@@ -148,10 +158,10 @@ impl Routines {
     }
 }
 
-/// Renames an unreadable `routines.json` to
-/// `routines.json.unreadable-<sha256 prefix>`, so nothing is lost and the
-/// next save starts clean. Identical files share one name.
-fn set_aside(path: &Path, bytes: &[u8]) {
+/// Renames a state file that doesn't parse to
+/// `<name>.unreadable-<sha256 prefix>`, so nothing is lost and the next save
+/// starts clean. Identical files share one name.
+pub(super) fn set_aside(path: &Path, bytes: &[u8]) {
     let digest: String = Sha256::digest(bytes)
         .iter()
         .take(8)
@@ -160,7 +170,7 @@ fn set_aside(path: &Path, bytes: &[u8]) {
     let mut name = path.as_os_str().to_owned();
     name.push(format!(".unreadable-{digest}"));
     if let Err(error) = std::fs::rename(path, PathBuf::from(name)) {
-        tracing::warn!(%error, "could not set the unreadable routines aside");
+        tracing::warn!(%error, "could not set an unreadable state file aside");
     }
 }
 
@@ -290,6 +300,16 @@ mod tests {
         assert_eq!(std::fs::read(dir.0.join(&aside[0])).unwrap(), b"{ not json");
         routines.save().unwrap();
         assert!(Routines::load(&dir.0).known.is_empty());
+    }
+
+    #[test]
+    fn a_read_error_is_an_error_and_moves_nothing() {
+        let dir = Dir::new("ioerror");
+        std::fs::create_dir_all(dir.0.join(FILE)).unwrap();
+        assert!(Routines::try_load(&dir.0).is_err());
+        assert!(Routines::load(&dir.0).known.is_empty());
+        assert!(dir.0.join(FILE).is_dir());
+        assert_eq!(std::fs::read_dir(&dir.0).unwrap().count(), 1);
     }
 
     #[test]

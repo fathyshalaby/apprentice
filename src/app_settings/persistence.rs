@@ -132,6 +132,21 @@ impl AppSettings {
         Self::read_managed_from(path, Policy::current())
     }
 
+    /// What `read_from` reads, but `None` when the file is there and
+    /// couldn't be read or isn't a JSON object, rather than the defaults
+    /// standing in for it: for a reader that must not mistake a broken file
+    /// for an empty one. Writes nothing.
+    #[cfg_attr(not(all(target_os = "macos", hex_capture)), allow(dead_code))]
+    pub(crate) fn read_trusted_from(path: &Path) -> Result<Option<Self>> {
+        let mut revision = WRITER.lock().unwrap_or_else(|error| error.into_inner());
+        let (mut settings, _, issue) = Self::read_managed_checked_from(path, Policy::current())?;
+        if issue.is_some() {
+            return Ok(None);
+        }
+        stamp(&mut settings, path, true, &mut revision);
+        Ok(Some(settings))
+    }
+
     /// Publishes the saved values the embedded transcription service reads:
     /// the Labs switches transcription checks (Labs › Vocabulary help
     /// gates the list), the vocabulary and its boost, and, on Linux and
