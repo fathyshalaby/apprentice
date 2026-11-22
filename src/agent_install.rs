@@ -250,7 +250,8 @@ pub(crate) fn install(paths: &Paths, agent: Agent, skill: &SkillFile) -> Result<
 /// is in it. A symlinked file or folder is managed elsewhere and refused; a
 /// missing skill is already removed. Callers that own extra files (a mark)
 /// check ownership first.
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+// Task 10's Skills pane reaches this through apprentice::install::remove.
+#[allow(dead_code)]
 pub(crate) fn remove(paths: &Paths, agent: Agent, folder: &str) -> Result<(), String> {
     let path = paths.skill_path(agent, folder);
     if linked(&path) {

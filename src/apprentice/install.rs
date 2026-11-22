@@ -4,6 +4,9 @@
 //! is the person's, and is never replaced or removed. Nothing is written
 //! through a symlink.
 
+// Task 10's Skills pane is the first caller of everything here.
+#![allow(dead_code)]
+
 use crate::agent_install::{self, Agent, Paths, SkillFile};
 use crate::apprentice::skill::{self, Skill};
 use crate::desktop::i18n::tr_fill;
