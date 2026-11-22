@@ -221,7 +221,10 @@ Notice patterns                          // apprentice.notice
 │   │   Moved); a renamed or moved folder is one change; of folders only a
 │   │   new one is kept; a file whose name, size, and time all changed under
 │   │   one identity is a Removed and an Added
-│   └── A folder that can't be read (missing, or macOS refuses it) is
+│   ├── Snapshots are committed only after a log opens, remaps, and loads
+│   │   routines successfully; an empty folder list creates no noticed/
+│   │   files and starts no watcher thread
+│   ├── A folder that can't be read (missing, or macOS refuses it) is
 │       reported unreadable and keeps its last snapshot; settings that
 │       can't be read, or whose apprentice.watched_folders had to be
 │       repaired (a wrong type), keep the last good folder list
@@ -232,8 +235,10 @@ Notice patterns                          // apprentice.notice
 │   HEX_APPLICATION_SUPPORT_DIR when set; without a data folder nothing is
 │   noticed)
 │   ├── events.ndjson: one line per event {t, root, kind, folder, ext, from,
-│   │   to, name, app?}; `folder` is a boolean (a folder event); `from` and `to` are folder paths relative to the
-│   │   watched folder, as the person named them; `name` is a shape
+│   │   to, name, app?}, written one line at a time under the lock; `folder`
+│   │   is a boolean (a folder event); `from` and `to` are folder paths
+│   │   relative to the watched folder, as the person named them; `name` is
+│   │   a shape
 │   │   (name_shape: letters become a, digits #, so `2026-11-03 Telekom.pdf`
 │   │   reads `#-#-# a.pdf`); `ext` only from an allow-list of common
 │   │   extensions (snapshot::KNOWN_EXTENSIONS, lowercased; any other
@@ -242,7 +247,9 @@ Notice patterns                          // apprentice.notice
 │   │   seen, never its window
 │   ├── Never file contents, never file names; no page address or title
 │   ├── 14 days (log::KEEP_MS) and the newest 20,000 lines (MAX_LINES),
-│   │   pruned when the gate opens and hourly
+│   │   pruned when the gate opens and hourly; a rewrite is owner-only and
+│   │   only swapped in after the new log is fully written, and a failure
+│   │   keeps the old one for the next tick
 │   ├── roots.json: the folder list the events' `root` indexes refer to;
 │   │   a changed list re-indexes the log, and a removed folder's events are
 │   │   dropped at the next tick
@@ -258,7 +265,8 @@ Notice patterns                          // apprentice.notice
 │   │   ext, the destination folder's shape (numbers abstracted, words kept:
 │   │   `Invoices 2026-11` is `Invoices #-#`), and for a rename or new folder
 │   │   the name's shape; a new file is not a step (downloads arrive on
-│   │   their own), a new folder is
+│   │   their own), a new folder is; an add and its later move are paired by
+│   │   file identity, and a folder add uses the folder shape, not the file
 │   ├── A routine is a signature repeated in at least 3 distinct local days
 │   │   (MIN_DAYS) within 14 days (WINDOW_MS) in one folder: three episodes
 │   │   on one day, or days older than 14, don't count
@@ -276,9 +284,10 @@ Notice patterns                          // apprentice.notice
 │   │   10 minutes, over the whole log; a known routine keeps its state and
 │   │   gets new days, last seen, trigger, and sentence
 │   └── Its sentence is one line in the interface language, such as "Moves
-│       PDFs from Downloads into folders like Invoices 2026-11, then renames
-│       them like #-#-# a.pdf" (the latest real folder name is the
-│       example), "Renames …", or "Makes folders like …"
+│       PDF files from Downloads into folders like Invoices 2026-11, then
+│       renames them like #-#-# a.pdf" (the latest real folder name is the
+│       example), "Renames …", or "Makes folders in …"; the kind is
+│       translated instead of adding an English plural
 ├── The offer (offer::pick, watch.rs; routine_offer.rs)
 │   ├── Only a new file with an allow-listed extension in the watched folder
 │   │   itself (not a subfolder) can start one, and only for a routine of
@@ -292,7 +301,8 @@ Notice patterns                          // apprentice.notice
 │   │   usually file these (3 days). Show me how?", with Show me, Not now, and
 │   │   Stop asking; it takes no focus, takes the pointer only where it
 │   │   draws, is left out of screen recordings, and sits clear of the
-│   │   meeting capsule's corner; a new offer replaces the one shown
+│   │   meeting capsule's corner as it changes; a new offer replaces the one
+│   │   shown
 │   ├── Closes by itself after 30 s (TIMEOUT), doing nothing and staying
 │   │   offerable again after 24 h; Not now only closes; closing the gate
 │   │   closes it at once
@@ -315,13 +325,17 @@ Notice patterns                          // apprentice.notice
 │       again (watch::note_changed)
 ├── The pane (Skills › Noticing, while the lab is on)
 │   ├── Watched folders: each with Remove, and Add folder… (the folder
-│   │   dialog from the home folder); a folder that can't be read says "Can't
-│   │   read this folder" with Open Settings (Files and Folders in System
-│   │   Settings › Privacy & Security)
+│   │   dialog from the home folder); it is ignored once the pane or lab
+│   │   closes. A relative folder reads "Use a full path" without Open
+│   │   Settings; one that can't be read says "Can't read this folder" with
+│   │   Open Settings (Files and Folders in System Settings › Privacy &
+│   │   Security)
 │   ├── Routines: each routine's sentence and "(3 days)", with Show me
 │   │   (the same refusals as Watch this: "Turn on Annotate to record a
 │   │   lesson", "Recording… stop it from the capsule"; a start failure
-│   │   shows in the pane's error line) and Forget
+│   │   shows in the pane's error line) and Forget. A confirmed lesson
+│   │   marks the pane recording at once, before the capture appears; a
+│   │   refusal leaves it off and shows the pane's error
 │   ├── "Apprentice keeps file kinds, folder names and times for 14 days, on
 │   │   this Mac." and Forget everything…, which asks again with Cancel in
 │   │   its place, then empties the event log and the routines; folders stay
@@ -364,8 +378,12 @@ Notice patterns                          // apprentice.notice
 // rune_ui::skills::tests::noticing_is_hidden_while_the_lab_is_off,
 // noticing_lists_folders_and_routines, forget_everything_asks_twice,
 // show_me_and_forget_answer_their_routine, adding_a_folder_saves_the_setting,
+// a_folder_answer_after_the_lab_closes_changes_nothing,
+// a_relative_folder_asks_for_a_full_path,
 // removing_a_folder_saves_the_setting, show_me_waits_like_watch_this,
 // a_lesson_show_me_could_not_start_is_shown,
+// rune_ui::skills::noticing::tests::a_confirmed_lesson_marks_recording_without_waiting_for_the_capture,
+// a_refused_lesson_leaves_recording_off_and_says_why,
 // control::settings::tests::watched_folders_key_takes_a_list_of_absolute_paths,
 // desktop::events::tests::routine_actions_name_only_the_routine,
 // labs::tests (feature registry)

@@ -285,7 +285,7 @@ pub fn diff(old: &Snapshot, new: &Snapshot) -> Vec<Change> {
 }
 
 fn is_mark(c: char) -> bool {
-    matches!(c as u32, 0x300..=0x36F | 0x1AB0..=0x1AFF | 0x1DC0..=0x1DFF | 0x20D0..=0x20FF | 0xFE20..=0xFE2F)
+    unicode_normalization::char::is_combining_mark(c)
 }
 
 /// Collapses runs: numbers to `#`, and (unless `keep_letters`) letters and
@@ -701,6 +701,9 @@ mod tests {
         assert_eq!(name_shape("\u{663}.pdf"), "#.pdf");
         assert_eq!(name_shape("\u{FF13}.pdf"), "#.pdf");
         assert_eq!(name_shape("e\u{301}.txt"), "a.txt");
+        // A combining mark outside the old hand-listed ranges is still a
+        // mark, not a literal character in a routine's name shape.
+        assert_eq!(name_shape("e\u{1D165}.txt"), "a.txt");
     }
 
     #[test]

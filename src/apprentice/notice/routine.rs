@@ -105,7 +105,8 @@ fn new_folder_name(added: &Event, episode: &[&Event]) -> String {
         .filter(|event| event.kind == EventKind::Moved && event.t >= added.t)
         .find_map(|event| {
             let target = Path::new(&event.to);
-            (target.parent() == Some(parent)).then(|| target.file_name())?
+            let name = (target.parent() == Some(parent)).then(|| target.file_name())??;
+            (folder_shape(Path::new(name)) == added.name).then_some(name)
         })
         .map_or_else(|| added.name.clone(), |name| folder_shape(Path::new(name)))
 }
@@ -187,17 +188,30 @@ fn routine_of(
         .flat_map(|episode| episode.iter().map(|event| event.t))
         .max()
         .unwrap_or(0);
-    let example_to = group
-        .episodes
+    // Use the same filing step `describe` will name, so a PNG moved into a
+    // different folder cannot supply the example for a PDF sentence.
+    let filing = group
+        .steps
         .iter()
-        .flat_map(|episode| episode.iter())
-        .filter(|event| event.kind == EventKind::Moved && !event.to.is_empty())
-        .max_by_key(|event| event.t)
-        .map(|event| event.to.clone());
-    let root_path = roots
-        .get(group.root)
-        .map(|path| path.to_string_lossy().into_owned())
-        .unwrap_or_default();
+        .find(|step| step.kind == EventKind::Moved && !step.folder && !step.to.is_empty());
+    let example_to = filing.and_then(|step| {
+        group
+            .episodes
+            .iter()
+            .flat_map(|episode| episode.iter())
+            .filter(|event| {
+                event.kind == EventKind::Moved
+                    && !event.folder
+                    && event.ext == step.ext
+                    && folder_shape(Path::new(&event.to)) == step.to
+            })
+            .max_by_key(|event| event.t)
+            .map(|event| event.to.clone())
+    });
+    let root_path = roots.get(group.root).map_or_else(
+        || format!("missing root {}", group.root),
+        |path| path.to_string_lossy().into_owned(),
+    );
     Some(Routine {
         id: routine_id(&root_path, &group.steps),
         root: group.root,
@@ -283,7 +297,7 @@ pub fn describe(routine: &Routine, root_name: &str) -> String {
         if ext.is_empty() {
             tr("files").to_owned()
         } else {
-            format!("{}s", ext.to_uppercase())
+            tr_named("{kind} files", &[("kind", &ext.to_uppercase())])
         }
     };
     if let Some(moved) = routine
@@ -325,11 +339,14 @@ pub fn describe(routine: &Routine, root_name: &str) -> String {
             .clone()
             .filter(|name| !name.is_empty())
             .or_else(|| step(EventKind::Added, true).and_then(|made| made.name.clone()))
-            .unwrap_or_default();
-        tr_named(
-            "Makes folders like {folder} in {root}",
-            &[("folder", &folder), ("root", root_name)],
-        )
+            .filter(|name| !name.is_empty());
+        match folder {
+            Some(folder) => tr_named(
+                "Makes folders like {folder} in {root}",
+                &[("folder", &folder), ("root", root_name)],
+            ),
+            None => tr_named("Makes folders in {root}", &[("root", root_name)]),
+        }
     }
 }
 
@@ -373,7 +390,14 @@ mod tests {
         let folder = format!("Invoices 2026-{month}");
         vec![
             event(start, EventKind::Added, false, "pdf", "", "a.pdf"),
-            event(start + MIN, EventKind::Added, true, "", &folder, "Invoices"),
+            event(
+                start + MIN,
+                EventKind::Added,
+                true,
+                "",
+                &folder,
+                "Invoices #-#",
+            ),
             event(
                 start + 2 * MIN,
                 EventKind::Moved,
@@ -417,6 +441,72 @@ mod tests {
         assert_eq!(routine.steps[0].name.as_deref(), Some("Invoices #-#"));
         assert_eq!(routine.steps[1].to, "Invoices #-#");
         assert_eq!(routine.last_seen_ms, NOW - DAY + 3 * MIN);
+    }
+
+    #[test]
+    fn each_new_folder_gets_the_move_into_itself() {
+        let events = vec![
+            event(1, EventKind::Added, false, "pdf", "", "a.pdf"),
+            event(
+                2,
+                EventKind::Added,
+                true,
+                "",
+                "Invoices 2026-11",
+                "Invoices #-#",
+            ),
+            event(
+                3,
+                EventKind::Added,
+                true,
+                "",
+                "Archive 2026-11",
+                "Archive #-#",
+            ),
+            event(
+                4,
+                EventKind::Moved,
+                false,
+                "pdf",
+                "Archive 2026-11",
+                "b.pdf",
+            ),
+            event(
+                5,
+                EventKind::Moved,
+                false,
+                "pdf",
+                "Invoices 2026-11",
+                "a.pdf",
+            ),
+        ];
+        let made: Vec<_> = signature(&events)
+            .into_iter()
+            .filter(|step| step.kind == EventKind::Added && step.folder)
+            .collect();
+        assert_eq!(made.len(), 2);
+        assert_eq!(made[0].name.as_deref(), Some("Invoices #-#"));
+        assert_eq!(made[1].name.as_deref(), Some("Archive #-#"));
+    }
+
+    #[test]
+    fn the_example_folder_comes_from_the_sentence_s_filing_step() {
+        let mut events = three_days();
+        for days_ago in [3, 2, 1] {
+            let start = NOW - days_ago * DAY;
+            events.push(event(
+                start + 5 * MIN,
+                EventKind::Moved,
+                false,
+                "png",
+                &format!("Screenshots 2026-{:02}", 12 - days_ago),
+                "shot.png",
+            ));
+        }
+        let found = detect(&events, &roots(), NOW, day_of);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].example_to.as_deref(), Some("Invoices 2026-11"));
+        assert_eq!(found[0].trigger.as_deref(), Some("pdf"));
     }
 
     #[test]
@@ -539,7 +629,7 @@ mod tests {
         let found = detect(&three_days(), &roots(), NOW, day_of);
         assert_eq!(
             describe(&found[0], "Downloads"),
-            "Moves PDFs from Downloads into folders like Invoices 2026-11, then renames them like #-#-# a.pdf"
+            "Moves PDF files from Downloads into folders like Invoices 2026-11, then renames them like #-#-# a.pdf"
         );
     }
 

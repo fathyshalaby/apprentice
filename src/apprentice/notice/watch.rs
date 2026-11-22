@@ -90,7 +90,10 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 /// Starts the `apprentice-notice` thread. It never stops; while the gate is
 /// closed or no folder is watched each tick does nothing. Without a data
 /// folder it ends at once.
-pub fn start(events: SyncSender<NoticeEvent>, wake: impl Fn() + Send + 'static) -> JoinHandle<()> {
+pub fn start(
+    events: SyncSender<NoticeEvent>,
+    wake: impl Fn() + Send + 'static,
+) -> std::io::Result<JoinHandle<()>> {
     std::thread::Builder::new()
         .name("apprentice-notice".into())
         .spawn(move || {
@@ -107,7 +110,6 @@ pub fn start(events: SyncSender<NoticeEvent>, wake: impl Fn() + Send + 'static) 
                 std::thread::sleep(POLL);
             }
         })
-        .expect("the apprentice-notice thread starts")
 }
 
 /// How long Show me waits for the listener to say the lesson started.
@@ -457,6 +459,15 @@ pub struct Watcher {
     offers: (i64, usize),
 }
 
+/// Folder state read before the store lock is taken. It is committed only
+/// after the log and routine state are ready, so a failed write never makes
+/// the next tick treat an unrecorded change as an old one.
+struct FreshRead {
+    roots: Vec<PathBuf>,
+    snapshots: Vec<Snapshot>,
+    health: Vec<(PathBuf, FolderHealth)>,
+}
+
 impl Watcher {
     fn new(
         dir: PathBuf,
@@ -509,13 +520,18 @@ impl Watcher {
             },
         };
         let folders = watchable(&saved);
+        // With nothing watched and nothing to re-index, a first tick must
+        // not even create the noticed folder. If the log did have roots,
+        // it is still opened so their events can be dropped.
+        if folders.is_empty() && self.nothing_logged() {
+            self.logged_roots = Some(Vec::new());
+            self.close();
+            return;
+        }
         // Folders are read before the lock, so the pane never waits on a
-        // slow one.
-        let (changes, mut changed) = if folders.is_empty() {
-            (Vec::new(), false)
-        } else {
-            self.read(&folders)
-        };
+        // slow one. The new snapshots stay pending until every write below
+        // has succeeded.
+        let fresh = (!folders.is_empty()).then(|| self.scan(&folders));
         let _store = lock(&STORE);
         let log = match Log::open(&self.dir) {
             Ok(log) => log,
@@ -534,6 +550,7 @@ impl Watcher {
             Ok(routines) => routines,
             Err(error) => return self.stop("could not read the noticed routines", Some(&error)),
         };
+        let (changes, mut changed) = self.commit(fresh.expect("folders are not empty"));
         if !self.started || now_ms.saturating_sub(self.pruned_ms) >= PRUNE_EVERY_MS {
             if let Err(error) = log.prune(now_ms) {
                 tracing::warn!(%error, "could not prune the noticed events");
@@ -639,29 +656,24 @@ impl Watcher {
         true
     }
 
-    /// Reads every folder and returns the kept changes by root index, and
-    /// whether any folder's health changed. A folder that can't be read is
-    /// unreadable and keeps its last snapshot.
-    fn read(&mut self, folders: &[PathBuf]) -> (Vec<(usize, Change)>, bool) {
-        if self.roots != folders {
-            let mut old: Vec<(PathBuf, Snapshot)> = self
-                .roots
-                .drain(..)
-                .zip(self.snapshots.drain(..))
-                .filter_map(|(root, snapshot)| Some((root, snapshot?)))
-                .collect();
-            self.snapshots = folders
-                .iter()
-                .map(|folder| {
-                    let at = old.iter().position(|(root, _)| root == folder)?;
-                    Some(old.swap_remove(at).1)
-                })
-                .collect();
-            self.roots = folders.to_vec();
+    /// Whether the event log has no folder list to re-index.
+    fn nothing_logged(&self) -> bool {
+        match &self.logged_roots {
+            Some(roots) => roots.is_empty(),
+            None => match read_saved_roots(&self.dir) {
+                Ok(SavedRoots::Missing) => true,
+                Ok(SavedRoots::List(roots)) => roots.is_empty(),
+                _ => false,
+            },
         }
-        let mut changes = Vec::new();
-        let mut health = Vec::with_capacity(self.roots.len());
-        for (index, root) in self.roots.iter().enumerate() {
+    }
+
+    /// Reads the folders before the store lock is taken. A folder that can't
+    /// be read is unreadable and keeps its last snapshot once committed.
+    fn scan(&mut self, folders: &[PathBuf]) -> FreshRead {
+        let mut snapshots = Vec::with_capacity(folders.len());
+        let mut health = Vec::with_capacity(folders.len());
+        for (index, root) in folders.iter().enumerate() {
             match snapshot::read(root, snapshot::DEPTH, snapshot::MAX_ENTRIES) {
                 Ok(new) => {
                     if new.truncated && self.truncated.insert(root.clone()) {
@@ -671,25 +683,55 @@ impl Watcher {
                             "a watched folder has more entries than Apprentice reads"
                         );
                     }
-                    if let Some(old) = &self.snapshots[index] {
-                        changes.extend(
-                            snapshot::diff(old, &new)
-                                .into_iter()
-                                .filter(kept)
-                                .map(|change| (index, change)),
-                        );
-                    }
-                    self.snapshots[index] = Some(new);
+                    snapshots.push(new);
                     health.push((root.clone(), FolderHealth::Ok));
                 }
                 Err(error) => {
                     tracing::debug!(%error, root = index, "a watched folder can't be read");
+                    snapshots.push(Snapshot::default());
                     health.push((root.clone(), FolderHealth::Unreadable));
                 }
             }
         }
-        let changed = health != self.health;
-        self.health = health;
+        FreshRead {
+            roots: folders.to_vec(),
+            snapshots,
+            health,
+        }
+    }
+
+    /// Diffs and publishes `fresh` once the log and routine state are ready.
+    fn commit(&mut self, fresh: FreshRead) -> (Vec<(usize, Change)>, bool) {
+        let old: Vec<(PathBuf, Snapshot)> = self
+            .roots
+            .drain(..)
+            .zip(self.snapshots.drain(..))
+            .filter_map(|(root, snapshot)| Some((root, snapshot?)))
+            .collect();
+        let mut changes = Vec::new();
+        for (index, root) in fresh.roots.iter().enumerate() {
+            let Some(at) = old.iter().position(|(known, _)| known == root) else {
+                continue;
+            };
+            if fresh.health[index].1 == FolderHealth::Ok {
+                changes.extend(
+                    snapshot::diff(&old[at].1, &fresh.snapshots[index])
+                        .into_iter()
+                        .filter(kept)
+                        .map(|change| (index, change)),
+                );
+            }
+        }
+        let changed = fresh.health != self.health;
+        let snapshots = fresh
+            .snapshots
+            .into_iter()
+            .zip(fresh.health.iter().map(|(_, health)| *health))
+            .map(|(snapshot, health)| (health == FolderHealth::Ok).then_some(snapshot))
+            .collect();
+        self.roots = fresh.roots;
+        self.snapshots = snapshots;
+        self.health = fresh.health;
         (changes, changed)
     }
 
@@ -1010,6 +1052,50 @@ mod tests {
         assert_eq!(noted[0].root, 0);
     }
 
+    #[test]
+    fn an_unwritable_log_keeps_the_change_for_the_next_tick() {
+        let dir = Dir::new("retry");
+        let data = dir.0.join("noticed");
+        let held = dir.0.join("held-log");
+        let root = dir.0.join("Root");
+        std::fs::create_dir_all(&root).unwrap();
+        let (mut watcher, _receiver) = watcher(&data, vec![root.clone()]);
+        watcher.tick(NOW);
+        std::fs::write(root.join("first.pdf"), b"x").unwrap();
+        watcher.tick(NOW + 1_000);
+        assert_eq!(Log::open(&data).unwrap().read().len(), 1);
+
+        // Move the log aside and put a file where its folder belongs, so
+        // Log::open fails without losing what was already recorded.
+        std::fs::rename(&data, &held).unwrap();
+        std::fs::write(&data, b"not a folder").unwrap();
+        std::fs::write(root.join("second.pdf"), b"x").unwrap();
+        watcher.tick(NOW + 5_000);
+        assert_eq!(
+            watcher.snapshots.len(),
+            1,
+            "the failed tick changed nothing"
+        );
+        assert_eq!(watcher.snapshots[0].as_ref().unwrap().entries.len(), 1);
+
+        std::fs::remove_file(&data).unwrap();
+        std::fs::rename(&held, &data).unwrap();
+        watcher.tick(NOW + 10_000);
+        let noted = Log::open(&data).unwrap().read();
+        assert_eq!(noted.len(), 2, "the second file is still new: {noted:?}");
+    }
+
+    #[test]
+    fn an_empty_folder_list_touches_no_disk_until_there_is_a_log_to_clean() {
+        let dir = Dir::new("empty");
+        let data = dir.0.join("noticed");
+        let (mut watcher, _receiver) = watcher(&data, Vec::new());
+        watcher.tick(NOW);
+        assert!(!data.exists(), "the first empty tick creates nothing");
+        watcher.tick(NOW + 5_000);
+        assert!(!data.exists(), "later empty ticks still create nothing");
+    }
+
     static GATE: AtomicBool = AtomicBool::new(true);
 
     fn gate() -> bool {
@@ -1087,6 +1173,12 @@ mod tests {
         assert_eq!(noted.len(), 1, "{noted:?}");
         assert_eq!(noted[0].root, 0);
         assert_eq!(read_roots(&data), Some(vec![b]));
+
+        // Removing the last folder still re-indexes the old events away.
+        *lock(&both) = Vec::new();
+        watcher.tick(NOW + 15_000);
+        assert!(Log::open(&data).unwrap().read().is_empty());
+        assert_eq!(read_roots(&data), Some(Vec::new()));
     }
 
     #[test]

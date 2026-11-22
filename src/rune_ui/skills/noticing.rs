@@ -50,6 +50,8 @@ pub(in crate::rune_ui) struct Noticing {
     pub(in crate::rune_ui) folder_choice: Option<Pending>,
     /// Forget everything waits for its second click.
     pub(in crate::rune_ui) confirm_forget: bool,
+    /// Show me is waiting for the listener to confirm the lesson started.
+    lesson_pending: bool,
     /// What was noticed, after an answer and why the answer failed, if it
     /// did.
     reading: Option<Receiver<(NoticeStatus, Option<String>)>>,
@@ -87,31 +89,61 @@ fn open(ui: &Ui) -> bool {
 /// Reads what was noticed when the pane opens and whenever the watcher says
 /// it changed, and takes the folder dialog's answer.
 pub(in crate::rune_ui) fn poll(ui: &mut Ui, visible: bool) -> bool {
-    let mut changed = poll_chooser(ui);
+    let mut changed = false;
     if !visible {
         ui.skills.noticing.seen = None;
         ui.skills.noticing.confirm_forget = false;
+        ui.skills.noticing.folder_choice = None;
         return changed;
     }
-    if ui.skills.fixture.is_some() || !open(ui) {
+    // An answer that lands while the section is hidden or the lab is off
+    // must not change the watched folders.
+    if !open(ui) {
+        ui.skills.noticing.folder_choice = None;
         return changed;
+    }
+    if ui.skills.fixture.is_some() {
+        return changed;
+    }
+    changed |= poll_chooser(ui);
+    let received = {
+        let noticing = &mut ui.skills.noticing;
+        if let Some(reading) = &noticing.reading {
+            match reading.try_recv() {
+                Ok((status, failed)) => {
+                    noticing.status = Some(status);
+                    noticing.reading = None;
+                    Some((
+                        failed,
+                        std::mem::replace(&mut noticing.lesson_pending, false),
+                    ))
+                }
+                Err(TryRecvError::Empty) => return changed,
+                Err(TryRecvError::Disconnected) => {
+                    noticing.reading = None;
+                    None
+                }
+            }
+        } else {
+            None
+        }
+    };
+    if let Some((failed, lesson)) = received {
+        if let Some(error) = failed {
+            if lesson {
+                ui.skills.recording = false;
+            }
+            refused(ui, &error);
+            return true;
+        }
+        if lesson {
+            // The listener confirmed the lesson; don't wait for the capture
+            // snapshot's next poll to show it.
+            ui.skills.recording = true;
+        }
+        changed = true;
     }
     let noticing = &mut ui.skills.noticing;
-    if let Some(reading) = &noticing.reading {
-        match reading.try_recv() {
-            Ok((status, failed)) => {
-                noticing.status = Some(status);
-                noticing.reading = None;
-                if let Some(error) = failed {
-                    refused(ui, &error);
-                    return true;
-                }
-                changed = true;
-            }
-            Err(TryRecvError::Empty) => return changed,
-            Err(TryRecvError::Disconnected) => noticing.reading = None,
-        }
-    }
     let generation = watch::changed_generation();
     if noticing.seen != Some(generation) {
         noticing.seen = Some(generation);
@@ -161,6 +193,9 @@ fn add_folder(ui: &mut Ui) {
 /// The folder dialog's answer: a folder not watched yet is saved; a cancel
 /// changes nothing. True when the section shows something new.
 pub(super) fn chosen(ui: &mut Ui, choice: Choice) -> bool {
+    if !open(ui) {
+        return false;
+    }
     match choice {
         Ok(Some(folder)) => {
             if ui.settings.apprentice.watched_folders.contains(&folder) {
@@ -228,6 +263,7 @@ fn show_me(ui: &mut Ui, id: &str) {
         return;
     }
     let id = id.to_owned();
+    ui.skills.noticing.lesson_pending = true;
     ui.skills.noticing.run(move || watch::accept(&id).err());
 }
 
@@ -298,11 +334,9 @@ pub(super) fn lists_routines(ui: &Ui) -> bool {
 }
 
 /// A folder as its last read saw it; a path macOS can't resolve can't be
-/// read, and one not read yet is taken as fine.
+/// read, and one not read yet is taken as fine. Relative paths never reach
+/// the watcher, so they are handled separately in the row.
 fn health(ui: &Ui, folder: &Path) -> FolderHealth {
-    if !folder.is_absolute() {
-        return FolderHealth::Unreadable;
-    }
     ui.skills
         .noticing
         .status
@@ -350,7 +384,15 @@ pub(super) fn section(ui: &Ui, p: Paint) -> Option<El> {
 }
 
 fn folder_row(ui: &Ui, p: Paint, index: usize, folder: &Path) -> El {
-    let unreadable = health(ui, folder) == FolderHealth::Unreadable;
+    let relative = !folder.is_absolute();
+    let unreadable = !relative && health(ui, folder) == FolderHealth::Unreadable;
+    let problem = if relative {
+        Some(tr("Use a full path").to_owned())
+    } else if unreadable {
+        Some(tr("Can't read this folder").to_owned())
+    } else {
+        None
+    };
     let mut actions = row().key("folder-actions").gap(8.0).center_y();
     if unreadable {
         actions = actions.child(
@@ -373,7 +415,7 @@ fn folder_row(ui: &Ui, p: Paint, index: usize, folder: &Path) -> El {
         p,
         &format!("folder-{index}"),
         &folder_label(folder),
-        unreadable.then(|| (tr("Can't read this folder").to_owned(), p.danger())),
+        problem.map(|copy| (copy, if relative { p.muted() } else { p.danger() })),
         actions,
     )
 }
@@ -475,4 +517,48 @@ fn privacy(ui: &Ui, p: Paint) -> El {
             .min_w(0.0),
         )
         .child(actions)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app_settings::AppSettings;
+    use crate::rune_ui::Service;
+
+    fn empty_status() -> NoticeStatus {
+        NoticeStatus {
+            folders: Vec::new(),
+            routines: Vec::new(),
+        }
+    }
+
+    fn answered(failed: Option<String>) -> Ui {
+        let mut ui = Ui::with(AppSettings::default(), Service::Fixture(Vec::new()));
+        ui.settings.labs.watch_and_learn = true;
+        ui.settings.labs.notice_patterns = true;
+        crate::labs::apply(&ui.settings.labs);
+        let (send, reading) = mpsc::sync_channel(1);
+        send.send((empty_status(), failed)).unwrap();
+        ui.skills.noticing.reading = Some(reading);
+        ui.skills.noticing.lesson_pending = true;
+        ui
+    }
+
+    #[test]
+    fn a_confirmed_lesson_marks_recording_without_waiting_for_the_capture() {
+        let mut ui = answered(None);
+        assert!(poll(&mut ui, true));
+        assert!(ui.skills.recording);
+        assert!(ui.skills.error.is_none());
+        crate::labs::apply(&AppSettings::default().labs);
+    }
+
+    #[test]
+    fn a_refused_lesson_leaves_recording_off_and_says_why() {
+        let mut ui = answered(Some("no capture engine".into()));
+        assert!(poll(&mut ui, true));
+        assert!(!ui.skills.recording);
+        assert!(ui.skills.error.is_some());
+        crate::labs::apply(&AppSettings::default().labs);
+    }
 }

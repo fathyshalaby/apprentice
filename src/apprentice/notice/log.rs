@@ -1,13 +1,18 @@
 //! The owner-only, 14-day log of noticed file events. Names are kept only as
 //! shapes (`snapshot::name_shape`); folder paths are kept as the person named
 //! them. Nothing here leaves the Mac.
+//!
+//! Callers serialize rewrites ([`Log::prune`], [`Log::remap`], [`Log::forget`],
+//! [`Log::clear`]) against appends through `watch::STORE`; a rewrite racing an
+//! append would lose the new line. [`MAX_LINES`] is enforced by `prune`, not
+//! on every append.
 
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use super::snapshot::{Change, ChangeKind, known_extension, name_shape};
+use super::snapshot::{Change, ChangeKind, folder_shape, known_extension, name_shape};
 
 const KEEP_MS: u64 = 14 * 24 * 60 * 60 * 1000;
 const MAX_LINES: usize = 20_000;
@@ -58,7 +63,14 @@ pub fn event(change: &Change, root: usize, t: u64, app: Option<String>) -> Event
         ext,
         from: change.from.to_string_lossy().into_owned(),
         to: change.to.to_string_lossy().into_owned(),
-        name: name_shape(&change.name),
+        // A folder's name is part of the path Apprentice already keeps; use
+        // its folder shape so a later move can be matched to the folder it
+        // filled.
+        name: if change.folder {
+            folder_shape(std::path::Path::new(&change.name))
+        } else {
+            name_shape(&change.name)
+        },
         app,
     }
 }
@@ -234,8 +246,27 @@ mod tests {
         let mode = |p: &Path| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
         assert_eq!(mode(&dir.0.join("noticed")), 0o700);
         assert_eq!(mode(&dir.0.join("noticed/events.ndjson")), 0o600);
+        let path = dir.0.join("noticed/events.ndjson");
         log.prune(10).unwrap();
-        assert_eq!(mode(&dir.0.join("noticed/events.ndjson")), 0o600);
+        assert_eq!(mode(&path), 0o600);
+        log.append(&[ev(11, 0)]).unwrap();
+        assert_eq!(log.read().len(), 3, "appending still works after a rewrite");
+        assert_eq!(mode(&path), 0o600);
+
+        // Every rewrite tightens a file an older build left readable.
+        for event in [ev(1, 0), ev(2, 1)] {
+            log.append(std::slice::from_ref(&event)).unwrap();
+        }
+        for rewrite in ["remap", "forget", "clear"] {
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
+            match rewrite {
+                "remap" => log.remap(&[], &[]).unwrap(),
+                "forget" => log.forget(None, |_| false).unwrap(),
+                "clear" => log.clear().unwrap(),
+                _ => unreachable!(),
+            }
+            assert_eq!(mode(&path), 0o600, "{rewrite}");
+        }
     }
 
     #[test]

@@ -49,8 +49,8 @@ fn noticed() -> NoticeStatus {
             id: "5f2a9c".into(),
             root: downloads,
             steps: Vec::new(),
-            description: "Moves PDFs from Downloads into folders like Invoices 2026-11, then \
-                renames them like #-#-# a.pdf"
+            description: "Moves PDF files from Downloads into folders like Invoices 2026-11, \
+                then renames them like #-#-# a.pdf"
                 .into(),
             days: 3,
             last_seen_ms: crate::history::now_ms(),

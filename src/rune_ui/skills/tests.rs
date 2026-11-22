@@ -714,7 +714,7 @@ fn noticing_lists_folders_and_routines() {
         "~/Documents/Scans",
         "Can't read this folder",
         "Routines",
-        "Moves PDFs from Downloads into folders like Invoices 2026-11, then renames them like #-#-# a.pdf (3 days)",
+        "Moves PDF files from Downloads into folders like Invoices 2026-11, then renames them like #-#-# a.pdf (3 days)",
         "Apprentice keeps file kinds, folder names and times for 14 days, on this Mac.",
     ] {
         assert!(shown.iter().any(|t| t == copy), "no {copy:?} in {shown:?}");
@@ -816,6 +816,25 @@ fn adding_a_folder_saves_the_setting() {
     noticing::chosen(&mut rt.state, Ok(Some(folder.clone())));
     assert_eq!(rt.state.settings.apprentice.watched_folders, [folder]);
     assert_eq!(rt.state.saved, saved + 1);
+}
+
+#[test]
+fn a_folder_answer_after_the_lab_closes_changes_nothing() {
+    let mut rt = runtime("mac-skills-noticing-empty");
+    rt.state.settings.labs.notice_patterns = false;
+    let saved = rt.state.saved;
+    noticing::chosen(&mut rt.state, Ok(Some(home("Downloads"))));
+    assert!(rt.state.settings.apprentice.watched_folders.is_empty());
+    assert_eq!(rt.state.saved, saved);
+}
+
+#[test]
+fn a_relative_folder_asks_for_a_full_path() {
+    let mut rt = runtime("mac-skills-noticing");
+    rt.state.settings.apprentice.watched_folders = vec![PathBuf::from("Downloads")];
+    refresh(&mut rt);
+    assert!(shows(&rt, "Use a full path"));
+    assert!(rt.find("open-settings-0").is_none());
 }
 
 #[test]

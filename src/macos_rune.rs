@@ -349,7 +349,7 @@ pub fn run(shutdown: &'static AtomicBool, listener: ListenerConfig, hidden: bool
     #[cfg(hex_capture)]
     let notice_events = {
         let (sender, receiver) = mpsc::sync_channel(8);
-        crate::apprentice::notice::watch::start(sender, wake_pump);
+        crate::apprentice::notice::watch::start(sender, wake_pump)?;
         receiver
     };
     let drained_event_log = event_log.clone();

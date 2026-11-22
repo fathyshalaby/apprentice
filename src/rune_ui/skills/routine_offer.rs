@@ -21,7 +21,7 @@ use crate::rune_ui::controls::{Paint, PushSize, status_dot};
 /// An unanswered offer closes by itself after this long, doing nothing.
 pub(crate) const TIMEOUT: Duration = Duration::from_secs(30);
 /// The overlay window: the capsule and the few points around it.
-const WINDOW: (f32, f32) = (440.0, 128.0);
+const WINDOW: (f32, f32) = (440.0, 108.0);
 /// Below the menu bar, where the meeting capsules sit.
 const MARGIN: f32 = 40.0;
 /// From the screen's side edge.
@@ -237,8 +237,8 @@ fn align_for(corner: MeetingIndicatorCorner) -> Align {
 /// The offer capsule's overlay, fed from the pump on the main thread.
 pub(crate) struct RoutineOffer {
     handle: OverlayHandle<OfferState>,
-    /// When the shown offer closes by itself; none while nothing shows.
-    until: Option<Instant>,
+    /// The meeting capsule corner the current offer was placed against.
+    corner: Option<MeetingIndicatorCorner>,
 }
 
 impl RoutineOffer {
@@ -269,7 +269,7 @@ impl RoutineOffer {
         handle.update(move |state, _| state.hide = Some(Arc::new(move || hide.hide())));
         Self {
             handle,
-            until: None,
+            corner: None,
         }
     }
 
@@ -277,11 +277,12 @@ impl RoutineOffer {
     /// open.
     pub(crate) fn show(&mut self, id: String, title: String, line: String, now: Instant) {
         if !crate::labs::notice_patterns() {
+            tracing::info!(routine = %id, "dropped a noticed routine's offer: Notice patterns is off");
             return;
         }
-        let align = align_for(crate::app_settings::meeting_indicator_corner());
-        self.handle.set_align(align, INSET);
-        self.until = Some(now + TIMEOUT);
+        let corner = crate::app_settings::meeting_indicator_corner();
+        self.handle.set_align(align_for(corner), INSET);
+        self.corner = Some(corner);
         let shown = self.handle.clone();
         self.handle.update(move |state, tx| {
             state.show(id, title, line, now);
@@ -293,15 +294,20 @@ impl RoutineOffer {
     /// Closes an unanswered offer after [`TIMEOUT`], and at once when the
     /// gate closes.
     pub(crate) fn tick(&mut self, now: Instant) {
-        let Some(until) = self.until else {
-            return;
-        };
-        let open = crate::labs::notice_patterns();
-        if open && now < until {
-            return;
+        // An offer already shown follows a changed meeting-capsule corner.
+        if let Some(shown) = self.corner {
+            let corner = crate::app_settings::meeting_indicator_corner();
+            if corner != shown {
+                self.handle.set_align(align_for(corner), INSET);
+                self.corner = Some(corner);
+            }
         }
-        self.until = None;
+        // The overlay's state owns the deadline; no second copy to drift.
+        let open = crate::labs::notice_patterns();
         self.handle.update_if(move |state, _| state.tick(now, open));
+        if !open {
+            self.corner = None;
+        }
     }
 }
 
