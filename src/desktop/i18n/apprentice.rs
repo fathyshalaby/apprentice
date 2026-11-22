@@ -110,7 +110,6 @@ pub(super) const TRANSLATIONS: &[(&str, [&str; 6])] = &[
     (", then renames them like {shape}", [", potem zmienia ich nazwy na wzór {shape}", "，然后按 {shape} 的样式重命名", "、そのあと {shape} のように名前を変えます", ", benennt sie dann wie {shape} um", ", y luego les cambia el nombre como {shape}", ", потім перейменовує їх за зразком {shape}"]),
     ("Renames {kind} in {root} like {shape}", ["Zmienia nazwy: {kind} w {root} na wzór {shape}", "将 {root} 中的{kind}按 {shape} 的样式重命名", "{root} の{kind}を {shape} のように名前変更します", "Benennt {kind} in {root} wie {shape} um", "Cambia el nombre de {kind} en {root} como {shape}", "Перейменовує {kind} у {root} за зразком {shape}"]),
     ("Makes folders like {folder} in {root}", ["Tworzy w {root} foldery takie jak {folder}", "在 {root} 中创建类似 {folder} 的文件夹", "{root} に {folder} のようなフォルダを作ります", "Legt in {root} Ordner wie {folder} an", "Crea en {root} carpetas como {folder}", "Створює в {root} папки на кшталт {folder}"]),
-    ("Removes {kind} from {root}", ["Usuwa {kind} z {root}", "从 {root} 中删除{kind}", "{root} から{kind}を削除します", "Entfernt {kind} aus {root}", "Elimina {kind} de {root}", "Видаляє {kind} з {root}"]),
     ("files", ["pliki", "文件", "ファイル", "Dateien", "archivos", "файли"]),
 ];
 
@@ -225,7 +224,6 @@ pub(super) const PORTUGUESE: &[(&str, &str)] = &[
     (", then renames them like {shape}", ", depois renomeia como {shape}"),
     ("Renames {kind} in {root} like {shape}", "Renomeia {kind} em {root} como {shape}"),
     ("Makes folders like {folder} in {root}", "Cria em {root} pastas como {folder}"),
-    ("Removes {kind} from {root}", "Remove {kind} de {root}"),
     ("files", "arquivos"),
 ];
 
@@ -336,11 +334,10 @@ pub(super) const FRENCH: &[(&str, &str)] = &[
     ("This model runs in the cloud, so Apprentice won't use it", "Ce modèle s'exécute dans le cloud, donc Apprentice ne l'utilisera pas"),
     ("Inputs (one per line)", "Entrées (une par ligne)"),
     ("Apprentice can't open its skills folder", "Apprentice ne peut pas ouvrir son dossier de compétences"),
-    ("Moves {kind} from {root} into folders like {folder}", "Move {kind} de {root} vers des dossiers comme {folder}"),
+    ("Moves {kind} from {root} into folders like {folder}", "Déplace {kind} de {root} vers des dossiers comme {folder}"),
     (", then renames them like {shape}", ", puis les renomme comme {shape}"),
     ("Renames {kind} in {root} like {shape}", "Renomme {kind} dans {root} comme {shape}"),
     ("Makes folders like {folder} in {root}", "Crée dans {root} des dossiers comme {folder}"),
-    ("Removes {kind} from {root}", "Supprime {kind} de {root}"),
     ("files", "fichiers"),
 ];
 
@@ -455,6 +452,5 @@ pub(super) const RUSSIAN: &[(&str, &str)] = &[
     (", then renames them like {shape}", ", затем переименовывает их по образцу {shape}"),
     ("Renames {kind} in {root} like {shape}", "Переименовывает {kind} в {root} по образцу {shape}"),
     ("Makes folders like {folder} in {root}", "Создаёт в {root} папки вроде {folder}"),
-    ("Removes {kind} from {root}", "Удаляет {kind} из {root}"),
     ("files", "файлы"),
 ];

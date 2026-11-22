@@ -110,6 +110,17 @@ fn new_folder_name(added: &Event, episode: &[&Event]) -> String {
         .map_or_else(|| added.name.clone(), |name| folder_shape(Path::new(name)))
 }
 
+/// Putting something away: a move into a folder (not the root), a rename,
+/// or a new folder. Deleting and moving to the root are not.
+fn is_filing(step: &Step) -> bool {
+    match step.kind {
+        EventKind::Moved => !step.to.is_empty(),
+        EventKind::Renamed => true,
+        EventKind::Added => step.folder,
+        EventKind::Removed => false,
+    }
+}
+
 struct Group<'a> {
     root: usize,
     steps: Vec<Step>,
@@ -136,7 +147,7 @@ pub fn detect(
             continue;
         }
         let steps = signature(episode);
-        if steps.is_empty() {
+        if !steps.iter().any(is_filing) {
             continue;
         }
         groups
@@ -180,7 +191,7 @@ fn routine_of(
         .episodes
         .iter()
         .flat_map(|episode| episode.iter())
-        .filter(|event| event.kind == EventKind::Moved)
+        .filter(|event| event.kind == EventKind::Moved && !event.to.is_empty())
         .max_by_key(|event| event.t)
         .map(|event| event.to.clone());
     let root_path = roots
@@ -273,7 +284,11 @@ pub fn describe(routine: &Routine, root_name: &str) -> String {
             format!("{}s", ext.to_uppercase())
         }
     };
-    if let Some(moved) = step(EventKind::Moved, false) {
+    if let Some(moved) = routine
+        .steps
+        .iter()
+        .find(|step| step.kind == EventKind::Moved && !step.folder && !step.to.is_empty())
+    {
         let folder = routine
             .example_to
             .clone()
@@ -302,21 +317,16 @@ pub fn describe(routine: &Routine, root_name: &str) -> String {
                 ("shape", renamed.name.as_deref().unwrap_or_default()),
             ],
         )
-    } else if let Some(made) = step(EventKind::Added, true) {
+    } else {
         let folder = routine
             .example_to
             .clone()
-            .or_else(|| made.name.clone())
+            .filter(|name| !name.is_empty())
+            .or_else(|| step(EventKind::Added, true).and_then(|made| made.name.clone()))
             .unwrap_or_default();
         tr_named(
             "Makes folders like {folder} in {root}",
             &[("folder", &folder), ("root", root_name)],
-        )
-    } else {
-        let ext = routine.steps.first().map(|s| s.ext.as_str()).unwrap_or("");
-        tr_named(
-            "Removes {kind} from {root}",
-            &[("kind", &kind_of(ext)), ("root", root_name)],
         )
     }
 }
@@ -454,6 +464,38 @@ mod tests {
         events.extend(invoice_episode(NOW - 4 * MIN, "11"));
         assert!(detect(&events, &roots(), NOW, day_of).is_empty());
         assert_eq!(detect(&events, &roots(), NOW + 10 * MIN, day_of).len(), 1);
+    }
+
+    #[test]
+    fn deleting_downloads_daily_is_not_a_routine() {
+        let mut events = Vec::new();
+        for days_ago in [3, 2, 1] {
+            events.push(event(
+                NOW - days_ago * DAY,
+                EventKind::Removed,
+                false,
+                "pdf",
+                "",
+                "a.pdf",
+            ));
+        }
+        assert!(detect(&events, &roots(), NOW, day_of).is_empty());
+    }
+
+    #[test]
+    fn moving_into_the_root_is_not_filing() {
+        let mut events = Vec::new();
+        for days_ago in [3, 2, 1] {
+            events.push(event(
+                NOW - days_ago * DAY,
+                EventKind::Moved,
+                false,
+                "dmg",
+                "",
+                "a.dmg",
+            ));
+        }
+        assert!(detect(&events, &roots(), NOW, day_of).is_empty());
     }
 
     #[test]

@@ -89,7 +89,7 @@ pub fn read(root: &Path, max_depth: usize, max_entries: usize) -> std::io::Resul
                 let Some(name_str) = name.to_str() else {
                     continue;
                 };
-                if name_str.starts_with('.') {
+                if name_str.starts_with('.') || is_partial_download(name_str) {
                     continue;
                 }
                 let Ok(meta) = std::fs::symlink_metadata(child.path()) else {
@@ -328,6 +328,15 @@ fn split_known(name: &str) -> Option<(&str, String)> {
     (!stem.is_empty() && KNOWN_EXTENSIONS.contains(&ext.as_str())).then_some((stem, ext))
 }
 
+/// A browser's unfinished download, which is skipped like a hidden entry so
+/// the finished file appears as a plain `Added`.
+fn is_partial_download(name: &str) -> bool {
+    let name = name.to_lowercase();
+    [".crdownload", ".part", ".partial", ".download"]
+        .iter()
+        .any(|suffix| name.ends_with(suffix))
+}
+
 /// A relative folder path with its numbers abstracted, words kept:
 /// `Invoices 2026-11` becomes `Invoices #-#`.
 pub fn folder_shape(rel: &Path) -> String {
@@ -449,6 +458,23 @@ mod tests {
         f.file("y.scrawl/b.txt");
         f.file("keep/c.txt");
         assert_eq!(rels(&f.snap()), ["keep", "keep/c.txt"]);
+    }
+
+    #[test]
+    fn browser_partial_downloads_are_not_seen() {
+        let f = Fixture::new("partial");
+        f.file("foo.pdf.crdownload");
+        f.file("foo.dmg.download/inner.bin");
+        f.file("Bar.PART");
+        f.file("keep/c.txt");
+        assert_eq!(rels(&f.snap()), ["keep", "keep/c.txt"]);
+        let before = f.snap();
+        f.file("foo.pdf.crdownload");
+        f.mv("foo.pdf.crdownload", "foo.pdf");
+        let changes = diff(&before, &f.snap());
+        assert_eq!(changes.len(), 1);
+        assert_eq!(changes[0].kind, ChangeKind::Added);
+        assert_eq!(changes[0].name, "foo.pdf");
     }
 
     #[test]
