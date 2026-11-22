@@ -793,6 +793,18 @@ fn rows(ui: &Ui) -> Vec<Row> {
                 on: !watch_locked && Feature::WatchAndLearn.on(settings),
                 ..watch
             });
+            let notice_locked = annotate_locked || Feature::NoticePatterns.managed().is_some();
+            let notice = row(Feature::NoticePatterns, Some(&BOOK));
+            rows.push(Row {
+                locked: notice_locked,
+                about: if notice_locked {
+                    super::managed_note().into()
+                } else {
+                    notice.about.clone()
+                },
+                on: !notice_locked && Feature::NoticePatterns.on(settings),
+                ..notice
+            });
         }
         let locked = annotate_locked;
         rows.push(Row {
@@ -934,6 +946,7 @@ fn row_key(lab: Lab) -> &'static str {
         Feature::AnnotateAgentTools => "lab-annotate-agent-tools",
         Feature::AnnotateAgentInstall => "lab-annotate-agent-install",
         Feature::WatchAndLearn => "lab-watch-and-learn",
+        Feature::NoticePatterns => "lab-notice-patterns",
         Feature::MeetingImport => "lab-meeting-import",
         Feature::OpenCodeInWsl => "lab-opencode-in-wsl",
         Feature::YoloMode => "lab-yolo-mode",

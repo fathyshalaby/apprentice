@@ -462,6 +462,15 @@ pub fn apply(
                 "expected apple-intelligence or ollama:<model name>",
             ));
         }
+        "apprentice.watched_folders"
+            if candidate
+                .apprentice
+                .watched_folders
+                .iter()
+                .any(|folder| !folder.is_absolute()) =>
+        {
+            return Err(invalid(name, "expected a list of absolute paths"));
+        }
         "apprentice.ollama_url"
             if !crate::app_settings::is_loopback_http_url(&candidate.apprentice.ollama_url) =>
         {
@@ -694,6 +703,27 @@ mod tests {
     }
 
     #[test]
+    fn watched_folders_key_takes_a_list_of_absolute_paths() {
+        let rules = rules();
+        let set = |raw: &str| {
+            apply(
+                &AppSettings::default(),
+                "apprentice.watched_folders",
+                raw,
+                &rules,
+            )
+        };
+        let change = set(r#"["/x"]"#).expect("absolute paths are accepted");
+        assert_eq!(
+            change.settings.apprentice.watched_folders,
+            vec![std::path::PathBuf::from("/x")]
+        );
+        assert!(set(r#"["rel"]"#).is_err());
+        assert!(set(r#""/x""#).is_err());
+        assert!(set("[]").is_ok());
+    }
+
+    #[test]
     fn a_labs_switch_for_another_os_is_refused() {
         let refused = unavailable_under("labs.notch_indicator", crate::policy::Policy::default())
             .map(|error| error.code);
@@ -839,6 +869,7 @@ mod tests {
             },
             apprentice: crate::app_settings::ApprenticeSettings {
                 model: Some("apple-intelligence".into()),
+                watched_folders: vec!["/Users/me/Downloads".into()],
                 ..Default::default()
             },
             ..Default::default()

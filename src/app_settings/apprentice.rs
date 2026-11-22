@@ -29,6 +29,10 @@ pub struct ApprenticeSettings {
     pub model: Option<String>,
     /// Ollama's address; it must be a loopback `http` URL.
     pub ollama_url: String,
+    /// The folders Labs › Notice patterns watches: only these, each an
+    /// absolute path the person added. Omitted from the file while empty.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub watched_folders: Vec<std::path::PathBuf>,
 }
 
 impl Default for ApprenticeSettings {
@@ -36,6 +40,7 @@ impl Default for ApprenticeSettings {
         Self {
             model: None,
             ollama_url: DEFAULT_OLLAMA_URL.to_owned(),
+            watched_folders: Vec::new(),
         }
     }
 }
@@ -98,6 +103,23 @@ mod tests {
         let json = serde_json::to_value(&settings).unwrap();
         assert!(json.get("model").is_none());
         assert_eq!(AppSettings::default().apprentice, settings);
+    }
+
+    #[test]
+    fn watched_folders_round_trip_and_are_omitted_when_empty() {
+        let json = serde_json::to_value(ApprenticeSettings::default()).unwrap();
+        assert!(json.get("watched_folders").is_none());
+        let settings = ApprenticeSettings {
+            watched_folders: vec!["/a".into(), "/b".into()],
+            ..ApprenticeSettings::default()
+        };
+        let json = serde_json::to_value(&settings).unwrap();
+        assert_eq!(json["watched_folders"], serde_json::json!(["/a", "/b"]));
+        let back: ApprenticeSettings = serde_json::from_value(json).unwrap();
+        assert_eq!(back, settings);
+        // A file from before the setting reads as no folders.
+        let old: ApprenticeSettings = serde_json::from_value(serde_json::json!({})).unwrap();
+        assert!(old.watched_folders.is_empty());
     }
 
     #[test]

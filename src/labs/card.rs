@@ -87,6 +87,7 @@ impl Feature {
             Self::AnnotateAgentTools => "Agent tools for captures",
             Self::AnnotateAgentInstall => "Install agent skill from Annotate",
             Self::WatchAndLearn => "Watch and learn",
+            Self::NoticePatterns => "Notice patterns",
         }
     }
 
@@ -317,6 +318,9 @@ impl Feature {
             }
             Self::WatchAndLearn => {
                 "Show Apprentice a task once and it writes a skill your coding agents can follow"
+            }
+            Self::NoticePatterns => {
+                "Watches folders you pick for filing you repeat, and offers to learn it with a lesson. Needs Watch and learn."
             }
         }
     }

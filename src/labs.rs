@@ -196,6 +196,7 @@ impl Feature {
             Self::AnnotateAgentTools => settings.labs.annotate_agent_tools,
             Self::AnnotateAgentInstall => settings.labs.annotate_agent_install,
             Self::WatchAndLearn => settings.labs.watch_and_learn,
+            Self::NoticePatterns => settings.labs.notice_patterns,
         }
     }
 
@@ -284,6 +285,7 @@ impl Feature {
             &mut labs.annotate_agent_tools,
             &mut labs.annotate_agent_install,
             &mut labs.watch_and_learn,
+            &mut labs.notice_patterns,
         ]
     }
 
@@ -383,6 +385,7 @@ impl Feature {
             Self::AnnotateAgentTools => settings.labs.annotate_agent_tools = on,
             Self::AnnotateAgentInstall => settings.labs.annotate_agent_install = on,
             Self::WatchAndLearn => settings.labs.watch_and_learn = on,
+            Self::NoticePatterns => settings.labs.notice_patterns = on,
             // Off, no shortcut keeps a key only the feature allows.
             Self::StandaloneSpecialKeys => {
                 settings.labs.standalone_special_keys = on;
@@ -582,6 +585,10 @@ static ANNOTATE_AGENT_TOOLS: AtomicBool = AtomicBool::new(false);
 /// [`ANNOTATE_AGENT_TOOLS`], written by [`state`] and [`apply`].
 static WATCH_AND_LEARN: AtomicBool = AtomicBool::new(false);
 
+/// Labs › Notice patterns' switch: its own atomic like [`WATCH_AND_LEARN`],
+/// written by [`state`] and [`apply`].
+static NOTICE_PATTERNS: AtomicBool = AtomicBool::new(false);
+
 /// The words that start a voice prompt, set beside [`STATE`] by [`state`] and
 /// [`apply`]. An invalid saved phrase reads as the default.
 static VOICE_PROMPT_PHRASE: LazyLock<RwLock<String>> =
@@ -626,6 +633,7 @@ fn state() -> u64 {
                 PASTE_LAST_PICKER.store(paste_last_picker_enabled(&saved), Ordering::Release);
                 ANNOTATE_AGENT_TOOLS.store(annotate_agent_tools_enabled(&saved), Ordering::Release);
                 WATCH_AND_LEARN.store(watch_and_learn_enabled(&saved), Ordering::Release);
+                NOTICE_PATTERNS.store(notice_patterns_enabled(&saved), Ordering::Release);
                 store_voice_prompt_phrase(&saved.voice_prompt_phrase);
                 store_stop_phrase_text(&saved.stop_phrase_text);
             }
@@ -782,6 +790,15 @@ fn watch_and_learn_enabled(settings: &LabsSettings) -> bool {
         && Feature::WatchAndLearn.managed().is_none()
 }
 
+/// Whether `settings` turn on Labs › Notice patterns in this build, before
+/// its managed lock and before Watch and learn's own switch (the gate,
+/// [`notice_patterns`], also needs that).
+fn notice_patterns_enabled(settings: &LabsSettings) -> bool {
+    settings.notice_patterns
+        && Feature::NoticePatterns.shipped()
+        && Feature::NoticePatterns.managed().is_none()
+}
+
 /// Records the trigger phrase matching reads; an invalid value never turns
 /// matching off.
 fn store_voice_prompt_phrase(phrase: &str) {
@@ -842,6 +859,7 @@ pub(crate) fn apply(settings: &LabsSettings) {
     PASTE_LAST_PICKER.store(paste_last_picker_enabled(settings), Ordering::Release);
     ANNOTATE_AGENT_TOOLS.store(annotate_agent_tools_enabled(settings), Ordering::Release);
     WATCH_AND_LEARN.store(watch_and_learn_enabled(settings), Ordering::Release);
+    NOTICE_PATTERNS.store(notice_patterns_enabled(settings), Ordering::Release);
     store_voice_prompt_phrase(&settings.voice_prompt_phrase);
     store_stop_phrase_text(&settings.stop_phrase_text);
     // Labs › Pause from menu bar: turning it off resumes at once, without
@@ -1038,6 +1056,7 @@ pub fn log_launch() {
         screen_vocabulary = screen_vocabulary(),
         learn_from_corrections = learn_from_corrections(),
         watch_and_learn = watch_and_learn(),
+        notice_patterns = notice_patterns(),
         cursor_context = cursor_context(),
         copy_dictation_audio = copy_dictation_audio(),
         hold_through_keys = hold_through_keys(),
@@ -1848,6 +1867,45 @@ mod tests {
         // An Annotate lock holds the gate off.
         let annotate = crate::policy::Policy::default().with(crate::policy::Lock::Annotate);
         assert!(!watch_and_learn_under(annotate));
+    }
+
+    #[test]
+    fn notice_patterns_is_off_by_default() {
+        let labs = LabsSettings::default();
+        assert!(!labs.notice_patterns);
+        assert!(!notice_patterns_enabled(&labs));
+        assert!(!Feature::NoticePatterns.on(&AppSettings::default()));
+        assert_eq!(
+            Feature::NoticePatterns.settings_key(),
+            "labs.notice_patterns"
+        );
+        assert_eq!(Feature::NoticePatterns.name(), "notice-patterns");
+        assert_eq!(Feature::NoticePatterns.group(), Group::Annotate);
+        assert_eq!(Feature::NoticePatterns.audience(), Audience::Everyone);
+        assert_eq!(Feature::NoticePatterns.oses(), &[Os::Macos]);
+        assert!(!Feature::NoticePatterns.title().is_empty());
+        assert!(!Feature::NoticePatterns.summary().is_empty());
+        assert!(!Feature::NoticePatterns.description().is_empty());
+        let mut labs = LabsSettings::default();
+        labs.notice_patterns = true;
+        assert!(notice_patterns_enabled(&labs));
+    }
+
+    #[test]
+    fn notice_patterns_needs_watch_and_learn() {
+        let policy = crate::policy::Policy::default();
+        // Notice patterns on, Watch and learn off: closed.
+        assert!(!notice_patterns_gate(true, false, policy));
+        // Watch and learn on alone: closed.
+        assert!(!notice_patterns_gate(false, true, policy));
+        // Both on: open where this OS has the lab.
+        assert_eq!(
+            notice_patterns_gate(true, true, policy),
+            cfg!(target_os = "macos")
+        );
+        // An Annotate lock holds it off.
+        let annotate = policy.with(crate::policy::Lock::Annotate);
+        assert!(!notice_patterns_gate(true, true, annotate));
     }
 
     #[test]

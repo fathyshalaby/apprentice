@@ -225,6 +225,10 @@ pub struct LabsSettings {
     /// The Skills pane: record a narrated lesson and draft a SKILL.md from it
     /// with a local model (macOS, Labs › Watch and learn).
     pub watch_and_learn: bool,
+    /// Noticing in the Skills pane: watch the folders you add for filing you
+    /// repeat and offer to learn it (macOS, Labs › Notice patterns; needs
+    /// Watch and learn).
+    pub notice_patterns: bool,
     /// The local API's `process=global` returns transcripts after Global
     /// mode's output processing.
     pub api_processing: bool,
@@ -433,6 +437,7 @@ impl Default for LabsSettings {
             annotate_agent_tools: false,
             annotate_agent_install: false,
             watch_and_learn: false,
+            notice_patterns: false,
             api_processing: false,
             api_timestamps: false,
             speakers_only: false,

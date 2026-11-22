@@ -231,6 +231,9 @@ impl Feature {
             Self::WatchAndLearn => {
                 "Adds a Skills pane (macOS): Learn a task records your whole screen and your voice while you do it once, then a local model you choose drafts a SKILL.md from the key frames and what you said, and asks up to five questions about your decisions. Nothing is drafted, saved, or installed until you click, video and audio never reach a model, and the lesson is never copied or sent anywhere"
             }
+            Self::NoticePatterns => {
+                "Adds a Noticing section to Skills (macOS): Apprentice watches only the folders you add, keeps file kinds, folder names and times for 14 days on this Mac, never file contents or names, and offers to learn a routine you repeat on 3 days. Needs Watch and learn (hex settings labs.notice_patterns)"
+            }
         }
     }
 }

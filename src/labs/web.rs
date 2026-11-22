@@ -20,6 +20,7 @@ impl Feature {
                     | Self::AnnotateAgentTools
                     | Self::AnnotateAgentInstall
                     | Self::WatchAndLearn
+                    | Self::NoticePatterns
             )
     }
 
@@ -128,6 +129,7 @@ mod tests {
             Feature::AnnotateAgentTools,
             Feature::AnnotateAgentInstall,
             Feature::WatchAndLearn,
+            Feature::NoticePatterns,
         ] {
             assert!(!feature.on_the_web(), "{}", feature.name());
         }

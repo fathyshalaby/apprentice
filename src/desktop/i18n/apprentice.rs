@@ -113,6 +113,8 @@ pub(super) const TRANSLATIONS: &[(&str, [&str; 6])] = &[
 pub(super) const PORTUGUESE: &[(&str, &str)] = &[
     ("Watch and learn", "Observar e aprender"),
     ("Show Apprentice a task once and it writes a skill your coding agents can follow", "Mostre uma tarefa ao Apprentice uma vez e ele escreve uma habilidade que seus agentes de código podem seguir"),
+    ("Notice patterns", "Notar padrões"),
+    ("Watches folders you pick for filing you repeat, and offers to learn it with a lesson. Needs Watch and learn.", "Observa as pastas que você escolher em busca de arquivamentos que você repete e se oferece para aprendê-los com uma lição. Requer Observar e aprender."),
     ("Ollama isn't running", "O Ollama não está em execução"),
     ("{} isn't downloaded", "{} não foi baixado"),
     ("Ollama's address must be on this computer", "O endereço do Ollama deve estar neste computador"),
@@ -220,6 +222,8 @@ pub(super) const PORTUGUESE: &[(&str, &str)] = &[
 pub(super) const FRENCH: &[(&str, &str)] = &[
     ("Watch and learn", "Observer et apprendre"),
     ("Show Apprentice a task once and it writes a skill your coding agents can follow", "Montrez une tâche à Apprentice une fois et il écrit une compétence que vos agents de code peuvent suivre"),
+    ("Notice patterns", "Repérer les habitudes"),
+    ("Watches folders you pick for filing you repeat, and offers to learn it with a lesson. Needs Watch and learn.", "Surveille les dossiers que vous choisissez pour repérer un rangement que vous répétez, et propose de l'apprendre avec une leçon. Nécessite Observer et apprendre."),
     ("Ollama isn't running", "Ollama n'est pas lancé"),
     ("{} isn't downloaded", "{} n'est pas téléchargé"),
     ("Ollama's address must be on this computer", "L'adresse d'Ollama doit être sur cet ordinateur"),
@@ -327,6 +331,8 @@ pub(super) const FRENCH: &[(&str, &str)] = &[
 pub(super) const RUSSIAN: &[(&str, &str)] = &[
     ("Watch and learn", "Смотреть и учиться"),
     ("Show Apprentice a task once and it writes a skill your coding agents can follow", "Покажите Apprentice задачу один раз, и он напишет навык, которому смогут следовать ваши агенты для кода"),
+    ("Notice patterns", "Замечать закономерности"),
+    ("Watches folders you pick for filing you repeat, and offers to learn it with a lesson. Needs Watch and learn.", "Следит за выбранными вами папками, замечает повторяющуюся сортировку файлов и предлагает научиться ей на уроке. Нужна функция «Смотреть и учиться»."),
     ("Ollama isn't running", "Ollama не запущена"),
     ("{} isn't downloaded", "{} не загружена"),
     ("Ollama's address must be on this computer", "Адрес Ollama должен быть на этом компьютере"),

@@ -150,6 +150,7 @@ impl Policy {
                 | crate::labs::Feature::AnnotateAgentTools
                 | crate::labs::Feature::AnnotateAgentInstall
                 | crate::labs::Feature::WatchAndLearn
+                | crate::labs::Feature::NoticePatterns
         ) && self.locks(Lock::Annotate)
         {
             return Some(Lock::Annotate);
@@ -185,6 +186,7 @@ impl Policy {
                 &mut settings.labs.annotate_agent_tools,
                 &mut settings.labs.annotate_agent_install,
                 &mut settings.labs.watch_and_learn,
+                &mut settings.labs.notice_patterns,
             ],
             #[cfg(not(hex_capture))]
             Lock::Annotate => Vec::new(),

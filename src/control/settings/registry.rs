@@ -384,6 +384,16 @@ pub(super) const KEYS: &[Key] = &[
         Kind::Bool,
         "Labs: Watch and learn (macOS): record your whole screen and voice for a lesson, then draft a skill from it with a local model you choose",
     ),
+    key(
+        "labs.notice_patterns",
+        Kind::Bool,
+        "Labs: Notice patterns (macOS): watch only the folders you add for filing you repeat and offer to learn it with a lesson; needs labs.watch_and_learn",
+    ),
+    key(
+        "apprentice.watched_folders",
+        Kind::Json,
+        "The folders Notice patterns watches, as a JSON array of absolute paths such as [\"/Users/me/Downloads\"] (macOS)",
+    ),
     optional(
         "apprentice.model",
         Kind::Text,

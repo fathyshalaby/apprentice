@@ -89,7 +89,8 @@ impl Feature {
             | Self::VocabularyFiles
             | Self::AnnotateAgentTools
             | Self::AnnotateAgentInstall
-            | Self::WatchAndLearn => Audience::Everyone,
+            | Self::WatchAndLearn
+            | Self::NoticePatterns => Audience::Everyone,
         }
     }
 
@@ -160,7 +161,7 @@ impl Feature {
             Self::LearnFromCorrections | Self::AnnotateAgentTools | Self::AnnotateAgentInstall => {
                 20261121
             }
-            Self::WatchAndLearn => 20261122,
+            Self::WatchAndLearn | Self::NoticePatterns => 20261122,
         }
     }
 
@@ -269,7 +270,8 @@ impl Feature {
             | Self::CalendarMenu
             | Self::CalendarSelectAll
             | Self::PasteLastPicker
-            | Self::WatchAndLearn => MACOS,
+            | Self::WatchAndLearn
+            | Self::NoticePatterns => MACOS,
             Self::CleanUpWithAppleIntelligence => MACOS,
             Self::NeutralVoice => MACOS,
             Self::CopyOnly => MACOS_WINDOWS,
@@ -397,6 +399,7 @@ impl Feature {
             Self::AnnotateAgentTools => "annotate-agent-tools",
             Self::AnnotateAgentInstall => "annotate-agent-install",
             Self::WatchAndLearn => "watch-and-learn",
+            Self::NoticePatterns => "notice-patterns",
         }
     }
 
@@ -482,6 +485,7 @@ impl Feature {
             Self::AnnotateAgentTools => "labs.annotate_agent_tools",
             Self::AnnotateAgentInstall => "labs.annotate_agent_install",
             Self::WatchAndLearn => "labs.watch_and_learn",
+            Self::NoticePatterns => "labs.notice_patterns",
         }
     }
 

@@ -119,7 +119,8 @@ impl Feature {
             | Self::CopyCaptureZip
             | Self::AnnotateAgentTools
             | Self::AnnotateAgentInstall
-            | Self::WatchAndLearn => Group::Annotate,
+            | Self::WatchAndLearn
+            | Self::NoticePatterns => Group::Annotate,
             Self::MouseShortcuts
             | Self::SecondDictationShortcut
             | Self::MoreDictationShortcuts

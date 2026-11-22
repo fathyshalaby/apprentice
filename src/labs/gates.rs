@@ -507,6 +507,38 @@ pub(crate) fn watch_and_learn_under(policy: crate::policy::Policy) -> bool {
         && policy.labs_lock(Feature::WatchAndLearn).is_none()
 }
 
+/// Labs › Notice patterns: the Noticing section of the Skills pane and the
+/// folder watching behind it (macOS). It needs Watch and learn on as well, and
+/// an Annotate lock holds it off even with its saved switch on.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub fn notice_patterns() -> bool {
+    notice_patterns_under(crate::policy::Policy::current())
+}
+
+/// [`notice_patterns`] under an explicit policy, so its managed lock is read
+/// where the gate is tested.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub(crate) fn notice_patterns_under(policy: crate::policy::Policy) -> bool {
+    let _ = state();
+    notice_patterns_gate(
+        NOTICE_PATTERNS.load(Ordering::Acquire),
+        watch_and_learn_under(policy),
+        policy,
+    )
+}
+
+/// The gate's rule with both switches given: Notice patterns on, Watch and
+/// learn on, this OS has the lab, and no lock.
+pub(crate) fn notice_patterns_gate(
+    own: bool,
+    watch_and_learn: bool,
+    policy: crate::policy::Policy,
+) -> bool {
+    own && watch_and_learn
+        && Feature::NoticePatterns.on_this_os()
+        && policy.labs_lock(Feature::NoticePatterns).is_none()
+}
+
 /// Labs › Transcribe dropped audio: a file with one of this build's
 /// extensions, dropped on the window, is transcribed in this process and saved
 /// as a text file beside it (read as each drop starts, and by the window's
