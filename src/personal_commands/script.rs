@@ -213,7 +213,7 @@ impl Script {
                 return Ok(Err(timed_out(limit)));
             }
             if stop.load(Ordering::Acquire) {
-                return Ok(Err("Hex stopped before the transformation finished".into()));
+                return Ok(Err("Apprentice stopped before the transformation finished".into()));
             }
             let wake = self.io.borrow_mut().wait(deadline);
             match wake {
@@ -448,7 +448,7 @@ impl Resolver for WorkspaceLoader {
                 .resolve_file(base, name)
                 .or_else(|message| refuse(&message)),
             _ if name.starts_with("node:") => refuse(
-                "Hex provides only node:child_process (exec, execFile) and node:util (promisify)",
+                "Apprentice provides only node:child_process (exec, execFile) and node:util (promisify)",
             ),
             _ => refuse(
                 "only @hex/commands, node:child_process, node:util, and relative imports are available",

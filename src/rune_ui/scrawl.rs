@@ -24,7 +24,7 @@ fn description(enabled: bool) -> &'static str {
     if enabled {
         tr("Record your screen, draw on it, and talk over it with the shortcut below")
     } else {
-        tr("Off. Hex records nothing and keeps no shortcut until you turn this on.")
+        tr("Off. Apprentice records nothing and keeps no shortcut until you turn this on.")
     }
 }
 
@@ -71,7 +71,7 @@ pub(super) fn toggle(ui: &mut Ui) {
 fn transcriber_description(transcriber: CaptureTranscriber) -> &'static str {
     match transcriber {
         CaptureTranscriber::Parakeet => {
-            tr("The model Hex dictates with, with a time for every word")
+            tr("The model Apprentice dictates with, with a time for every word")
         }
         CaptureTranscriber::Apple => tr("Apple's speech recognizer, as Scrawl uses"),
     }
@@ -177,7 +177,7 @@ fn scrawl_running(p: Paint, view: &ScrawlView) -> El {
     let description = if view.quitting_scrawl {
         tr("Waiting for Scrawl to quit…")
     } else {
-        tr("Hex leaves the Annotate shortcut to Scrawl until you switch")
+        tr("Apprentice leaves the Annotate shortcut to Scrawl until you switch")
     };
     card(
         p,
@@ -190,7 +190,7 @@ fn scrawl_running(p: Paint, view: &ScrawlView) -> El {
             super::controls::button(
                 p,
                 "use-hex-for-captures",
-                tr("Use Hex for annotations"),
+                tr("Use Apprentice for annotations"),
                 ButtonKind::Primary,
                 |ui: &mut Ui, _| scrawl_request(ui, ScrawlRequest::QuitScrawl),
             ),
@@ -271,11 +271,11 @@ fn shortcut_rows(ui: &Ui, p: Paint, view: &ScrawlView) -> Vec<El> {
             p,
             "screen-recording",
             tr("Screen Recording"),
-            Some(tr("Turns on when Hex restarts")),
+            Some(tr("Turns on when Apprentice restarts")),
             button(
                 p,
                 "screen-recording-restart",
-                tr("Restart Hex"),
+                tr("Restart Apprentice"),
                 ButtonKind::Secondary,
                 |ui: &mut Ui, _| ui.ask(PlatformRequest::Permission(PermissionAction::Restart)),
             ),
@@ -290,7 +290,7 @@ fn shortcut_rows(ui: &Ui, p: Paint, view: &ScrawlView) -> Vec<El> {
             Some(if view.screen_recording {
                 tr("Lets Annotate record your screen")
             } else if stale {
-                tr("An older Hex entry can keep this off")
+                tr("An older Apprentice entry can keep this off")
             } else {
                 tr("Required to record your screen. macOS asks the first time you annotate, or allow it here.")
             }),
@@ -322,7 +322,7 @@ fn recordings_row(ui: &Ui, p: Paint) -> El {
         p,
         "capture-show-in-recordings",
         tr("Show in screen recordings"),
-        tr("Lets recordings, annotations included, show Hex's capsule, ink, and HUD, for demos"),
+        tr("Lets recordings, annotations included, show Apprentice's capsule, ink, and HUD, for demos"),
         ui.settings.capture.show_overlays_in_recordings,
         |ui: &mut Ui| {
             ui.update(|settings| {
@@ -529,7 +529,7 @@ impl Agents {
         match agent_install::cli::install(&agent_install::cli::Environment::current()) {
             Ok(status) => self.cli = Some(status),
             Err(LinkError::Translocation) => {
-                self.cli_error = Some(tr("Move Hex to Applications first").to_string());
+                self.cli_error = Some(tr("Move Apprentice to Applications first").to_string());
             }
             Err(LinkError::Io(error)) => self.cli_error = Some(error),
         }

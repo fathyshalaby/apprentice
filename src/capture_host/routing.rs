@@ -1126,11 +1126,11 @@ const FILES_UNSEEN: &str = "OpenCode can't see files";
 /// OpenCode answered but refused Hex's credentials (HTTP 401 or 403): the
 /// password in its registration was missing or didn't match, as when the
 /// service runs in WSL and writes its registration inside WSL's home.
-const AUTH_REFUSED: &str = "OpenCode needs a password Hex doesn't have";
+const AUTH_REFUSED: &str = "OpenCode needs a password Apprentice doesn't have";
 
 /// What process.log says beside [`AUTH_REFUSED`]; it never names the
 /// password itself.
-const AUTH_HINT: &str = "OpenCode refused Hex's password. Hex reads it from OpenCode's \
+const AUTH_HINT: &str = "OpenCode refused Apprentice's password. Apprentice reads it from OpenCode's \
                          service.json under this user's ~/.local/state/opencode (or \
                          OPENCODE_PASSWORD); on Windows, turn on Labs › OpenCode in WSL \
                          when OpenCode runs there. The capture is saved and copied either way";

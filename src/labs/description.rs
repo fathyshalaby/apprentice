@@ -23,14 +23,14 @@ impl Feature {
                 "When a dictation fails, show the reason next to the small recording indicator (Dictation HUD)"
             }
             Self::LiveTyping => {
-                "On Wayland, show your words in the text box as you speak, then Hex types the text there"
+                "On Wayland, show your words in the text box as you speak, then Apprentice types the text there"
             }
             Self::LiveChapters => "Split a meeting's text into chapters while it records",
             Self::ScreenVocabulary => {
-                "Names in the window you're dictating into help Hex spell them. Never saved. Parakeet needs Vocabulary help, and a dictation with terms runs after release instead of from the live stream."
+                "Names in the window you're dictating into help Apprentice spell them. Never saved. Parakeet needs Vocabulary help, and a dictation with terms runs after release instead of from the live stream."
             }
             Self::LearnFromCorrections => {
-                "When you fix a name in text Hex just pasted, add the corrected spelling to Vocabulary; Hex watches only that field, for up to 5 minutes, and sends nothing anywhere"
+                "When you fix a name in text Apprentice just pasted, add the corrected spelling to Vocabulary; Apprentice watches only that field, for up to 5 minutes, and sends nothing anywhere"
             }
             Self::TerminalPaste => "Paste with Ctrl+Shift+V, for apps that ignore Ctrl+V",
             Self::KeyboardModelSwitching => {
@@ -117,23 +117,23 @@ impl Feature {
                 "Add a speech model file and use it where it is, without copying it, so several accounts can share one file"
             }
             Self::KQuantModels => {
-                "Add your own speech model files saved in smaller formats (Q6_K, Q5_K, or Q4_K). They take less space, but Hex hasn't checked them, so accuracy may vary."
+                "Add your own speech model files saved in smaller formats (Q6_K, Q5_K, or Q4_K). They take less space, but Apprentice hasn't checked them, so accuracy may vary."
             }
             Self::PickerDownloaded => {
                 "Show only downloaded speech models in the list, with the space they take"
             }
             Self::SectionKeyAlone => {
-                "Use the key left of 1 on ISO keyboards, § or a dead key such as ^, alone as a shortcut; Hex takes it from every app while it's bound"
+                "Use the key left of 1 on ISO keyboards, § or a dead key such as ^, alone as a shortcut; Apprentice takes it from every app while it's bound"
             }
             Self::MicrophoneKeyAlone => {
-                "Use the mic key in F5's spot on a Mac laptop keyboard as a shortcut; once set, Hex takes the key from other apps. If macOS's own Dictation still opens, change macOS's dictation shortcut in System Settings › Keyboard › Dictation."
+                "Use the mic key in F5's spot on a Mac laptop keyboard as a shortcut; once set, Apprentice takes the key from other apps. If macOS's own Dictation still opens, change macOS's dictation shortcut in System Settings › Keyboard › Dictation."
             }
             Self::KeepRecordings => {
                 "Keep the audio of your dictations in History, so you can turn them into text again with another speech model"
             }
             Self::Appearance => "Use light or dark for the main window instead of the system's",
             Self::HideMenuBarIcon => {
-                "Hide Hex's menu bar icon; shortcuts keep working, and opening Hex again shows Settings"
+                "Hide Apprentice's menu bar icon; shortcuts keep working, and opening Apprentice again shows Settings"
             }
             Self::GnomeClipboardRestore => {
                 "Put the previous clipboard back after a paste on GNOME Wayland, through the XWayland clipboard while XWayland is running"
@@ -166,28 +166,28 @@ impl Feature {
                 "Add an audio file to Meetings and turn it into text on this Mac"
             }
             Self::CapsLockDictation => {
-                "Press Caps Lock to start and stop dictation; its light shows when Hex records and writes the text"
+                "Press Caps Lock to start and stop dictation; its light shows when Apprentice records and writes the text"
             }
             Self::OpenCodeInWsl => {
                 "Use an OpenCode service running in your default WSL distribution for Modes rewriting and the Modes model picker; looking for it can start WSL"
             }
             Self::DropTranscribe => {
-                "Drop a WAV, MP3, AAC, M4A, MP4, MOV, AIFF, CAF, FLAC, OGG, Opus, WebM, or MKV file on the Hex window to save its transcript as a text file next to it"
+                "Drop a WAV, MP3, AAC, M4A, MP4, MOV, AIFF, CAF, FLAC, OGG, Opus, WebM, or MKV file on the Apprentice window to save its transcript as a text file next to it"
             }
             Self::PasteLastPicker => {
                 "Tap Paste Last for the newest dictation or annotation, hold it to pick another, and see dictations, annotations, screenshots, and recordings together in History (macOS)"
             }
             Self::ApiProcessing => {
-                "Let apps using Hex's local API ask for text with Global mode's replacements, corrections, rewriting, and transformations applied"
+                "Let apps using Apprentice's local API ask for text with Global mode's replacements, corrections, rewriting, and transformations applied"
             }
             Self::ApiTimestamps => {
-                "Let apps using Hex's local API ask when each word or phrase starts and ends, as the speech model heard them"
+                "Let apps using Apprentice's local API ask when each word or phrase starts and ends, as the speech model heard them"
             }
             Self::SpeakersOnly => {
                 "Apply \"While dictating\" only when sound plays through speakers; headphones are left alone"
             }
             Self::PauseMenu => {
-                "Add Pause Hex to the menu bar. While paused, Hex ignores its shortcuts so other apps get the keys"
+                "Add Pause Apprentice to the menu bar. While paused, Apprentice ignores its shortcuts so other apps get the keys"
             }
             Self::CalendarMenu => {
                 "Show your next calendar meetings in the menu bar menu. Choosing one with a call link opens it; that click doesn't start a recording (macOS, with Meetings on and a calendar connected)"
@@ -196,7 +196,7 @@ impl Feature {
                 "Add a Select all or Deselect all button beside the Calendars row in Meetings settings, so every calendar is included or left out at once (macOS)"
             }
             Self::VoicePrompt => {
-                "Say \"rewrite this\" and then what you want; Hex redoes the text with the mode's AI model"
+                "Say \"rewrite this\" and then what you want; Apprentice redoes the text with the mode's AI model"
             }
             Self::CursorContext => {
                 "The mode's OpenCode rewrite uses the text around the cursor to spell names and terms right and fit where it pastes. That text goes to the mode's model, which may be a cloud provider; password fields are never read"

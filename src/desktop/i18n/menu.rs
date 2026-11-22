@@ -5,8 +5,8 @@
 /// Columns: Polish, Chinese (Simplified), Japanese, German, Spanish, Ukrainian.
 #[rustfmt::skip]
 pub(super) const TRANSLATIONS: &[(&str, [&str; 6])] = &[
-    ("Pause Hex", ["Wstrzymaj Hex", "暂停 Hex", "Hex を一時停止", "Hex pausieren", "Pausar Hex", "Призупинити Hex"]),
-    ("Resume Hex", ["Wznów Hex", "恢复 Hex", "Hex を再開", "Hex fortsetzen", "Reanudar Hex", "Відновити Hex"]),
+    ("Pause Apprentice", ["Wstrzymaj Apprentice", "暂停 Apprentice", "Apprentice を一時停止", "Apprentice pausieren", "Pausar Apprentice", "Призупинити Apprentice"]),
+    ("Resume Apprentice", ["Wznów Apprentice", "恢复 Apprentice", "Apprentice を再開", "Apprentice fortsetzen", "Reanudar Apprentice", "Відновити Apprentice"]),
     ("Restore last capture", ["Przywróć ostatnie przechwycenie", "恢复上次捕获", "前回のキャプチャを復元", "Letzte Aufnahme wiederherstellen", "Restaurar la última captura", "Відновити останнє захоплення"]),
     ("Quit {}", ["Zakończ {}", "退出 {}", "{} を終了", "{} beenden", "Salir de {}", "Вийти з {}"]),
     ("No downloaded models", ["Brak pobranych modeli", "没有已下载的模型", "ダウンロード済みのモデルはありません", "Keine geladenen Modelle", "No hay modelos descargados", "Немає завантажених моделей"]),

@@ -90,7 +90,7 @@ pub(super) fn side(s: &Onboard, cx: &mut Cx<Onboard>) -> El {
             side_chip(
                 p,
                 "step-demo",
-                "1 · Without Hex",
+                "1 · Without Apprentice",
                 matches!(s.step, Step::Pick | Step::Started | Step::Parked),
                 Onboard::jump_to_demo,
             ),
@@ -111,7 +111,7 @@ pub(super) fn side(s: &Onboard, cx: &mut Cx<Onboard>) -> El {
             side_chip(
                 p,
                 "step-try",
-                "3 · With Hex (game)",
+                "3 · With Apprentice (game)",
                 matches!(s.step, Step::Try | Step::TryHearing | Step::TryHeard),
                 Onboard::jump_to_try,
             ),
@@ -125,7 +125,7 @@ pub(super) fn side(s: &Onboard, cx: &mut Cx<Onboard>) -> El {
             side_chip(
                 p,
                 "step-ready",
-                "5 · Hex is ready",
+                "5 · Apprentice is ready",
                 s.step == Step::Ready,
                 Onboard::jump_to_ready,
             ),
@@ -161,7 +161,7 @@ pub(super) fn side(s: &Onboard, cx: &mut Cx<Onboard>) -> El {
     }
 
     let note = if s.interactive_try() {
-        "On Your turn, hold ⌥ and speak into your Mac's mic — your running Hex pastes your real words into the card."
+        "On Your turn, hold ⌥ and speak into your Mac's mic — your running Apprentice pastes your real words into the card."
     } else {
         "English: Parakeet Unified English, 731 MB, streams. French: Parakeet v3, 740 MB."
     };
@@ -282,7 +282,7 @@ const SCENE_KNOBS: &[Knob] = &[
     },
     Knob {
         key: "t-cheer",
-        label: "Hex: cheers apart",
+        label: "Apprentice: cheers apart",
         min: 0.1,
         max: 1.0,
         field: |t| &mut t.cheer,
@@ -296,14 +296,14 @@ const SCENE_KNOBS: &[Knob] = &[
     },
     Knob {
         key: "t-send",
-        label: "Hex: words to send",
+        label: "Apprentice: words to send",
         min: 0.3,
         max: 2.0,
         field: |t| &mut t.hex_send,
     },
     Knob {
         key: "t-reply",
-        label: "Hex: send to reply",
+        label: "Apprentice: send to reply",
         min: 0.5,
         max: 3.0,
         field: |t| &mut t.hex_reply,
@@ -332,5 +332,5 @@ fn scene_controls(p: Paint, s: &Onboard) -> El {
             },
         ));
     }
-    side_section(p, "scene-sec", "Without Hex timing (seconds)", vec![out])
+    side_section(p, "scene-sec", "Without Apprentice timing (seconds)", vec![out])
 }

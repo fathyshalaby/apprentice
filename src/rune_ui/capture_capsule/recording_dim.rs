@@ -181,7 +181,7 @@ impl RecordingDim {
         use rune::{OverlayLevel, OverlayOptions, OverlayPlacement, OverlaySpec};
         let overlays = (0..DIM_WINDOWS)
             .map(|n| {
-                let spec = OverlaySpec::new("Hex recording dim", (1440.0, 900.0), view)
+                let spec = OverlaySpec::new("Apprentice recording dim", (1440.0, 900.0), view)
                     .options(OverlayOptions {
                         placement: Some(OverlayPlacement::FullScreen),
                         display: picker::DISPLAY,

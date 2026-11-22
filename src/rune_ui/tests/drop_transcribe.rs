@@ -366,7 +366,7 @@ fn a_file_hex_cannot_read_is_refused() {
     settle(&mut rt);
     assert!(
         texts(&rt).iter().any(|text| {
-            text == "Hex can transcribe WAV, MP3, AAC, M4A, MP4, MOV, AIFF, CAF, FLAC, OGG, Opus, WebM, or MKV files"
+            text == "Apprentice can transcribe WAV, MP3, AAC, M4A, MP4, MOV, AIFF, CAF, FLAC, OGG, Opus, WebM, or MKV files"
         }),
         "{:?}",
         texts(&rt)
@@ -378,7 +378,7 @@ fn a_file_hex_cannot_read_is_refused() {
     assert!(rt.state.drop.running().is_none());
     assert!(
         rt.find("drop-transcribe-rejected").is_some(),
-        "the toast says what Hex reads"
+        "the toast says what Apprentice reads"
     );
 }
 

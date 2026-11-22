@@ -573,13 +573,13 @@ pub(crate) fn profile_of(
 
 fn profile(header: &GgufHeader, file_name: &str, types: TensorTypes) -> Result<Profile> {
     let Some(architecture) = header.string("general.architecture") else {
-        bail!("it has no general.architecture, so Hex can't tell which model family it is");
+        bail!("it has no general.architecture, so Apprentice can't tell which model family it is");
     };
     if !ARCHITECTURES.iter().any(|(name, _)| *name == architecture) {
         bail!(
-            "its architecture is {architecture}, so it was made for another program. Hex runs \
+            "its architecture is {architecture}, so it was made for another program. Apprentice runs \
              only GGUF files converted with transcribe.cpp (Parakeet, Whisper, Qwen3-ASR, \
-             Cohere Transcribe, SenseVoice, or GigaAM); for a model in Hex's list, download \
+             Cohere Transcribe, SenseVoice, or GigaAM); for a model in Apprentice's list, download \
              it from the list instead"
         );
     }
@@ -595,7 +595,7 @@ fn profile(header: &GgufHeader, file_name: &str, types: TensorTypes) -> Result<P
     let unsupported = header.unsupported_tensor_types(types);
     if !unsupported.is_empty() {
         bail!(
-            "it has {} tensors; Hex runs only {} weights {}. \
+            "it has {} tensors; Apprentice runs only {} weights {}. \
              Quantize it to Q8_0 with transcribe-quantize",
             unsupported.join(", "),
             types.names(),
@@ -615,7 +615,7 @@ fn profile(header: &GgufHeader, file_name: &str, types: TensorTypes) -> Result<P
         }
     }
     if languages.is_empty() {
-        bail!("its general.languages names no language Hex knows");
+        bail!("its general.languages names no language Apprentice knows");
     }
     Ok(Profile {
         name: header
@@ -935,7 +935,7 @@ fn record_in_place(
         .is_some_and(|existing| existing.path.is_none())
         && names_same_file(path, &copy)
     {
-        tracing::info!(id = id.as_str(), path = %path.display(), "the file chosen to use in place is Hex's own copy; keeping the import as it is");
+        tracing::info!(id = id.as_str(), path = %path.display(), "the file chosen to use in place is Apprentice's own copy; keeping the import as it is");
         return Ok(id);
     }
     super::models::write_json_atomically(
@@ -973,7 +973,7 @@ fn record_in_place(
     if existing.is_some_and(|existing| existing.path.is_none()) && independent(path, &copy) {
         match fs::remove_file(&copy) {
             Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
-                tracing::warn!(%error, id = id.as_str(), "could not remove Hex's copy of a model now used in place");
+                tracing::warn!(%error, id = id.as_str(), "could not remove Apprentice's copy of a model now used in place");
             }
             _ => {}
         }
@@ -1224,7 +1224,7 @@ mod tests {
         }
         for path in chosen {
             assert_eq!(add_in_place(&path, &AtomicBool::new(false)).unwrap(), id);
-            assert!(copy.is_file(), "{} deleted Hex's copy", path.display());
+            assert!(copy.is_file(), "{} deleted Apprentice's copy", path.display());
             invalidate();
             assert_eq!(status(id), Status::Ready);
             let model = definition(id);
@@ -1253,7 +1253,7 @@ mod tests {
         std::os::unix::fs::symlink(&shared, &linked).unwrap();
         let chosen = linked.join("primeline.gguf");
         assert_eq!(add_in_place(&chosen, &AtomicBool::new(false)).unwrap(), id);
-        assert!(!copy.exists(), "the independent file replaces Hex's copy");
+        assert!(!copy.exists(), "the independent file replaces Apprentice's copy");
         assert!(original.is_file() && shared.join("primeline.gguf").is_file());
         invalidate();
         assert_eq!(status(id), Status::Ready);
@@ -1519,7 +1519,7 @@ mod tests {
         let refused = reason(quantized.clone(), TensorTypes::STANDARD);
         assert!(refused.contains("Q4_K (1) tensors"), "{refused}");
         assert!(
-            refused.contains("Hex runs only F32, F16, and Q8_0 weights on Metal and Vulkan"),
+            refused.contains("Apprentice runs only F32, F16, and Q8_0 weights on Metal and Vulkan"),
             "{refused}"
         );
         // Labs › Smaller model files runs the K quants, so the same header
@@ -1544,7 +1544,7 @@ mod tests {
         let refused = reason(legacy_quant, TensorTypes::WITH_K_QUANTS);
         assert!(refused.contains("Q5_0 (1) tensors"), "{refused}");
         assert!(
-            refused.contains("Hex runs only F32, F16, Q8_0, Q4_K, Q5_K, and Q6_K"),
+            refused.contains("Apprentice runs only F32, F16, Q8_0, Q4_K, Q5_K, and Q6_K"),
             "{refused}"
         );
         let no_languages = gguf(
@@ -1557,7 +1557,7 @@ mod tests {
             &[("a", 0, 4)],
         );
         let refused = reason(no_languages, TensorTypes::STANDARD);
-        assert!(refused.contains("no language Hex knows"), "{refused}");
+        assert!(refused.contains("no language Apprentice knows"), "{refused}");
     }
 
     /// A K-quant file: refused everywhere until Labs › Smaller model files

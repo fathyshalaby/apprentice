@@ -39,7 +39,7 @@ const QUEUE_CAPACITY: usize = 1_024;
 const ROUTE_CHECK: Duration = Duration::from_secs(2);
 /// The PipeWire node every system audio monitor presents.
 const NODE_NAME: &str = "hex-meeting-system-audio";
-const NODE_DESCRIPTION: &str = "Hex meeting system audio";
+const NODE_DESCRIPTION: &str = "Apprentice meeting system audio";
 
 /// Fails until `pw-record`, which hears the other participants, is installed.
 pub(super) fn ensure_system_audio() -> Result<()> {
@@ -47,7 +47,7 @@ pub(super) fn ensure_system_audio() -> Result<()> {
         Ok(())
     } else {
         Err(eyre!(
-            "Install PipeWire's pw-record (the pipewire-audio package) so Hex can hear the other participants, then try again"
+            "Install PipeWire's pw-record (the pipewire-audio package) so Apprentice can hear the other participants, then try again"
         ))
     }
 }
@@ -627,14 +627,14 @@ mod tests {
         assert_eq!(
             properties(None, 0),
             "{ stream.capture.sink = true node.name = hex-meeting-system-audio \
-             node.description = \"Hex meeting system audio\" }"
+             node.description = \"Apprentice meeting system audio\" }"
         );
         // A targeted capture names its own node, never falls back to the
         // default output, and folds those flags into the property string.
         assert_eq!(
             properties(Some("bluez_output.AA_BB_CC_DD_EE_FF.1"), 2),
             "{ stream.capture.sink = true node.name = hex-meeting-system-audio-2 \
-             node.description = \"Hex meeting system audio\" \
+             node.description = \"Apprentice meeting system audio\" \
              node.dont-fallback = true node.dont-reconnect = true \
              target.object = \"bluez_output.AA_BB_CC_DD_EE_FF.1\" }"
         );

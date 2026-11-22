@@ -81,7 +81,7 @@ fn unavailable_under(name: &str, policy: crate::policy::Policy) -> Option<Contro
     Some(ControlError::new(
         "unsupported",
         format!(
-            "`{name}` does nothing on this OS: it needs {capability}, which Hex has only elsewhere"
+            "`{name}` does nothing on this OS: it needs {capability}, which Apprentice has only elsewhere"
         ),
     ))
 }
@@ -187,7 +187,7 @@ fn unknown(name: &str) -> ControlError {
     if name == "labs.settings_search" {
         return ControlError::new(
             "unknown-setting",
-            "Settings search no longer needs a lab. Use Cmd+K (Ctrl+K off macOS) in the Hex window.",
+            "Settings search no longer needs a lab. Use Cmd+K (Ctrl+K off macOS) in the Apprentice window.",
         );
     }
     if let Some((_, replacement)) = RETIRED.iter().find(|(retired, _)| *retired == name) {

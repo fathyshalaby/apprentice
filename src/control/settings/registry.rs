@@ -124,7 +124,7 @@ pub(super) const KEYS: &[Key] = &[
             "analog",
             "thock",
         ]),
-        "Which sounds play; classic, Hex's original tones, is the default",
+        "Which sounds play; classic, Apprentice's original tones, is the default",
     ),
     optional(
         "microphone",
@@ -180,7 +180,7 @@ pub(super) const KEYS: &[Key] = &[
         "cancel_hotkey",
         Kind::Shortcut(HotkeySlot::Cancel),
         "Toggle mode's cancel shortcut, Escape by default: discards the recording, \
-         nothing pasted or saved. Hex takes the key only while a toggled recording runs",
+         nothing pasted or saved. Apprentice takes the key only while a toggled recording runs",
     ),
     optional(
         "raw_dictation_hotkey",
@@ -289,7 +289,7 @@ pub(super) const KEYS: &[Key] = &[
     key(
         "show_dock_icon",
         Kind::Bool,
-        "Keep Hex in the Dock when Settings is closed (macOS)",
+        "Keep Apprentice in the Dock when Settings is closed (macOS)",
     ),
     read_only(
         "transcription.model",
@@ -307,7 +307,7 @@ pub(super) const KEYS: &[Key] = &[
         "transcription_recents",
         Kind::Json,
         "Recently used models, each with its language",
-        "Hex records these as you switch models",
+        "Apprentice records these as you switch models",
     ),
     key(
         "vocabulary_boost",
@@ -377,7 +377,7 @@ pub(super) const KEYS: &[Key] = &[
     key(
         "labs.learn_from_corrections",
         Kind::Bool,
-        "Labs: add names corrected in text Hex just pasted to Vocabulary, watching only that field for up to 5 minutes; nothing leaves this Mac (macOS)",
+        "Labs: add names corrected in text Apprentice just pasted to Vocabulary, watching only that field for up to 5 minutes; nothing leaves this Mac (macOS)",
     ),
     key(
         "labs.cursor_context",
@@ -562,12 +562,12 @@ pub(super) const KEYS: &[Key] = &[
     key(
         "labs.hide_menu_bar_icon",
         Kind::Bool,
-        "Labs: hide Hex's menu bar icon while nothing records; shortcuts keep working, and opening Hex again from Finder or Spotlight shows Settings (macOS)",
+        "Labs: hide Apprentice's menu bar icon while nothing records; shortcuts keep working, and opening Apprentice again from Finder or Spotlight shows Settings (macOS)",
     ),
     key(
         "labs.caps_lock_dictation",
         Kind::Bool,
-        "Labs: a Caps Lock press starts and stops dictation hands-free, and its light shows when Hex records and transcribes; Caps Lock stays off so typing is unchanged (macOS)",
+        "Labs: a Caps Lock press starts and stops dictation hands-free, and its light shows when Apprentice records and transcribes; Caps Lock stays off so typing is unchanged (macOS)",
     ),
     key(
         "labs.caps_lock_light",
@@ -662,7 +662,7 @@ pub(super) const KEYS: &[Key] = &[
     key(
         "labs.k_quant_models",
         Kind::Bool,
-        "Labs: add your own speech model files that use Q6_K, Q5_K, or Q4_K weights (macOS); they are smaller than Q8_0 but Hex hasn't verified them",
+        "Labs: add your own speech model files that use Q6_K, Q5_K, or Q4_K weights (macOS); they are smaller than Q8_0 but Apprentice hasn't verified them",
     ),
     key(
         "labs.picker_downloaded",
@@ -684,7 +684,7 @@ pub(super) const KEYS: &[Key] = &[
         "labs.drop_transcribe",
         Kind::Bool,
         "Labs: a WAV, MP3, AAC, M4A, MP4, MOV, AIFF, CAF, FLAC, OGG, Opus, WebM, or MKV file \
-         dropped on the Hex window is transcribed with the selected dictation model and saved \
+         dropped on the Apprentice window is transcribed with the selected dictation model and saved \
          as a text file next to it",
     ),
     key(
@@ -696,20 +696,20 @@ pub(super) const KEYS: &[Key] = &[
     key(
         "labs.api_processing",
         Kind::Bool,
-        "Labs: apps using Hex's local API can ask for transcripts with Global mode's corrections, \
+        "Labs: apps using Apprentice's local API can ask for transcripts with Global mode's corrections, \
          rewrite, and transformations applied (process=global)",
     ),
     key(
         "labs.api_timestamps",
         Kind::Bool,
-        "Labs: apps using Hex's local API can ask for each segment's or word's start and end times \
+        "Labs: apps using Apprentice's local API can ask for each segment's or word's start and end times \
          in a transcript, as the speech model heard them (timestamps=segment|word)",
     ),
     key(
         "labs.speakers_only",
         Kind::Bool,
         "Labs: While dictating applies only while the default output is speakers; headphones are \
-         left alone, and outputs Hex can't classify count as speakers",
+         left alone, and outputs Apprentice can't classify count as speakers",
     ),
     key(
         "labs.calendar_menu",
@@ -728,7 +728,7 @@ pub(super) const KEYS: &[Key] = &[
     key(
         "labs.pause_menu",
         Kind::Bool,
-        "Labs: the menu bar offers Pause Hex, which makes every capture shortcut inert until \
+        "Labs: the menu bar offers Pause Apprentice, which makes every capture shortcut inert until \
          Resume; a restart starts unpaused (macOS)",
     ),
     key(
@@ -763,7 +763,7 @@ pub(super) const KEYS: &[Key] = &[
     optional(
         "meetings.output_folder",
         Kind::Path,
-        "Folder for meeting Markdown; none uses ~/Documents/Hex Meetings",
+        "Folder for meeting Markdown; none uses ~/Documents/Apprentice Meetings",
     ),
     key(
         "meetings.summaries",
@@ -798,7 +798,7 @@ pub(super) const KEYS: &[Key] = &[
     key(
         "meetings.stop_when_call_ends",
         Kind::Bool,
-        "A meeting recording Hex started on its own stops 30 s after its call app leaves the microphone and goes quiet, unless you keep recording (macOS)",
+        "A meeting recording Apprentice started on its own stops 30 s after its call app leaves the microphone and goes quiet, unless you keep recording (macOS)",
     ),
     key(
         "meetings.export.descriptive_filenames",
@@ -869,7 +869,7 @@ pub(super) const KEYS: &[Key] = &[
     key(
         "enable_on_launch",
         Kind::Bool,
-        "Start listening when Hex opens (Windows and Linux)",
+        "Start listening when Apprentice opens (Windows and Linux)",
     ),
     key(
         "paste_with_shift",
@@ -879,7 +879,7 @@ pub(super) const KEYS: &[Key] = &[
     key(
         "gnome_keyboard_shortcuts",
         Kind::Bool,
-        "Hex's own GNOME custom keyboard shortcuts, for GNOME without a shortcuts portal (Linux)",
+        "Apprentice's own GNOME custom keyboard shortcuts, for GNOME without a shortcuts portal (Linux)",
     ),
     key(
         "share_dictation_shortcut",
@@ -931,7 +931,7 @@ pub(super) const CAPTURE_KEYS: &[Key] = &[
     key(
         "capture.transcriber",
         Kind::Choice(&["parakeet", "apple"]),
-        "What transcribes a capture's narration: Hex's loaded model or Apple's",
+        "What transcribes a capture's narration: Apprentice's loaded model or Apple's",
     ),
     optional(
         "capture.folder",
@@ -962,7 +962,7 @@ pub(super) const CAPTURE_KEYS: &[Key] = &[
     key(
         "capture.show_overlays_in_recordings",
         Kind::Bool,
-        "Let screen recordings, captures included, show Hex's capsules, ink, and HUD (for demos)",
+        "Let screen recordings, captures included, show Apprentice's capsules, ink, and HUD (for demos)",
     ),
 ];
 #[cfg(not(hex_capture))]

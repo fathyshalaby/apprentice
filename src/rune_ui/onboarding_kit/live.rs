@@ -465,7 +465,7 @@ pub(crate) fn restart(ui: &mut Ui, tx: &mut Tx) -> Result<(), String> {
     open(ui);
     tx.settle();
     if ui.first_run.is_none() {
-        return Err("Hex could not open onboarding".into());
+        return Err("Apprentice could not open onboarding".into());
     }
     Ok(())
 }
@@ -683,7 +683,7 @@ pub(in crate::rune_ui) fn overlay(ui: &Ui, p: Paint, reduced: bool) -> Option<El
             .children(strip)
             .key("first-run")
             .role("dialog")
-            .label(tr("Setting up Hex"))
+            .label(tr("Setting up Apprentice"))
             .absolute(0.0, 0.0)
             .on_press(|_: &mut Ui| {}),
     )
@@ -810,13 +810,13 @@ pub(super) fn recovery(p: Paint) -> El {
         .gap(10.0)
         .center_y()
         .child(
-            text(tr("Hex's shortcut didn't start."))
+            text(tr("Apprentice's shortcut didn't start."))
                 .key("why")
                 .font(super::landing::LEAD)
                 .color(p.muted()),
         )
         .child(
-            Button::new(tr("Reopen Hex"))
+            Button::new(tr("Reopen Apprentice"))
                 .variant(ButtonVariant::Neutral)
                 .on_press(reopen)
                 .build_push(p.k)
@@ -887,14 +887,14 @@ pub(super) fn practice_changed(ui: &mut Ui, tx: &mut Tx) {
 /// What the practice says in place of the shortcut invitation while the
 /// listener loads its model, microphone, and shortcuts.
 pub(super) fn warming_copy() -> &'static str {
-    tr("Getting Hex ready to listen…")
+    tr("Getting Apprentice ready to listen…")
 }
 
 /// What the practice dictation's last try needs said.
 pub(super) fn hint_copy(live: &Live) -> Option<&'static str> {
     Some(match live.practice {
         Practice::TooShort => tr("Keep holding the shortcut while you talk, then let go."),
-        Practice::NothingHeard => tr("Hex didn't hear any words. Try again a little louder."),
+        Practice::NothingHeard => tr("Apprentice didn't hear any words. Try again a little louder."),
         Practice::Failed => tr("That didn't work. Try again."),
         Practice::Transcribing => tr("Typing what you said…"),
         _ => return None,

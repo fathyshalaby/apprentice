@@ -955,7 +955,7 @@ fn wait_for_modifiers(
         if began.elapsed() >= limit && !shortcut_held() {
             tracing::warn!(
                 waited_ms = began.elapsed().as_millis() as u64,
-                "modifiers still read as held with no Hex shortcut down; pasting anyway"
+                "modifiers still read as held with no Apprentice shortcut down; pasting anyway"
             );
             return Ok(());
         }

@@ -168,7 +168,7 @@ const FLUID_SPEECH_PRO: ModelDetails = ModelDetails {
         ("uk", 4.77),
     ],
     published_conditions: "The card's FLEURS test figures (greedy decoding) for the reference \
-                           NeMo model, not the Q8_0 file Hex downloads. The Q8_0 card reports \
+                           NeMo model, not the Q8_0 file Apprentice downloads. The Q8_0 card reports \
                            only 10.2% WER on EdAcc's 600 accented-English clips against the \
                            .nemo's 10.1%. The card publishes no FLEURS English figure. Dataset \
                            revisions, normalization, and scorer versions unknown",

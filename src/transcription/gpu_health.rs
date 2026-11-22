@@ -208,7 +208,7 @@ pub(crate) fn set_out_of_memory(fallback: Option<&Failure>) {
         Some(failure) => tracing::warn!(
             device = failure.device,
             reason = failure.reason,
-            "the GPU ran out of memory while transcribing; the dictation engine uses the CPU until a GPU load works or Hex restarts"
+            "the GPU ran out of memory while transcribing; the dictation engine uses the CPU until a GPU load works or Apprentice restarts"
         ),
         None if had => tracing::info!(
             "the dictation engine loaded the model on a GPU again; forgetting the out-of-memory fallback"

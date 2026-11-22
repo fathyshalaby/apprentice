@@ -148,7 +148,7 @@ impl AppInstance {
         let event = unsafe { CreateEventW(std::ptr::null(), 0, 0, name.as_ptr()) };
         if event.is_null() {
             return Err(eyre!(
-                "could not create the Hex instance event: {}",
+                "could not create the Apprentice instance event: {}",
                 std::io::Error::last_os_error()
             ));
         }
@@ -157,7 +157,7 @@ impl AppInstance {
             return Ok(Some(Self(event)));
         }
         if !start_hidden {
-            tracing::info!("Hex is already running; showing its window");
+            tracing::info!("Apprentice is already running; showing its window");
             // SAFETY: `event` is a valid handle owned by this function. A
             // launched app may take the foreground; pass that right on so
             // the running app can activate its window.
@@ -169,7 +169,7 @@ impl AppInstance {
             // A hidden launch (`hex start`, `hex restart`, a login launch)
             // only yields, so nothing else records that it came and went:
             // say why here, or a lost relaunch leaves no trace at all.
-            tracing::info!("Hex is already running; this hidden launch exits");
+            tracing::info!("Apprentice is already running; this hidden launch exits");
         }
         // SAFETY: `event` is a valid handle owned by this function.
         unsafe { CloseHandle(event) };
@@ -192,7 +192,7 @@ impl AppInstance {
                 }
             });
         if let Err(error) = spawned {
-            tracing::warn!(%error, "relaunching Hex will not show the running window");
+            tracing::warn!(%error, "relaunching Apprentice will not show the running window");
         }
     }
 }
@@ -359,7 +359,7 @@ impl WindowsDesktopHost {
             | DesktopAction::ConfirmUpdateSwitch
             | DesktopAction::WindowFocused => {
                 if let Err(error) = self.updater.act(&action) {
-                    self.error = Some(tr_fill("Could not restart Hex: {}", &format!("{error:#}")));
+                    self.error = Some(tr_fill("Could not restart Apprentice: {}", &format!("{error:#}")));
                 }
             }
             // Windows saves shortcuts from the window.
@@ -698,7 +698,7 @@ impl WindowsDesktopHost {
                 true
             }
             Some(Err(error)) => {
-                self.error = Some(tr_fill("Could not restart Hex: {}", &format!("{error:#}")));
+                self.error = Some(tr_fill("Could not restart Apprentice: {}", &format!("{error:#}")));
                 false
             }
             None => false,

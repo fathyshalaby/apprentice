@@ -701,7 +701,7 @@ pub(super) fn error_notes(p: Paint, error: &str) -> [El; 2] {
     [
         note(
             "error-title",
-            tr("Hex could not apply this change."),
+            tr("Apprentice could not apply this change."),
             p.danger(),
         ),
         note("error", error, p.muted()),
@@ -728,7 +728,7 @@ pub(super) fn listener_card(ui: &Ui, p: Paint) -> (String, El) {
     };
     let no_model = super::general::missing_model(ui).is_some();
     let hint = match (running, ui.settings.shortcut_mode) {
-        _ if no_model => tr("Hex can't dictate until a speech model is installed").to_string(),
+        _ if no_model => tr("Apprentice can't dictate until a speech model is installed").to_string(),
         _ if !ui.records_shortcuts() => {
             tr("Ready anywhere · Use your desktop's shortcuts to dictate").to_string()
         }
@@ -737,7 +737,7 @@ pub(super) fn listener_card(ui: &Ui, p: Paint) -> (String, El) {
             &shortcut,
         ),
         (true, ShortcutMode::Hold) => tr_fill("Ready anywhere · Hold {} to dictate", &shortcut),
-        (false, _) => tr_fill("Enable Hex to dictate into any app with {}", &shortcut),
+        (false, _) => tr_fill("Enable Apprentice to dictate into any app with {}", &shortcut),
     };
     let search = format!("{status} {hint} {} {}", tr("Enable"), tr("Disable"));
     let failure = ui
@@ -889,7 +889,7 @@ pub(super) fn desktop_commands(ui: &Ui, p: Paint) -> El {
             p,
             "raw-dictation",
             tr("Dictate without processing"),
-            tr("Paste your words as Hex heard them, skipping every step"),
+            tr("Paste your words as Apprentice heard them, skipping every step"),
             &["hex dictation toggle --raw"],
         ),
     ];
@@ -918,7 +918,7 @@ fn gnome_shortcuts_row(ui: &Ui, p: Paint) -> El {
     let on = ui.settings.gnome_keyboard_shortcuts;
     let description = if on {
         tr(
-            "Added to GNOME Settings › Keyboard › Custom Shortcuts while Hex is enabled. GNOME runs them on the key press, so your dictation shortcut toggles dictation. Change the keys there.",
+            "Added to GNOME Settings › Keyboard › Custom Shortcuts while Apprentice is enabled. GNOME runs them on the key press, so your dictation shortcut toggles dictation. Change the keys there.",
         )
     } else {
         tr(

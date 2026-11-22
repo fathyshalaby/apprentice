@@ -466,7 +466,7 @@ impl Updater {
             return;
         };
         if let Err(error) = crate::desktop::opencode_catalog::open_url(&url) {
-            tracing::warn!(%error, "could not open the Hex download");
+            tracing::warn!(%error, "could not open the Apprentice download");
         }
     }
 
@@ -622,7 +622,7 @@ fn discarded_state(state: &State, staged: bool) -> State {
 /// still finishing a meeting, and the relaunch would cut it off.
 fn restart_hold() -> Option<&'static str> {
     crate::meeting::recording()
-        .then_some("Hex is finishing a meeting; restart to update when it's done")
+        .then_some("Apprentice is finishing a meeting; restart to update when it's done")
 }
 
 /// Writes `next` unless a quit already installed the staged update. That
@@ -802,7 +802,7 @@ fn check(
                 .and_then(|console| platform::stage(&file, console.as_deref(), &version));
             #[cfg(not(target_os = "windows"))]
             let staged = platform::stage(&file, &version);
-            let staged = staged.wrap_err_with(|| format!("could not stage Hex {version}"))?;
+            let staged = staged.wrap_err_with(|| format!("could not stage Apprentice {version}"))?;
             // A quit installs the staged update itself (`install_on_quit`) and
             // holds both locks, so take them in the same order and look again
             // under them: a release that lands after that must not replace the
@@ -1248,7 +1248,7 @@ mod tests {
 
         assert!(
             finish_restart(&updater.shared, State::Ready, None, false),
-            "the quit already installed the update; Hex still quits"
+            "the quit already installed the update; Apprentice still quits"
         );
         assert!(matches!(
             *lock(&updater.shared.restart),
@@ -1305,7 +1305,7 @@ mod tests {
     fn restart_to_update_waits_while_a_meeting_records() {
         let updater = Updater::idle_checking();
         *lock(&updater.shared.state) = State::Ready;
-        let hold = Some("Hex is finishing a meeting; restart to update when it's done");
+        let hold = Some("Apprentice is finishing a meeting; restart to update when it's done");
         let error = updater.request_restart(hold).unwrap_err();
         assert!(error.to_string().contains("meeting"));
         assert!(matches!(*lock(&updater.shared.state), State::Ready));

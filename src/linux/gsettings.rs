@@ -78,7 +78,7 @@ mod tests {
 
     #[test]
     fn strings_quote_for_gsettings() {
-        assert_eq!(string_text("Hex"), "'Hex'");
+        assert_eq!(string_text("Apprentice"), "'Apprentice'");
         assert_eq!(string_text("it's \\ ok"), "'it\\'s \\\\ ok'");
     }
 }

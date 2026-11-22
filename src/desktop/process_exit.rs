@@ -140,11 +140,11 @@ fn finish_within(drain: &Drain, deadline: Duration, code: i32) -> ! {
                     std::thread::sleep(grace);
                 }
             }
-            tracing::warn!("Hex stopped before its workers finished");
+            tracing::warn!("Apprentice stopped before its workers finished");
             end_process(code);
         });
     drain.run();
-    tracing::info!("Hex stopped");
+    tracing::info!("Apprentice stopped");
     end_process(code)
 }
 
@@ -198,7 +198,7 @@ pub(crate) fn arm_deadline() {
     static ARMED: Once = Once::new();
     ARMED.call_once(|| {
         if let Err(error) = run_deadline(STOP_DEADLINE, false, pending_work, || end_process(0)) {
-            tracing::warn!(%error, "could not arm Hex's exit deadline");
+            tracing::warn!(%error, "could not arm Apprentice's exit deadline");
         }
     });
 }
@@ -217,7 +217,7 @@ pub(crate) fn arm_windows_deadline(code: i32) {
             || "the runtime, meetings, local API, or tray",
             move || end_process(code),
         ) {
-            tracing::warn!(%error, "could not arm Hex's exit deadline");
+            tracing::warn!(%error, "could not arm Apprentice's exit deadline");
         }
     });
 }
@@ -251,7 +251,7 @@ fn run_deadline(
             }
             tracing::warn!(
                 pending = pending(),
-                "Hex's shutdown did not finish before its exit deadline"
+                "Apprentice's shutdown did not finish before its exit deadline"
             );
             exit();
         })

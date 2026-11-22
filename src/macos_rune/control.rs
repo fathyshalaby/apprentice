@@ -91,8 +91,8 @@ impl Pump {
                     let quitting = answer.is_ok();
                     let _ = reply.send(
                         match answer {
-                            Ok(()) if restart => ControlReply::done("Restarting Hex"),
-                            Ok(()) => ControlReply::done("Quitting Hex"),
+                            Ok(()) if restart => ControlReply::done("Restarting Apprentice"),
+                            Ok(()) => ControlReply::done("Quitting Apprentice"),
                             Err(error) => error.into(),
                         }
                         .into(),
@@ -250,7 +250,7 @@ impl Pump {
                         .map_err(|error| ControlError::new("unavailable", error.to_string()))
                         .map(|()| {
                             ControlReply::done(format!(
-                                "Downloading {} ({}); Hex switches to it once it's ready. \
+                                "Downloading {} ({}); Apprentice switches to it once it's ready. \
                                  `hex status` shows progress, `hex model cancel` stops it",
                                 definition.name,
                                 definition.size_label()
@@ -301,10 +301,10 @@ impl Pump {
                     ControlReply::error("unsupported", "updates are managed by your organization")
                 }
                 DesktopUpdateStatus::Unavailable | DesktopUpdateStatus::SourceBuild => {
-                    ControlReply::error("unavailable", "this Hex build doesn't update itself")
+                    ControlReply::error("unavailable", "this Apprentice build doesn't update itself")
                 }
                 _ => match crate::macos_rune::update_action(&DesktopAction::CheckForUpdates) {
-                    Ok(()) => ControlReply::done("Checking for updates; Hex shows what it finds"),
+                    Ok(()) => ControlReply::done("Checking for updates; Apprentice shows what it finds"),
                     Err(error) => ControlReply::error("unavailable", format!("{error:#}")),
                 },
             }),
@@ -412,7 +412,7 @@ impl Pump {
                 _ if now >= waiter.deadline => ControlReply::done(if waiter.stop {
                     "Asked the meeting to stop; `hex status` shows when it's transcribing"
                 } else {
-                    "Hex is starting the recording; `hex status` shows when it's recording"
+                    "Apprentice is starting the recording; `hex status` shows when it's recording"
                 }),
                 _ => return true,
             };
@@ -664,12 +664,12 @@ fn listener_ready(runtime: &RuntimeHandle) -> Result<(), ControlError> {
     if let Some(failure) = listener.and_then(|listener| listener.warning.as_ref()) {
         return Err(ControlError::new(
             "listener-stopped",
-            format!("the listener stopped ({failure}); restart Hex"),
+            format!("the listener stopped ({failure}); restart Apprentice"),
         ));
     }
     Err(ControlError::new(
         "not-ready",
-        "Hex is waiting for setup (permissions or the dictation model); run `hex status`",
+        "Apprentice is waiting for setup (permissions or the dictation model); run `hex status`",
     ))
 }
 
@@ -899,7 +899,7 @@ fn status(
 ) -> Result<ControlReply, ControlError> {
     let published = runtime
         .published()
-        .ok_or_else(|| ControlError::new("not-ready", "Hex is still starting; try again"))?;
+        .ok_or_else(|| ControlError::new("not-ready", "Apprentice is still starting; try again"))?;
     // A stopped listener cannot say what it was doing.
     let snapshot = match &published.listener.warning {
         Some(failure) => Err(ControlError::new("listener-stopped", failure.clone())),

@@ -360,7 +360,7 @@ pub(super) fn reveal(ui: &mut Ui, link: &LabsLink, tx: &mut Tx) {
             tx.scroll_into_view(format!("lab-card-{id}"));
             tx.wake_after(FLASH);
         }
-        None => tracing::warn!(feature = %id, "a Labs link named no feature this Hex has"),
+        None => tracing::warn!(feature = %id, "a Labs link named no feature this Apprentice has"),
     }
 }
 
@@ -691,7 +691,7 @@ fn rows(ui: &Ui) -> Vec<Row> {
         Some(_) => drop,
         None => Row {
             about: tr_fill(
-                "Drop a {} file on the Hex window to save its transcript as a text file next to it",
+                "Drop a {} file on the Apprentice window to save its transcript as a text file next to it",
                 super::drop_transcribe::formats(),
             )
             .into(),

@@ -72,7 +72,7 @@ pub(crate) fn import(source: &Path) -> Result<MeetingManifest> {
         sync_file(&marker)?;
         sync_directory(&directory)?;
         if crate::desktop::process_exit::quitting() {
-            return Err(eyre!("Hex is quitting; the audio was not imported"));
+            return Err(eyre!("Apprentice is quitting; the audio was not imported"));
         }
         let decoded = directory.join("system.importing.wav");
         decode(source, &decoded)?;
@@ -159,7 +159,7 @@ pub(crate) fn import(source: &Path) -> Result<MeetingManifest> {
         write_manifest(&directory, &manifest)?;
         tracing::info!(
             meeting = id,
-            "Hex quit before an imported transcript ran; it finishes at the next launch"
+            "Apprentice quit before an imported transcript ran; it finishes at the next launch"
         );
         return Ok(manifest);
     }
@@ -221,7 +221,7 @@ extern "C" fn hex_is_quitting() -> c_int {
 
 fn take_error(error: *mut c_char) -> color_eyre::Report {
     if error.is_null() {
-        return eyre!("Hex could not read this audio file");
+        return eyre!("Apprentice could not read this audio file");
     }
     // SAFETY: the bridge answers a NUL-terminated string it allocated.
     let message = unsafe { CStr::from_ptr(error) }

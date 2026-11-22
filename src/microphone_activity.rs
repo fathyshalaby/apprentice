@@ -1185,7 +1185,7 @@ mod tests {
                 Some("app.zen-browser.zen"),
                 true,
             ),
-            ("anomaly.hex", "Hex", None, false),
+            ("anomaly.hex", "Apprentice", None, false),
             ("zoom", "Zoom", Some("us.zoom.xos"), false),
             (
                 "ms-teams.exe",

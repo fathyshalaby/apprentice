@@ -347,7 +347,7 @@ pub fn menu_state(
 ) -> MenuState {
     let Some(status) = status else {
         return MenuState {
-            hex_title: "Hex (not running)",
+            hex_title: "Apprentice (not running)",
             hex_enabled: false,
             hex_checked: false,
             models: Vec::new(),
@@ -371,7 +371,7 @@ pub fn menu_state(
         .collect();
     let ready = chosen.is_some();
     MenuState {
-        hex_title: if ready { "Hex" } else { "Hex (no model ready)" },
+        hex_title: if ready { "Apprentice" } else { "Apprentice (no model ready)" },
         hex_enabled: ready,
         hex_checked: ready && preferred == Engine::Hex,
         models,
@@ -517,7 +517,7 @@ fn run(
 ) -> TranscriptData {
     let name = match engine {
         Engine::Apple => return apple(),
-        Engine::Hex => "Hex",
+        Engine::Hex => "Apprentice",
         Engine::Command => "Command",
     };
     match other() {
@@ -556,7 +556,7 @@ fn try_hex(audio: &RecordedAudio) -> Result<Option<TranscriptData>> {
     let not_connected = |reason: String| {
         LOGGED_NOT_CONNECTED.call_once(|| {
             crate::log::scrawl_log(format!(
-                "Hex preferred but unavailable ({reason}); using {LOCAL_ENGINE_TITLE}"
+                "Apprentice preferred but unavailable ({reason}); using {LOCAL_ENGINE_TITLE}"
             ));
         });
         Ok(None)
@@ -577,7 +577,7 @@ fn try_hex(audio: &RecordedAudio) -> Result<Option<TranscriptData>> {
 fn try_hex(_audio: &RecordedAudio) -> Result<Option<TranscriptData>> {
     LOGGED_NOT_CONNECTED.call_once(|| {
         crate::log::scrawl_log(format!(
-            "Hex preferred but hex-client feature is disabled; using {LOCAL_ENGINE_TITLE}"
+            "Apprentice preferred but hex-client feature is disabled; using {LOCAL_ENGINE_TITLE}"
         ));
     });
     Ok(None)
@@ -676,7 +676,7 @@ mod tests {
 
         let away = menu_state(Engine::Hex, None, None);
         assert!(!away.hex_checked && !away.hex_enabled);
-        assert_eq!(away.hex_title, "Hex (not running)");
+        assert_eq!(away.hex_title, "Apprentice (not running)");
 
         let up = status(vec![
             ready("parakeet_v3", "Parakeet v3"),
@@ -702,7 +702,7 @@ mod tests {
         }]);
         let none = menu_state(Engine::Hex, Some(&empty), None);
         assert!(!none.hex_checked && !none.hex_enabled && none.models.is_empty());
-        assert_eq!(none.hex_title, "Hex (no model ready)");
+        assert_eq!(none.hex_title, "Apprentice (no model ready)");
     }
 
     #[test]

@@ -177,7 +177,7 @@ pub fn wait_until_restored(deadline: Duration) -> bool {
             return true;
         }
         if started.elapsed() >= deadline {
-            tracing::warn!("Hex quit before restoring output or media after recording");
+            tracing::warn!("Apprentice quit before restoring output or media after recording");
             return false;
         }
         thread::sleep(Duration::from_millis(10));

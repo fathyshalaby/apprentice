@@ -45,7 +45,7 @@ impl Highlight {
                 20261029,
                 "sounds",
                 tr("Sounds"),
-                tr("Preview the tones Hex plays when you dictate."),
+                tr("Preview the tones Apprentice plays when you dictate."),
                 "open-sounds",
                 tr("Sounds"),
             ),

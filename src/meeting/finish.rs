@@ -36,7 +36,7 @@ pub(crate) fn finish_transcription(
             tracing::info!(
                 meeting = manifest.id,
                 %error,
-                "Hex quit during final transcription; the transcript finishes at the next launch"
+                "Apprentice quit during final transcription; the transcript finishes at the next launch"
             );
             Ok(manifest)
         }

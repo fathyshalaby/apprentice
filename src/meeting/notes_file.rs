@@ -158,7 +158,7 @@ fn update(manifest: &mut MeetingManifest, transcript: &Path, create: bool) -> Re
             tracing::info!(
                 meeting = manifest.id,
                 path = %path.display(),
-                "kept the meeting's notes file, which changed since Hex wrote it"
+                "kept the meeting's notes file, which changed since Apprentice wrote it"
             );
             return Ok(());
         }

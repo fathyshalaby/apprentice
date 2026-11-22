@@ -615,7 +615,7 @@ impl SoundSet {
     /// The English name Settings shows, translated where it is shown.
     pub fn name(self) -> &'static str {
         match self {
-            Self::Signature => "Hex signature",
+            Self::Signature => "Apprentice signature",
             Self::Classic => "Classic",
             Self::Click => "Click",
             Self::Soft => "Soft tone",
@@ -629,7 +629,7 @@ impl SoundSet {
     pub fn character(self) -> &'static str {
         match self {
             Self::Signature => "A kalimba motif that rises and comes home",
-            Self::Classic => "The tones Hex first shipped with",
+            Self::Classic => "The tones Apprentice first shipped with",
             Self::Click => "Mechanical key clicks",
             Self::Soft => "Warm, rounded blips",
             Self::Wood => "Soft marimba and hollow wood blocks",

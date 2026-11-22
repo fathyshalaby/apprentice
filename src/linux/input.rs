@@ -1339,7 +1339,7 @@ impl Backend {
         if let Err(error) = portal.forget_legacy_kde_shortcuts(&keep) {
             tracing::warn!(
                 error = format!("{error:#}"),
-                "could not remove Hex's old shortcuts from KDE"
+                "could not remove Apprentice's old shortcuts from KDE"
             );
         }
         // GNOME asks for approval whenever Hex binds shortcuts it hasn't
@@ -1357,7 +1357,7 @@ impl Backend {
                 tracing::warn!(
                     error = format!("{error:#}"),
                     desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default(),
-                    "the shortcuts portal's backend could not bind Hex's shortcuts; dictation follows the hex commands, which reach the service listener (`hex start`) but not a foreground `hex dictate`"
+                    "the shortcuts portal's backend could not bind Apprentice's shortcuts; dictation follows the hex commands, which reach the service listener (`hex start`) but not a foreground `hex dictate`"
                 );
                 drop(portal);
                 self.wait_for_portal(&mut dispatcher, false)?;
@@ -1365,7 +1365,7 @@ impl Backend {
             }
             Err(error) => {
                 return Err(error.wrap_err(
-                    "the desktop did not approve Hex's shortcuts; choose Enable to ask again",
+                    "the desktop did not approve Apprentice's shortcuts; choose Enable to ask again",
                 ));
             }
         };
@@ -1387,13 +1387,13 @@ impl Backend {
                 None if shortcut.unconfirmed => {
                     tracing::info!(
                         name = %shortcut.name,
-                        "the desktop assigns this Hex shortcut's key itself; Hex cannot confirm it"
+                        "the desktop assigns this Apprentice shortcut's key itself; Apprentice cannot confirm it"
                     );
                 }
                 None => {
                     tracing::warn!(
                         name = %shortcut.name,
-                        "the desktop did not grant a Hex shortcut"
+                        "the desktop did not grant a Apprentice shortcut"
                     );
                 }
                 Some(_) => {}
@@ -1443,7 +1443,7 @@ impl Backend {
                         dispatcher.keys.released_all();
                         dispatcher.input(Input::Lost);
                         let _ = dispatcher.flush();
-                        return Err(eyre!("the desktop closed Hex's shortcuts portal session"));
+                        return Err(eyre!("the desktop closed Apprentice's shortcuts portal session"));
                     }
                 };
                 dispatcher.input(input);
@@ -1472,7 +1472,7 @@ impl Backend {
         {
             tracing::warn!(
                 error = format!("{error:#}"),
-                "could not clear Hex's shortcuts from the desktop"
+                "could not clear Apprentice's shortcuts from the desktop"
             );
         }
         Ok(())

@@ -59,11 +59,11 @@ pub fn call_developer(
     let (status, body) = post_json("/dev/control", &body, DEVELOPER_CONTROL_TIMEOUT, 64 * 1024)?;
     if status != 200 {
         bail!(
-            "Hex developer control failed: {}",
+            "Apprentice developer control failed: {}",
             error_code(status, &body)
         );
     }
-    serde_json::from_slice(&body).wrap_err("Hex developer response is invalid")
+    serde_json::from_slice(&body).wrap_err("Apprentice developer response is invalid")
 }
 
 /// Sends one `hex` control request to the running app.
@@ -83,17 +83,17 @@ pub fn call_control(
         let code = error_code(status, &body);
         bail!(match code.as_str() {
             "control-unavailable" => {
-                "the running Hex doesn't accept control commands; update Hex".to_string()
+                "the running Apprentice doesn't accept control commands; update Apprentice".to_string()
             }
-            "control-busy" => "Hex is busy with other control commands; try again".into(),
-            "control-timeout" => "Hex didn't answer in time; check `hex status`".into(),
+            "control-busy" => "Apprentice is busy with other control commands; try again".into(),
+            "control-timeout" => "Apprentice didn't answer in time; check `hex status`".into(),
             "invalid-control-command" => {
-                "the running Hex doesn't know this command; update Hex".into()
+                "the running Apprentice doesn't know this command; update Apprentice".into()
             }
-            _ => format!("Hex refused the request ({code})"),
+            _ => format!("Apprentice refused the request ({code})"),
         });
     }
-    serde_json::from_slice(&body).wrap_err("Hex sent an invalid control reply")
+    serde_json::from_slice(&body).wrap_err("Apprentice sent an invalid control reply")
 }
 
 /// The running app's process id, if its local API is live.
@@ -107,16 +107,16 @@ pub(super) fn live_discovery() -> Result<DiscoveryDocument> {
     let bytes = match fs::read(&path) {
         Ok(bytes) => bytes,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-            bail!("Hex is not running")
+            bail!("Apprentice is not running")
         }
         Err(error) => {
             return Err(error).wrap_err_with(|| format!("could not read {}", path.display()));
         }
     };
     let document: DiscoveryDocument =
-        serde_json::from_slice(&bytes).wrap_err("Hex's local API discovery file is invalid")?;
+        serde_json::from_slice(&bytes).wrap_err("Apprentice's local API discovery file is invalid")?;
     if !valid_discovery(&document) || !discovery_is_live(&document) {
-        bail!("Hex is not running");
+        bail!("Apprentice is not running");
     }
     Ok(document)
 }
@@ -174,7 +174,7 @@ pub(crate) fn discover() -> Result<Discovered> {
         }
     };
     let document: DiscoveryDocument =
-        serde_json::from_slice(&bytes).wrap_err("Hex's local API discovery file is invalid")?;
+        serde_json::from_slice(&bytes).wrap_err("Apprentice's local API discovery file is invalid")?;
     classify(&document, discovery_is_live(&document))
 }
 
@@ -184,13 +184,13 @@ fn classify(document: &DiscoveryDocument, live: bool) -> Result<Discovered> {
     }
     if document.api_version != API_VERSION {
         bail!(
-            "the running Hex speaks local API version {}, not {API_VERSION}; \
-             update Hex or quit it",
+            "the running Apprentice speaks local API version {}, not {API_VERSION}; \
+             update Apprentice or quit it",
             document.api_version
         );
     }
     if !valid_token(&document.token) {
-        bail!("the running Hex's local API token is malformed; restart Hex");
+        bail!("the running Apprentice's local API token is malformed; restart Apprentice");
     }
     Ok(Discovered::Live(Endpoint::of(document)))
 }
@@ -283,7 +283,7 @@ impl Endpoint {
         use std::io::BufRead as _;
 
         let mut stream = TcpStream::connect_timeout(&self.address, CONNECTION_TIMEOUT)
-            .wrap_err("could not connect to Hex's local API")?;
+            .wrap_err("could not connect to Apprentice's local API")?;
         stream.set_read_timeout(Some(idle))?;
         stream.set_write_timeout(Some(CONNECTION_TIMEOUT))?;
         write!(
@@ -301,21 +301,21 @@ impl Endpoint {
                 .take(max_event as u64 + 1)
                 .read_until(b'\n', line)?;
             if line.len() > max_event {
-                bail!("Hex sent an event that is too large");
+                bail!("Apprentice sent an event that is too large");
             }
             Ok::<_, color_eyre::Report>(read)
         };
         if next_line(&mut reader, &mut line)? == 0 {
-            bail!("Hex didn't answer");
+            bail!("Apprentice didn't answer");
         }
         let status = std::str::from_utf8(&line)
             .ok()
             .and_then(|line| line.split_ascii_whitespace().nth(1))
             .and_then(|status| status.parse::<u16>().ok())
-            .ok_or_else(|| eyre!("Hex's response has no HTTP status"))?;
+            .ok_or_else(|| eyre!("Apprentice's response has no HTTP status"))?;
         loop {
             if next_line(&mut reader, &mut line)? == 0 {
-                bail!("Hex's response is malformed");
+                bail!("Apprentice's response is malformed");
             }
             if line == b"\r\n" || line == b"\n" {
                 break;
@@ -326,7 +326,7 @@ impl Endpoint {
             reader
                 .take(max_event as u64 + 1)
                 .read_to_end(&mut body)
-                .wrap_err("Hex didn't finish answering")?;
+                .wrap_err("Apprentice didn't finish answering")?;
             body.truncate(max_event);
             return Ok((status, body));
         }
@@ -335,7 +335,7 @@ impl Endpoint {
                 continue;
             };
             let value = serde_json::from_slice::<serde_json::Value>(data.trim_ascii())
-                .wrap_err("Hex sent an unreadable event")?;
+                .wrap_err("Apprentice sent an unreadable event")?;
             if event(&value) {
                 break;
             }
@@ -354,7 +354,7 @@ fn send(
     max_response: usize,
 ) -> Result<(u16, Vec<u8>)> {
     let mut stream = TcpStream::connect_timeout(&address, CONNECTION_TIMEOUT)
-        .wrap_err("could not connect to Hex's local API")?;
+        .wrap_err("could not connect to Apprentice's local API")?;
     stream.set_read_timeout(Some(read_timeout))?;
     stream.set_write_timeout(Some(CONNECTION_TIMEOUT))?;
     write!(
@@ -370,15 +370,15 @@ fn send(
         .take(max_response as u64 + 1)
         .read_to_end(&mut response);
     if response.is_empty() {
-        read.wrap_err("Hex didn't answer")?;
-        upload.wrap_err("Hex didn't take the upload")?;
-        bail!("Hex didn't answer");
+        read.wrap_err("Apprentice didn't answer")?;
+        upload.wrap_err("Apprentice didn't take the upload")?;
+        bail!("Apprentice didn't answer");
     }
     if response.len() > max_response {
-        bail!("Hex's response is too large");
+        bail!("Apprentice's response is too large");
     }
     let Some(header_end) = response.windows(4).position(|window| window == b"\r\n\r\n") else {
-        bail!("Hex's response is malformed");
+        bail!("Apprentice's response is malformed");
     };
     let headers = std::str::from_utf8(&response[..header_end])?;
     let status = headers
@@ -386,7 +386,7 @@ fn send(
         .next()
         .and_then(|line| line.split_ascii_whitespace().nth(1))
         .and_then(|status| status.parse::<u16>().ok())
-        .ok_or_else(|| eyre!("Hex's response has no HTTP status"))?;
+        .ok_or_else(|| eyre!("Apprentice's response has no HTTP status"))?;
     Ok((status, response.split_off(header_end + 4)))
 }
 
@@ -648,7 +648,7 @@ mod tests {
             Discovered::Live(_)
         ));
         let other = classify(&document("1", TOKEN), true).unwrap_err();
-        assert!(format!("{other}").contains("update Hex"), "{other}");
+        assert!(format!("{other}").contains("update Apprentice"), "{other}");
         assert!(classify(&document(super::API_VERSION, "hex_x"), true).is_err());
     }
 

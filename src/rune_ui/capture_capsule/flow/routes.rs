@@ -165,7 +165,7 @@ mod tests {
                 vec![Dest::new("Board", "same page").session("ses_board")],
                 vec![
                     Dest::new("Home", "recent").session("ses_home"),
-                    Dest::new("Hex", "recent").session("ses_hex"),
+                    Dest::new("Apprentice", "recent").session("ses_hex"),
                 ],
             )),
             0.0,
@@ -180,7 +180,7 @@ mod tests {
         // re-sorted by their latest activity, and one more session.
         flow.input(
             Input::Refined(guess_of(
-                vec![Dest::new("Hex", "mentioned").session("ses_hex")],
+                vec![Dest::new("Apprentice", "mentioned").session("ses_hex")],
                 vec![
                     Dest::new("Rune", "recent").session("ses_rune"),
                     Dest::new("Board", "recent").session("ses_board"),

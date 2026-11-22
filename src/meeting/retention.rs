@@ -143,7 +143,7 @@ pub(super) fn trash_expired(
         } else {
             tracing::info!(
                 meeting = manifest.id,
-                "kept the meeting's Markdown, which changed since Hex wrote it"
+                "kept the meeting's Markdown, which changed since Apprentice wrote it"
             );
         }
     }
@@ -155,7 +155,7 @@ pub(super) fn trash_expired(
         } else {
             tracing::info!(
                 meeting = manifest.id,
-                "kept the meeting's notes file, which changed since Hex wrote it"
+                "kept the meeting's notes file, which changed since Apprentice wrote it"
             );
         }
     }

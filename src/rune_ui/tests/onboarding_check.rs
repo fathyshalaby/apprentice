@@ -141,7 +141,7 @@ fn onboarding_continue_without_model() {
         "Add model file…"
     );
     assert!(
-        texts(&rt).contains(&"Hex can't dictate until a speech model is installed".to_owned()),
+        texts(&rt).contains(&"Apprentice can't dictate until a speech model is installed".to_owned()),
         "the status says so too"
     );
 
@@ -326,7 +326,7 @@ fn onboarding_walkthrough() {
     let mut rt = runtime_for(ui, true, PANE_SIZE);
     let step = |rt: &Runtime<Ui>| rt.state.tour.as_ref().map(|tour| tour.flow.step());
     let shown = texts(&rt);
-    assert!(shown.contains(&"Setting up Hex".to_owned()), "{shown:?}");
+    assert!(shown.contains(&"Setting up Apprentice".to_owned()), "{shown:?}");
     assert!(
         !shown.contains(&"Choose a speech model".to_owned()),
         "nothing found, so no model step"
@@ -369,15 +369,15 @@ fn onboarding_walkthrough() {
     rt.update(|ui, _| super::super::onboarding_kit::live::fixture_resume(ui, Page::Try));
     settle(&mut rt);
     assert_eq!(step(&rt), Some(Step::TryIt));
-    assert!(texts(&rt).contains(&"With Hex".to_owned()));
+    assert!(texts(&rt).contains(&"With Apprentice".to_owned()));
     assert!(rt.find("skip").is_some(), "Skip shows on the practice too");
     tap(&mut rt, "done");
-    assert!(texts(&rt).contains(&"Hex is ready".to_owned()));
+    assert!(texts(&rt).contains(&"Apprentice is ready".to_owned()));
     tap(&mut rt, "start-using-hex");
-    assert!(rt.state.tour.is_none(), "Start using Hex closes onboarding");
+    assert!(rt.state.tour.is_none(), "Start using Apprentice closes onboarding");
     assert!(rt.state.first_run.is_none());
     println!(
-        "onboarding walkthrough: Setting up Hex -> {} downloaded ({} bytes) -> Your turn -> Hex is ready",
+        "onboarding walkthrough: Setting up Apprentice -> {} downloaded ({} bytes) -> Your turn -> Apprentice is ready",
         definition.name,
         downloaded.load(std::sync::atomic::Ordering::Relaxed)
     );
@@ -401,7 +401,7 @@ fn the_practice_and_ready_pages_are_translated() {
         "anywhere, then talk.",
         "to answer",
         "Keyboard mode",
-        "Hex is ready",
+        "Apprentice is ready",
     ];
     for (scene, expected) in [
         (
@@ -448,10 +448,10 @@ fn a_shortcut_that_did_not_start_shows_only_reopen() {
             .filter(|e| !e.exiting && e.path.ends_with("/reopen-hex"))
             .count(),
         1,
-        "one Reopen Hex"
+        "one Reopen Apprentice"
     );
     assert!(
-        shown.iter().any(|t| t == "Hex's shortcut didn't start."),
+        shown.iter().any(|t| t == "Apprentice's shortcut didn't start."),
         "{shown:?}"
     );
 }
@@ -490,7 +490,7 @@ fn the_login_ask_speaks_each_platforms_wording() {
 
     let mac = texts(&runtime("mac-onboarding-ready", true, PANE_SIZE));
     assert!(
-        mac.contains(&"Open Hex when your Mac starts?".to_owned()),
+        mac.contains(&"Open Apprentice when your Mac starts?".to_owned()),
         "{mac:?}"
     );
     assert!(
@@ -509,7 +509,7 @@ fn the_login_ask_speaks_each_platforms_wording() {
                 PANE_SIZE,
             ));
             assert!(
-                off.contains(&"Open Hex when your computer starts?".to_owned()),
+                off.contains(&"Open Apprentice when your computer starts?".to_owned()),
                 "{caps:?}: {off:?}"
             );
             assert!(
@@ -531,7 +531,7 @@ fn the_login_ask_speaks_each_platforms_wording() {
             PANE_SIZE,
         ));
         assert!(
-            on.contains(&"Hex opens when your computer starts.".to_owned()),
+            on.contains(&"Apprentice opens when your computer starts.".to_owned()),
             "{caps:?}: {on:?}"
         );
         assert!(

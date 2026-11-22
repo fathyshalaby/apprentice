@@ -21,16 +21,16 @@ pub(super) fn permission_lines(need: CaptureNeed, grant: Grant) -> Done {
         Grant::Off => Done {
             why: Some(why.into()),
             ask: Some(tr("Allow").into()),
-            ..Done::plain(Lead::Warning, tr_fill("Hex needs {}", name))
+            ..Done::plain(Lead::Warning, tr_fill("Apprentice needs {}", name))
         },
         Grant::Asked => Done {
-            why: Some(tr("turn Hex on in System Settings").into()),
+            why: Some(tr("turn Apprentice on in System Settings").into()),
             ask: Some(tr("Allow").into()),
-            ..Done::plain(Lead::Warning, tr_fill("Hex needs {}", name))
+            ..Done::plain(Lead::Warning, tr_fill("Apprentice needs {}", name))
         },
         Grant::Restart => Done {
-            why: Some(tr("turns on when Hex restarts").into()),
-            ask: Some(tr("Restart Hex").into()),
+            why: Some(tr("turns on when Apprentice restarts").into()),
+            ask: Some(tr("Restart Apprentice").into()),
             ..Done::plain(Lead::Warning, tr_fill("{} is on", name))
         },
         Grant::Ready => Done {

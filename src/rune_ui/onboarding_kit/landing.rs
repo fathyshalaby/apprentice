@@ -165,16 +165,16 @@ impl Home {
     /// the computer's elsewhere.
     pub(super) fn ask_question(self) -> &'static str {
         match self {
-            Self::MenuBar => tr("Open Hex when your Mac starts?"),
-            Self::Tray | Self::Launcher => tr("Open Hex when your computer starts?"),
+            Self::MenuBar => tr("Open Apprentice when your Mac starts?"),
+            Self::Tray | Self::Launcher => tr("Open Apprentice when your computer starts?"),
         }
     }
 
     /// The ask once the login item is on.
     pub(super) fn ask_started(self) -> &'static str {
         match self {
-            Self::MenuBar => tr("Hex opens when your Mac starts."),
-            Self::Tray | Self::Launcher => tr("Hex opens when your computer starts."),
+            Self::MenuBar => tr("Apprentice opens when your Mac starts."),
+            Self::Tray | Self::Launcher => tr("Apprentice opens when your computer starts."),
         }
     }
 
@@ -235,7 +235,7 @@ pub(crate) fn ready(
                     .gap(10.0)
                     .items_center()
                     .child(
-                        text(tr("Hex is ready"))
+                        text(tr("Apprentice is ready"))
                             .key("title")
                             .font(title_font(p))
                             .color(p.text()),

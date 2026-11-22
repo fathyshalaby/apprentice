@@ -1357,7 +1357,7 @@ mod tests {
             assert!(shown.open.is_none());
             flow.tick(MENU_HINT_S + 0.1);
             assert_eq!(flow.pres(MENU_HINT_S + 0.1), Pres::Hidden);
-            assert_eq!(flow.keys(), None, "no key is Hex's once it's gone");
+            assert_eq!(flow.keys(), None, "no key is Apprentice's once it's gone");
 
             let mut flow = Flow::new();
             flow.input(Input::Stage(Stage::Done), 0.0);
@@ -2689,7 +2689,7 @@ mod tests {
     fn a_row_names_its_folder_only_beside_a_row_with_the_same_title() {
         let route = sessions(&[
             ("HOME", "home", "ses_1"),
-            ("Hex", "hex", "ses_2"),
+            ("Apprentice", "hex", "ses_2"),
             ("home", "dotfiles", "ses_3"),
         ]);
         let mut flow = Flow::new();
@@ -3171,7 +3171,7 @@ mod tests {
         flow.input(Input::NeedsPermission(screen, AskedBy::Capture), 1.0);
         let shown = done(&flow, 1.0);
         assert_eq!(shown.lead, Lead::Warning);
-        assert_eq!(shown.text, "Hex needs Screen Recording");
+        assert_eq!(shown.text, "Apprentice needs Screen Recording");
         assert_eq!(shown.why.as_deref(), Some("to see your screen"));
         assert_eq!(shown.ask.as_deref(), Some("Allow"));
         assert_eq!(flow.keys(), None);
@@ -3184,7 +3184,7 @@ mod tests {
         let waiting = done(&flow, 4.0);
         assert_eq!(
             waiting.why.as_deref(),
-            Some("turn Hex on in System Settings")
+            Some("turn Apprentice on in System Settings")
         );
         // It waits a good while, and never folds under the pointer.
         flow.tick(60.0);
@@ -3193,7 +3193,7 @@ mod tests {
         flow.input(Input::Permission(screen, Grant::Restart), 61.0);
         let restart = done(&flow, 61.0);
         assert_eq!(restart.text, "Screen Recording is on");
-        assert_eq!(restart.ask.as_deref(), Some("Restart Hex"));
+        assert_eq!(restart.ask.as_deref(), Some("Restart Apprentice"));
         assert_eq!(flow.click(Id::Ask, 62.0), vec![Action::Restart]);
 
         flow.input(Input::Permission(screen, Grant::Ready), 63.0);
@@ -3211,7 +3211,7 @@ mod tests {
             Input::NeedsPermission(CaptureNeed::Microphone, AskedBy::Capture),
             70.0,
         );
-        assert_eq!(done(&flow, 70.0).text, "Hex needs Microphone");
+        assert_eq!(done(&flow, 70.0).text, "Apprentice needs Microphone");
         assert!(flow.tick(70.0 + PERMISSION_HOLD_S));
         assert_eq!(flow.pres(70.0 + PERMISSION_HOLD_S), Pres::Hidden);
         flow.input(Input::NeedsPermission(screen, AskedBy::Capture), 300.0);
@@ -3239,7 +3239,7 @@ mod tests {
                 Input::NeedsPermission(screen, AskedBy::Screenshots { record }),
                 1.0,
             );
-            assert_eq!(done(&flow, 1.0).text, "Hex needs Screen Recording");
+            assert_eq!(done(&flow, 1.0).text, "Apprentice needs Screen Recording");
             flow.input(Input::Permission(screen, Grant::Ready), 2.0);
             assert_eq!(flow.click(Id::Ask, 3.0), vec![action]);
             assert_eq!(flow.pres(3.0), Pres::Hidden, "the helper folds");

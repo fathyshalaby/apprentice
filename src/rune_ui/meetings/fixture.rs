@@ -96,7 +96,7 @@ impl MeetingsPane {
         );
         notes.app = Some("Zoom".into());
         notes.reveal = crate::meeting::RevealTarget::Markdown(
-            "~/Documents/Hex Meetings/Arcade launch plan.md".into(),
+            "~/Documents/Apprentice Meetings/Arcade launch plan.md".into(),
         );
         notes.summary = Some(
             "One login for every Anomaly Arcade game, aiming for twenty to thirty games over the next couple of months. The build screen needs a proposal before more polish."

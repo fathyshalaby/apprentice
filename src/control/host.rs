@@ -105,7 +105,7 @@ pub(crate) fn serve(
             }
         });
     if let Err(error) = spawned {
-        tracing::warn!(%error, "`hex` control commands will not reach this Hex");
+        tracing::warn!(%error, "`hex` control commands will not reach this Apprentice");
     }
 }
 
@@ -130,9 +130,9 @@ fn command(host: &dyn Host, command: ControlCommand) -> ControlReply {
                     .and_then(|()| host.quit(restart))
                     .map(|()| {
                         ControlReply::done(if restart {
-                            "Restarting Hex"
+                            "Restarting Apprentice"
                         } else {
-                            "Quitting Hex"
+                            "Quitting Apprentice"
                         })
                     }),
             )
@@ -236,11 +236,11 @@ fn command(host: &dyn Host, command: ControlCommand) -> ControlReply {
                 | DesktopUpdateStatus::SourceBuild
                 | DesktopUpdateStatus::PackageManager => Err(ControlError::new(
                     "unavailable",
-                    "this Hex build doesn't update itself",
+                    "this Apprentice build doesn't update itself",
                 )),
                 _ => host
                     .check_for_updates()
-                    .map(|()| ControlReply::done("Checking for updates; Hex shows what it finds")),
+                    .map(|()| ControlReply::done("Checking for updates; Apprentice shows what it finds")),
             }
         })),
         ControlCommand::LaunchAtLogin { enabled } => launch_at_login(host, enabled),
@@ -353,7 +353,7 @@ fn meeting(stop: bool, title: Option<String>) -> ControlReply {
     ControlReply::done(if stop {
         "Asked the meeting to stop; `hex status` shows when it's transcribing"
     } else {
-        "Hex is starting the recording; `hex status` shows when it's recording"
+        "Apprentice is starting the recording; `hex status` shows when it's recording"
     })
 }
 
@@ -441,7 +441,7 @@ fn use_model(
     host.choose_model(selection.clone())?;
     if !installed {
         return Ok(ControlReply::done(format!(
-            "Downloading {} ({}); Hex switches to it once it's ready. \
+            "Downloading {} ({}); Apprentice switches to it once it's ready. \
              `hex status` shows progress, `hex model cancel` stops it",
             definition.name,
             definition.size_label()

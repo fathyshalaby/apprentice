@@ -916,7 +916,7 @@ mod tests {
         let raw = |id, title: &str, layer| RawWindow {
             id,
             pid: 9,
-            owner: "Hex".into(),
+            owner: "Apprentice".into(),
             title: title.into(),
             bounds: [100.0, 50.0, 600.0, 400.0],
             layer,
@@ -974,7 +974,7 @@ mod tests {
         let windows = [
             raw(1, 20, "Invoke", [520.0, 150.0, 200.0, 180.0], 25),
             raw(2, 20, "Invoke", [350.0, 110.0, 400.0, 260.0], 25),
-            raw(3, 21, "Hex", [450.0, 460.0, 100.0, 30.0], 25),
+            raw(3, 21, "Apprentice", [450.0, 460.0, 100.0, 30.0], 25),
             raw(4, 13, "OpenCode Beta", [0.0, 0.0, 1000.0, 500.0], 0),
         ];
         assert_eq!(panel_front(&windows, Some(13), Some(20), 9), Some(20));

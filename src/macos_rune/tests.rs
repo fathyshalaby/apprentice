@@ -295,7 +295,7 @@ fn hexs_own_window_applies_nothing_and_an_edit_waits_for_another_app() {
     fixture.app(None, true);
     assert!(
         fixture.started.try_recv().is_err(),
-        "Hex's own window switched the model"
+        "Apprentice's own window switched the model"
     );
     // Editing Global while Hex is in front changes nothing yet.
     fixture

@@ -35,7 +35,7 @@ pub(super) fn capture_refusal(other_recording: bool, suspended: bool) -> Option<
     } else if suspended {
         Some(ControlReply::error(
             "busy",
-            "Hex is recording a shortcut in Settings or reopening the microphone; try again",
+            "Apprentice is recording a shortcut in Settings or reopening the microphone; try again",
         ))
     } else {
         None

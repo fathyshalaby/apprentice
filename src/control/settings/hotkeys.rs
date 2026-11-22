@@ -39,7 +39,7 @@ pub(super) fn check_shortcut(
     {
         return Err(invalid(
             name,
-            "the mic key can't be the screenshot shortcut: macOS takes it before Hex sees it",
+            "the mic key can't be the screenshot shortcut: macOS takes it before Apprentice sees it",
         ));
     }
     (shortcuts.rule)(slot, binding).map_err(|why| invalid(name, &why))?;
@@ -47,7 +47,7 @@ pub(super) fn check_shortcut(
         return Err(crate::control::ControlError::new(
             "shortcut-in-use",
             format!(
-                "{} is already in use by another Hex shortcut",
+                "{} is already in use by another Apprentice shortcut",
                 format_hotkey(binding)
             ),
         ));

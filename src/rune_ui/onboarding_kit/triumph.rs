@@ -158,7 +158,7 @@ pub(crate) fn check(script: &'static Script<'static>, send: f64, t: &Timing) -> 
     let mut problems = Vec::new();
     if beats.done > MAX_SECS {
         problems.push(format!(
-            "\"With Hex\" runs {:.1} s from the shortcut; keep it under {MAX_SECS} s",
+            "\"With Apprentice\" runs {:.1} s from the shortcut; keep it under {MAX_SECS} s",
             beats.done
         ));
     }

@@ -265,13 +265,13 @@ impl PortalBus {
                 // /proc entry, which setgid wrappers such as newgrp make unreadable.
                 let fix = match written {
                     Some(entry) => format!(
-                        "Hex wrote {}; restart xdg-desktop-portal (systemctl --user restart xdg-desktop-portal) so it reads it",
+                        "Apprentice wrote {}; restart xdg-desktop-portal (systemctl --user restart xdg-desktop-portal) so it reads it",
                         entry.display()
                     ),
-                    None => "run Hex without setuid or setgid wrappers such as newgrp".into(),
+                    None => "run Apprentice without setuid or setgid wrappers such as newgrp".into(),
                 };
                 return Err(eyre!(
-                    "the desktop portal could not identify Hex ({error}); {fix}"
+                    "the desktop portal could not identify Apprentice ({error}); {fix}"
                 ));
             }
         } else {
@@ -512,7 +512,7 @@ fn executable() -> Result<String> {
     executable
         .to_str()
         .map(str::to_owned)
-        .ok_or_else(|| eyre!("Hex's executable path is not UTF-8"))
+        .ok_or_else(|| eyre!("Apprentice's executable path is not UTF-8"))
 }
 
 fn ensure_desktop_entry() -> Result<Option<PathBuf>> {
@@ -608,7 +608,7 @@ impl DesktopEntries {
             }
             std::fs::remove_file(&legacy)
                 .wrap_err_with(|| format!("could not remove {}", legacy.display()))?;
-            tracing::info!(entry = %entry.display(), "moved Hex's desktop entry to its app id");
+            tracing::info!(entry = %entry.display(), "moved Apprentice's desktop entry to its app id");
             return Ok(replace.then_some(entry));
         }
         if let Entry::File(current) = &current
@@ -618,14 +618,14 @@ impl DesktopEntries {
         {
             std::fs::remove_file(&entry)
                 .wrap_err_with(|| format!("could not remove {}", entry.display()))?;
-            tracing::info!(entry = %entry.display(), "removed Hex's fallback desktop entry");
+            tracing::info!(entry = %entry.display(), "removed Apprentice's fallback desktop entry");
         } else if let Entry::File(current) = &current
             && managed(current)
             && with_icon(current) != *current
         {
             write_entry(&self.applications, &entry, &with_icon(current))
                 .wrap_err_with(|| format!("could not write {}", entry.display()))?;
-            tracing::info!(entry = %entry.display(), "named Hex's icon in its desktop entry");
+            tracing::info!(entry = %entry.display(), "named Apprentice's icon in its desktop entry");
         }
         Ok(None)
     }
@@ -651,7 +651,7 @@ impl DesktopEntries {
         if !program.is_file() && self.shipped(&format!("{APP_ID}.desktop")) {
             std::fs::remove_file(&entry)
                 .wrap_err_with(|| format!("could not remove {}", entry.display()))?;
-            tracing::info!(entry = %entry.display(), "removed Hex's stranded desktop entry");
+            tracing::info!(entry = %entry.display(), "removed Apprentice's stranded desktop entry");
             return Ok(());
         }
         let repointed = desktop_entry(executable, no_display(&current));
@@ -660,7 +660,7 @@ impl DesktopEntries {
         }
         write_entry(&self.applications, &entry, &repointed)
             .wrap_err_with(|| format!("could not write {}", entry.display()))?;
-        tracing::info!(entry = %entry.display(), "pointed Hex's desktop entry at this Hex");
+        tracing::info!(entry = %entry.display(), "pointed Apprentice's desktop entry at this Apprentice");
         Ok(())
     }
 
@@ -759,7 +759,7 @@ fn moved_entry(old: &str) -> String {
 /// `NoDisplay`, not `Hidden`: the portal refuses an app whose entry is Hidden.
 fn desktop_entry(executable: &str, hidden: bool) -> String {
     format!(
-        "[Desktop Entry]\nType=Application\nName=Hex\nComment=Local voice dictation\nExec={}\nIcon={APP_ID}\nTerminal=false\nCategories=Utility;Accessibility;\nStartupWMClass={APP_ID}\n{}{MANAGED_MARK}\n",
+        "[Desktop Entry]\nType=Application\nName=Apprentice\nComment=Local voice dictation\nExec={}\nIcon={APP_ID}\nTerminal=false\nCategories=Utility;Accessibility;\nStartupWMClass={APP_ID}\n{}{MANAGED_MARK}\n",
         exec_argument(executable),
         if hidden { "NoDisplay=true\n" } else { "" }
     )
@@ -858,7 +858,7 @@ impl Portal {
         let stop = AtomicBool::new(false);
         let session = self.bus.create_session(&stop)?;
         self.bind_session(session, &[], &stop)?;
-        tracing::info!("cleared Hex's shortcuts from GNOME Settings");
+        tracing::info!("cleared Apprentice's shortcuts from GNOME Settings");
         Ok(())
     }
 
@@ -885,7 +885,7 @@ impl Portal {
                     "allActionsForComponent",
                     &(vec![component],),
                 )
-                .wrap_err("could not list Hex's old KDE shortcuts")
+                .wrap_err("could not list Apprentice's old KDE shortcuts")
         };
         let legacy = list(LEGACY_APP_ID)?;
         let current = list(APP_ID)?;
@@ -899,9 +899,9 @@ impl Portal {
                     "unregister",
                     &(component, action),
                 )
-                .wrap_err_with(|| format!("could not remove Hex's old KDE shortcut {action}"))?;
+                .wrap_err_with(|| format!("could not remove Apprentice's old KDE shortcut {action}"))?;
             if removed {
-                tracing::info!(component, action, "removed an old Hex shortcut from KDE");
+                tracing::info!(component, action, "removed an old Apprentice shortcut from KDE");
             }
         }
         // Shortcuts a bind left unapproved, which KDE keeps with no key: gone,
@@ -922,7 +922,7 @@ impl Portal {
                     "shortcutKeys",
                     &(vec![APP_ID, action.as_str()],),
                 )
-                .wrap_err_with(|| format!("could not read Hex's KDE shortcut {action}"))?;
+                .wrap_err_with(|| format!("could not read Apprentice's KDE shortcut {action}"))?;
             if keys.iter().any(|(keys,)| keys.iter().any(|key| *key != 0)) {
                 continue;
             }
@@ -935,11 +935,11 @@ impl Portal {
                     "unregister",
                     &(APP_ID, action.as_str()),
                 )
-                .wrap_err_with(|| format!("could not remove Hex's KDE shortcut {action}"))?;
+                .wrap_err_with(|| format!("could not remove Apprentice's KDE shortcut {action}"))?;
             if removed {
                 tracing::info!(
                     action,
-                    "removed a Hex shortcut KDE kept without a key after its dialog went unanswered; KDE asks again"
+                    "removed a Apprentice shortcut KDE kept without a key after its dialog went unanswered; KDE asks again"
                 );
             }
         }
@@ -1021,7 +1021,7 @@ mod kde_unapproved {
             .map(|shortcut| format!("{}\n", shortcut.id))
             .collect::<String>();
         if let Err(error) = std::fs::write(&path, ids) {
-            tracing::warn!(%error, "could not note Hex's unapproved KDE shortcuts");
+            tracing::warn!(%error, "could not note Apprentice's unapproved KDE shortcuts");
         }
     }
 
@@ -1070,7 +1070,7 @@ fn superseded_kde_actions<'a>(
 pub(crate) const MISSING_SHORTCUTS_PORTAL: &str = "no GlobalShortcuts portal; dictation follows the hex commands, \
 which reach the service listener (`hex start`) but not a foreground `hex dictate`. \
 If this desktop has one, xdg-desktop-portal may have started before the desktop session and picked the wrong \
-backend: restart it (systemctl --user restart xdg-desktop-portal) and Hex binds its shortcuts at its next check";
+backend: restart it (systemctl --user restart xdg-desktop-portal) and Apprentice binds its shortcuts at its next check";
 
 /// Looks for the shortcuts portal again from time to time, after 15 s and
 /// then doubling up to every 2 minutes. A portal started before the
@@ -1108,7 +1108,7 @@ impl PortalProbe {
         {
             match self.running.take().map(std::thread::JoinHandle::join) {
                 Some(Ok(Ok(Some(portal)))) => {
-                    tracing::info!("the GlobalShortcuts portal appeared; binding Hex's shortcuts");
+                    tracing::info!("the GlobalShortcuts portal appeared; binding Apprentice's shortcuts");
                     return Ok(Some(portal));
                 }
                 Some(Ok(Err(error))) if !self.warned => {
@@ -1172,7 +1172,7 @@ pub(crate) fn forget_legacy_gnome_shortcuts() -> Result<()> {
         "applications",
         &string_list_text(&kept),
     ])?;
-    tracing::info!("removed Hex's pre-#579 shortcuts from GNOME Settings");
+    tracing::info!("removed Apprentice's pre-#579 shortcuts from GNOME Settings");
     Ok(())
 }
 
@@ -1284,10 +1284,10 @@ mod tests {
 
     #[test]
     fn a_moved_entry_keeps_its_commands_and_names_the_window_class() {
-        let old = "[Desktop Entry]\nName=Hex\nExec=\"/home/a/.local/bin/hex\"\nStartupWMClass=hex\nX-Hex-Managed=true\n\n[Desktop Action quit]\nExec=\"/home/a/.local/bin/hex\" quit\n";
+        let old = "[Desktop Entry]\nName=Apprentice\nExec=\"/home/a/.local/bin/hex\"\nStartupWMClass=hex\nX-Hex-Managed=true\n\n[Desktop Action quit]\nExec=\"/home/a/.local/bin/hex\" quit\n";
         assert_eq!(
             moved_entry(old),
-            "[Desktop Entry]\nStartupWMClass=anomaly.hex\nName=Hex\nExec=\"/home/a/.local/bin/hex\"\nX-Hex-Managed=true\n\n[Desktop Action quit]\nExec=\"/home/a/.local/bin/hex\" quit\n"
+            "[Desktop Entry]\nStartupWMClass=anomaly.hex\nName=Apprentice\nExec=\"/home/a/.local/bin/hex\"\nX-Hex-Managed=true\n\n[Desktop Action quit]\nExec=\"/home/a/.local/bin/hex\" quit\n"
         );
     }
 
@@ -1306,7 +1306,7 @@ mod tests {
     }
 
     const OLD: &str =
-        "[Desktop Entry]\nName=Hex\nExec=\"/home/a/.local/bin/hex\"\nX-Hex-Managed=true\n";
+        "[Desktop Entry]\nName=Apprentice\nExec=\"/home/a/.local/bin/hex\"\nX-Hex-Managed=true\n";
 
     #[test]
     fn entries_hex_wrote_name_its_icon() {
@@ -1531,7 +1531,7 @@ mod tests {
             vec![
                 component.to_string(),
                 action.to_string(),
-                "Hex".to_string(),
+                "Apprentice".to_string(),
                 action.to_string(),
             ]
         };

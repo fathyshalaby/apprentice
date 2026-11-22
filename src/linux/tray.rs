@@ -60,7 +60,7 @@ pub(crate) fn start(
     };
     // Before the tray exists: Plasma reads the name when the item registers.
     let symbolic = crate::linux::icons::install_tray_symbolic(light)
-        .inspect_err(|error| tracing::warn!(%error, "could not install Hex's symbolic tray icon"))
+        .inspect_err(|error| tracing::warn!(%error, "could not install Apprentice's symbolic tray icon"))
         .unwrap_or_default();
     if symbolic.wrote
         && let (Some(runtime), Some(bus)) = (runtime.as_ref(), bus)
@@ -69,7 +69,7 @@ pub(crate) fn start(
     }
     drop(runtime);
     let icon = rune::TrayIcon::rgba(tray_icon::SIZE, tray_icon::SIZE, tray_icon::pixels(light));
-    let mut spec = rune::TraySpec::new("hex", "Hex", icon)
+    let mut spec = rune::TraySpec::new("hex", "Apprentice", icon)
         .tooltip(view.tooltip())
         .menu(view.menu());
     if symbolic.present {
@@ -93,7 +93,7 @@ pub(crate) fn start(
         },
         _ => {}
     });
-    tray.inspect_err(|error| tracing::warn!(%error, "Hex has no tray icon"))
+    tray.inspect_err(|error| tracing::warn!(%error, "Apprentice has no tray icon"))
         .ok()
 }
 

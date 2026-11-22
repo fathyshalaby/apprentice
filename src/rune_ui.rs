@@ -231,7 +231,7 @@ fn on_open_url(ui: &mut Ui, link: &str, tx: &mut Tx) {
     if let Some(target) = deep_link::parse(link, story_link::scheme()) {
         match target {
             Ok(target) => deep_link::open(ui, target, tx),
-            Err(why) => tracing::warn!(%why, "ignored a link opened with Hex"),
+            Err(why) => tracing::warn!(%why, "ignored a link opened with Apprentice"),
         }
         crate::macos_rune::bring_window_forward();
         return;
@@ -239,7 +239,7 @@ fn on_open_url(ui: &mut Ui, link: &str, tx: &mut Tx) {
     let link = match story_link::parse(link, story_link::scheme()) {
         Ok(link) => link,
         Err(why) => {
-            tracing::warn!(%why, "ignored a link opened with Hex");
+            tracing::warn!(%why, "ignored a link opened with Apprentice");
             return;
         }
     };
@@ -556,7 +556,7 @@ pub(crate) fn fixed_window() -> rune::WindowOptions {
 
 fn spec() -> AppSpec<Ui> {
     AppSpec {
-        title: "Hex",
+        title: "Apprentice",
         size: WINDOW_SIZE,
         min_size: Some(MIN_WINDOW_SIZE),
         init: Ui::fixture_base,

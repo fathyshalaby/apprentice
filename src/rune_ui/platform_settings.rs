@@ -36,12 +36,12 @@ fn permission_copy(
         PermissionKind::Microphone => (
             "permission-microphone",
             tr("Microphone"),
-            tr("Hex cannot record dictation until microphone access is restored."),
+            tr("Apprentice cannot record dictation until microphone access is restored."),
         ),
         PermissionKind::Accessibility => (
             "permission-accessibility",
             accessibility_name(accessibility_renamed),
-            tr("Hex cannot recognize the dictation shortcut or paste into other apps."),
+            tr("Apprentice cannot recognize the dictation shortcut or paste into other apps."),
         ),
         PermissionKind::SystemAudio => (
             "permission-system-audio",
@@ -95,11 +95,11 @@ pub(super) fn permissions_section(ui: &Ui, p: Paint) -> Option<El> {
                     p,
                     key,
                     name,
-                    Some(tr("Turns on when Hex restarts")),
+                    Some(tr("Turns on when Apprentice restarts")),
                     button(
                         p,
                         &format!("{key}-restart"),
-                        tr("Restart Hex"),
+                        tr("Restart Apprentice"),
                         ButtonKind::Secondary,
                         |ui: &mut Ui, _| {
                             ui.ask(PlatformRequest::Permission(PermissionAction::Restart))
@@ -110,7 +110,7 @@ pub(super) fn permissions_section(ui: &Ui, p: Paint) -> Option<El> {
             let stale =
                 warning.kind == PermissionKind::Accessibility && ui.platform.stale(warning.kind);
             let description = if stale {
-                tr("An older Hex entry can keep this off")
+                tr("An older Apprentice entry can keep this off")
             } else {
                 description
             };
@@ -140,9 +140,9 @@ fn paste_permission(ui: &Ui, p: Paint) -> Option<El> {
         .paste
         .filter(|paste| *paste != PasteAccess::Allowed)?;
     let description = if paste == PasteAccess::Declined {
-        tr("Without it, Hex copies your words and you press Ctrl+V.")
+        tr("Without it, Apprentice copies your words and you press Ctrl+V.")
     } else {
-        tr("Hex only sends the paste keystroke. It never sees your screen.")
+        tr("Apprentice only sends the paste keystroke. It never sees your screen.")
     };
     let control = permission_control(
         p,
@@ -468,7 +468,7 @@ pub(super) fn meetings_settings(ui: &Ui, p: Paint, layer: &mut Vec<El>) -> Vec<E
             Some(if permitted {
                 tr("Captures the other participants' audio")
             } else if stale {
-                tr("An older Hex entry can keep this off")
+                tr("An older Apprentice entry can keep this off")
             } else {
                 tr("Required to hear the other participants.")
             }),
@@ -629,11 +629,11 @@ fn retention_row(ui: &Ui, p: Paint, layer: &mut Vec<El>) -> El {
         tr("Keep meetings"),
         match chosen {
             None => Some(tr(
-                "Audio, transcripts, notes, and Hex's Markdown copy move to the Trash. Meetings from before this setting stay until you choose",
+                "Audio, transcripts, notes, and Apprentice's Markdown copy move to the Trash. Meetings from before this setting stay until you choose",
             )),
             Some(MeetingRetention::Forever) => None,
             Some(_) => Some(tr(
-                "Audio, transcripts, notes, and Hex's Markdown copy move to the Trash",
+                "Audio, transcripts, notes, and Apprentice's Markdown copy move to the Trash",
             )),
         },
         control,
@@ -710,7 +710,7 @@ pub(super) fn summary_model_shown(ui: &Ui) -> bool {
 /// use, such as one typed with `hex settings`; `None` when it can.
 pub(super) fn summary_model_problem(saved: &str) -> Option<&'static str> {
     (!saved.trim().is_empty() && crate::meeting::generator::parse_model(saved).is_none()).then(|| {
-        tr("Write it as provider/model, such as openai/gpt-5.4-mini. Until then, Hex uses OpenCode's default model")
+        tr("Write it as provider/model, such as openai/gpt-5.4-mini. Until then, Apprentice uses OpenCode's default model")
     })
 }
 
@@ -768,7 +768,7 @@ fn calendar_section(ui: &Ui, p: Paint, layer: &mut Vec<El>) -> Option<El> {
             &icons::CALENDAR,
             tr("Calendar access is off"),
             Some(tr(
-                "Allow Hex under Privacy & Security › Calendars to get meeting reminders",
+                "Allow Apprentice under Privacy & Security › Calendars to get meeting reminders",
             )),
             button(
                 p,
@@ -1000,7 +1000,7 @@ fn bulk_select_on(ui: &Ui) -> bool {
 
 /// The caption of Detected calls' Stop when the call ends, naming
 /// [`crate::meeting::detection::AUTO_STOP_GRACE`].
-pub(super) const STOP_WHEN_CALL_ENDS_CAPTION: &str = "Stop a recording Hex started on its own 30 s after the call app leaves the microphone and goes quiet";
+pub(super) const STOP_WHEN_CALL_ENDS_CAPTION: &str = "Stop a recording Apprentice started on its own 30 s after the call app leaves the microphone and goes quiet";
 
 /// Stop when the call ends (macOS), then the known services and every other
 /// website or app the user chose for, each with Ask / Always record / Never

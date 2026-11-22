@@ -48,7 +48,7 @@ fn lock() -> std::sync::MutexGuard<'static, Option<Owned>> {
 
 fn start() -> Result<Endpoint, String> {
     let executable =
-        std::env::current_exe().map_err(|error| format!("couldn't find Hex itself: {error}"))?;
+        std::env::current_exe().map_err(|error| format!("couldn't find Apprentice itself: {error}"))?;
     let mut command = crate::desktop::background_process::command(executable);
     command
         .args(["service", "--embedded"])
@@ -61,20 +61,20 @@ fn start() -> Result<Endpoint, String> {
     std::os::unix::process::CommandExt::process_group(&mut command, 0);
     let mut child = command
         .spawn()
-        .map_err(|error| format!("couldn't start Hex's transcription service: {error}"))?;
+        .map_err(|error| format!("couldn't start Apprentice's transcription service: {error}"))?;
     let pid = child.id();
     let stdout = child.stdout.take();
     let stdin = child.stdin.take();
     *lock() = Some(Owned { child, stdin });
     let line = stdout
-        .ok_or_else(|| "Hex's transcription service has no output".to_owned())
+        .ok_or_else(|| "Apprentice's transcription service has no output".to_owned())
         .and_then(ready_line);
     let endpoint =
         line.and_then(|line| Endpoint::embedded(&line, pid).map_err(|error| format!("{error:#}")));
     if endpoint.is_err() {
         release();
     }
-    endpoint.map_err(|error| format!("Hex's transcription service didn't start: {error}"))
+    endpoint.map_err(|error| format!("Apprentice's transcription service didn't start: {error}"))
 }
 
 /// The one line the child prints once it listens, read on a thread so a

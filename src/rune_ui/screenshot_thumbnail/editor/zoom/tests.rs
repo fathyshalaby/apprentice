@@ -156,7 +156,7 @@ impl Area {
     fn card(&self) -> (CardShot, rune::Image) {
         let (w, h, small) = half(self.width, self.height, &self.rgba);
         let shot = CardShot {
-            path: PathBuf::from("/tmp/Hex Screenshot.png"),
+            path: PathBuf::from("/tmp/Apprentice Screenshot.png"),
             image: image(w, h, small),
             size: [self.width, self.height],
             recording: None,

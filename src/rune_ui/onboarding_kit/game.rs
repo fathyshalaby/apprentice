@@ -952,7 +952,7 @@ pub(super) fn page(p: Paint, s: &Onboard) -> Option<El> {
         s.live.as_ref().and_then(live::hint_copy)
     };
     let title = if s.flow == super::stories::Flow::FirstRun {
-        tr("With Hex")
+        tr("With Apprentice")
     } else {
         tr("Clear your messages")
     };

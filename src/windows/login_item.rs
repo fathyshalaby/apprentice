@@ -6,7 +6,7 @@ use winreg::RegKey;
 use winreg::enums::{HKEY_CURRENT_USER, KEY_READ, KEY_WRITE};
 
 const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
-const VALUE_NAME: &str = "Hex";
+const VALUE_NAME: &str = "Apprentice";
 
 /// Return the Windows-owned startup registration state.
 pub fn is_enabled() -> Result<bool> {
@@ -19,15 +19,15 @@ pub fn is_enabled() -> Result<bool> {
     match key.get_value::<String, _>(VALUE_NAME) {
         Ok(_) => Ok(true),
         Err(error) if error.kind() == ErrorKind::NotFound => Ok(false),
-        Err(error) => Err(error).wrap_err("could not read the Hex startup registration"),
+        Err(error) => Err(error).wrap_err("could not read the Apprentice startup registration"),
     }
 }
 
 /// Register or unregister the current executable for the current Windows user.
 pub fn set_enabled(enabled: bool) -> Result<()> {
     if enabled {
-        let executable = std::env::current_exe().wrap_err("could not locate the Hex executable")?;
-        write_startup_command(&executable, "could not register Hex to launch at login")?;
+        let executable = std::env::current_exe().wrap_err("could not locate the Apprentice executable")?;
+        write_startup_command(&executable, "could not register Apprentice to launch at login")?;
     } else {
         let current_user = RegKey::predef(HKEY_CURRENT_USER);
         let key = match current_user.open_subkey_with_flags(RUN_KEY, KEY_WRITE) {
@@ -40,7 +40,7 @@ pub fn set_enabled(enabled: bool) -> Result<()> {
         if let Err(error) = key.delete_value(VALUE_NAME)
             && error.kind() != ErrorKind::NotFound
         {
-            return Err(error).wrap_err("could not unregister Hex from Windows startup");
+            return Err(error).wrap_err("could not unregister Apprentice from Windows startup");
         }
     }
     Ok(())
@@ -53,7 +53,7 @@ pub fn repoint(executable: &Path) -> Result<()> {
     if !is_enabled()? {
         return Ok(());
     }
-    write_startup_command(executable, "could not repoint the Hex startup registration")
+    write_startup_command(executable, "could not repoint the Apprentice startup registration")
 }
 
 /// Points Launch at login at this Hex when it starts another version of the
@@ -75,9 +75,9 @@ pub fn follow_current_version() -> Result<()> {
     let command = match key.get_value::<String, _>(VALUE_NAME) {
         Ok(command) => command,
         Err(error) if error.kind() == ErrorKind::NotFound => return Ok(()),
-        Err(error) => return Err(error).wrap_err("could not read the Hex startup registration"),
+        Err(error) => return Err(error).wrap_err("could not read the Apprentice startup registration"),
     };
-    let executable = std::env::current_exe().wrap_err("could not locate the Hex executable")?;
+    let executable = std::env::current_exe().wrap_err("could not locate the Apprentice executable")?;
     let support = crate::app_paths::support_dir()?;
     let current = std::fs::read_to_string(support.join("current-version")).ok();
     if !starts_another_version(&command, &executable, &support, current.as_deref()) {
@@ -85,11 +85,11 @@ pub fn follow_current_version() -> Result<()> {
     }
     write_startup_command(
         &executable,
-        "could not repoint the Hex startup registration",
+        "could not repoint the Apprentice startup registration",
     )?;
     tracing::info!(
         previous = %command,
-        "pointed Launch at login at this version of Hex"
+        "pointed Launch at login at this version of Apprentice"
     );
     Ok(())
 }

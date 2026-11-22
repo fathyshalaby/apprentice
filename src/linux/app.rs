@@ -430,16 +430,16 @@ pub(crate) fn run(
     let mut server = linux_service::Server::bind()?;
     // Installs before #579 named the entries hex.desktop.
     if let Err(error) = crate::linux::icons::install() {
-        tracing::warn!(%error, "could not install Hex's icon");
+        tracing::warn!(%error, "could not install Apprentice's icon");
     }
     if let Err(error) = crate::linux::portal::tidy_desktop_entries() {
-        tracing::warn!(%error, "could not move Hex's desktop entry");
+        tracing::warn!(%error, "could not move Apprentice's desktop entry");
     }
     if let Err(error) = crate::linux::portal::forget_legacy_gnome_shortcuts() {
-        tracing::warn!(%error, "could not remove Hex's old GNOME shortcuts");
+        tracing::warn!(%error, "could not remove Apprentice's old GNOME shortcuts");
     }
     if let Err(error) = crate::linux::login_item::tidy() {
-        tracing::warn!(%error, "could not tidy Hex's autostart entry");
+        tracing::warn!(%error, "could not tidy Apprentice's autostart entry");
     }
     // Off the main thread: the portal may take a moment to answer.
     let _ = std::thread::Builder::new()
@@ -496,7 +496,7 @@ pub(crate) fn run(
         crate::linux::tray::start(host.clone(), published.clone(), control.clone(), shutdown)
             .map(Arc::new);
     linux_service::notify("READY=1");
-    tracing::info!(pid = std::process::id(), "Hex instance ready");
+    tracing::info!(pid = std::process::id(), "Apprentice instance ready");
 
     let worker = {
         let host = host.clone();
@@ -556,7 +556,7 @@ fn run_window(
         Ok(Err(error)) => error,
         Err(panic) => panic_reason(panic.as_ref()),
     };
-    tracing::error!(%failed, "the Hex window failed; Hex keeps running without it");
+    tracing::error!(%failed, "the Apprentice window failed; Apprentice keeps running without it");
     // `hex window show` and `hex status` say so instead of reporting
     // a window that can no longer open (#979).
     host.window_failed(failed);
@@ -578,7 +578,7 @@ fn panic_reason(panic: &(dyn std::any::Any + Send)) -> String {
 fn window_failure_message(reason: &str) -> String {
     let reason = reason.lines().next().unwrap_or(reason);
     format!(
-        "The Hex window and recording HUD stopped ({reason}). Dictation still works; restart Hex to try again."
+        "The Apprentice window and recording HUD stopped ({reason}). Dictation still works; restart Apprentice to try again."
     )
 }
 
@@ -716,7 +716,7 @@ impl LinuxDesktopHost {
             Ok((settings, None)) => {
                 // Only the adopted snapshot gains permission to save.
                 if settings != self.settings {
-                    tracing::info!("settings.json changed outside Hex; applying it");
+                    tracing::info!("settings.json changed outside Apprentice; applying it");
                 }
                 self.adopt_settings(settings);
             }
@@ -845,7 +845,7 @@ impl LinuxDesktopHost {
             crate::linux::gnome_shortcuts::remove()
         };
         match result {
-            Ok(()) => tracing::info!(written = wanted, "updated Hex's GNOME keyboard shortcuts"),
+            Ok(()) => tracing::info!(written = wanted, "updated Apprentice's GNOME keyboard shortcuts"),
             Err(error) => {
                 self.error = Some(format!(
                     "Could not update GNOME keyboard shortcuts: {error:#}"
@@ -875,7 +875,7 @@ impl LinuxDesktopHost {
             if let Some(marker) = reopen_marker() {
                 let _ = std::fs::remove_file(marker);
             }
-            self.error = Some(format!("Could not restart Hex: {error:#}"));
+            self.error = Some(format!("Could not restart Apprentice: {error:#}"));
         }
         // Settings may set up the transformations workspace at any time.
         if self.personal_commands_checked_at.elapsed() >= Duration::from_secs(2) {
@@ -1459,7 +1459,7 @@ impl LinuxDesktopHost {
             | DesktopAction::ConfirmUpdateSwitch
             | DesktopAction::WindowFocused => {
                 if let Err(error) = self.updater.act(&action) {
-                    self.error = Some(format!("Could not restart Hex: {error:#}"));
+                    self.error = Some(format!("Could not restart Apprentice: {error:#}"));
                     return Err(error);
                 }
                 // Only an accepted restart relaunches with the window open;
@@ -1642,7 +1642,7 @@ mod tests {
             crate::app_settings::LaunchLoad {
                 settings: host_for_edit(false).settings.clone(),
                 note: Some(crate::app_settings::LaunchNote::Unparseable(
-                    "Hex couldn't read settings.json and started with defaults.".into(),
+                    "Apprentice couldn't read settings.json and started with defaults.".into(),
                 )),
             },
         );

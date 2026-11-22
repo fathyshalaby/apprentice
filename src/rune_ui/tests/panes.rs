@@ -1037,7 +1037,7 @@ fn the_practice_game_follows_hex_s_own_dictation_on_every_os() {
         assert!(!holding(&rt));
         onboarding::input(&mut rt.state, Input::Dictation(Observation::Started));
         refresh(&mut rt);
-        assert!(holding(&rt), "{scene}: the shortcut held, as Hex records");
+        assert!(holding(&rt), "{scene}: the shortcut held, as Apprentice records");
         onboarding::input(&mut rt.state, Input::Dictation(Observation::Transcribing));
         refresh(&mut rt);
         assert!(!holding(&rt), "{scene}: released");
@@ -1048,7 +1048,7 @@ fn the_practice_game_follows_hex_s_own_dictation_on_every_os() {
 /// is getting ready instead of inviting a hold that does nothing.
 #[test]
 fn the_practice_page_waits_for_the_listener() {
-    let warming = "Getting Hex ready to listen…";
+    let warming = "Getting Apprentice ready to listen…";
     let warming_state = |rt: &mut Runtime<Ui>, warming: bool| {
         if let Some(view) = &mut rt.state.view {
             view.listener.warming = warming;
@@ -1688,7 +1688,7 @@ fn reveal_markdown_asks_for_the_exported_file_and_reveal_files_for_the_recording
         asked(&rt),
         [PlatformRequest::Meeting(MeetingRequest::Reveal(
             crate::meeting::RevealTarget::Markdown(
-                "~/Documents/Hex Meetings/Arcade launch plan.md".into()
+                "~/Documents/Apprentice Meetings/Arcade launch plan.md".into()
             )
         ))]
     );
@@ -1830,7 +1830,7 @@ fn a_refused_microphone_points_to_system_settings() {
     assert!(
         shown
             .iter()
-            .any(|text| text == "Switch on Hex in System Settings")
+            .any(|text| text == "Switch on Apprentice in System Settings")
     );
     tap(&mut rt, "mic-pill-allow");
     assert_eq!(
@@ -1846,7 +1846,7 @@ fn windows_onboarding_asks_only_for_the_microphone_switch() {
     let mut rt = runtime("windows-onboarding-microphone", true, PANE_SIZE);
     let shown = texts(&rt);
     assert!(
-        shown.iter().any(|text| text == "Let Hex hear you"),
+        shown.iter().any(|text| text == "Let Apprentice hear you"),
         "{shown:?}"
     );
     assert!(rt.find("ax-row").is_none(), "no Accessibility on Windows");
@@ -1875,7 +1875,7 @@ fn stale_permissions_offer_fix_it_and_reset_entries_across_panes() {
     assert!(
         shown
             .iter()
-            .any(|text| text == "An older Hex entry can keep this off")
+            .any(|text| text == "An older Apprentice entry can keep this off")
     );
     tap(&mut rt, "ax-pill-allow");
     assert_eq!(
@@ -1893,7 +1893,7 @@ fn stale_permissions_offer_fix_it_and_reset_entries_across_panes() {
     assert!(
         shown
             .iter()
-            .any(|text| text == "An older Hex entry can keep this off")
+            .any(|text| text == "An older Apprentice entry can keep this off")
     );
     tap(&mut rt, "permission-accessibility-allow");
     assert_eq!(
@@ -1914,7 +1914,7 @@ fn stale_permissions_offer_fix_it_and_reset_entries_across_panes() {
     assert!(
         shown
             .iter()
-            .any(|text| text == "An older Hex entry can keep this off")
+            .any(|text| text == "An older Apprentice entry can keep this off")
     );
     tap(&mut rt, "meeting-system-audio-allow");
     assert_eq!(
@@ -2890,7 +2890,7 @@ fn a_chosen_screenshots_folder_is_saved_and_says_why_a_chooser_failed() {
     assert!(!shown.is_empty(), "the row shows the saves folder");
 
     let home = crate::app_paths::home_dir().expect("a home folder");
-    let picked = home.join("Pictures/Hex Shots");
+    let picked = home.join("Pictures/Apprentice Shots");
     rt.update(|ui, _| {
         assert!(apply_chosen_folder(ui, Ok(Some(picked.clone()))));
     });
@@ -2898,7 +2898,7 @@ fn a_chosen_screenshots_folder_is_saved_and_says_why_a_chooser_failed() {
     assert_eq!(rt.state.settings.screenshots.folder, Some(picked.clone()));
     assert_eq!(
         element(&rt, "choose-screenshot-folder").label.as_deref(),
-        Some("~/Pictures/Hex Shots"),
+        Some("~/Pictures/Apprentice Shots"),
         "the card shows the folder it saves to, home-shortened"
     );
     assert!(rt.find("screenshot-folder-error").is_none());
@@ -2922,12 +2922,12 @@ fn a_chosen_screenshots_folder_is_saved_and_says_why_a_chooser_failed() {
     assert!(rt.find("screenshot-save-error").is_some(), "{shown}");
     assert!(shown.contains("~/Old Shots"), "{shown}");
     assert!(
-        !shown.contains("~/Pictures/Hex Shots: "),
+        !shown.contains("~/Pictures/Apprentice Shots: "),
         "the note names the folder that failed: {shown}"
     );
 
     // A pick that saves clears the note, and its own poll reports that.
-    let other = home.join("Pictures/Hex Shots 2");
+    let other = home.join("Pictures/Apprentice Shots 2");
     rt.update(|ui, _| {
         assert!(apply_chosen_folder(ui, Ok(Some(other.clone()))));
     });

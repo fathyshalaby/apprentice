@@ -559,7 +559,7 @@ pub fn install() -> Result<Receiver<StatusItemAction>> {
         MainThreadMarker::new().ok_or_else(|| eyre!("status item requires the main thread"))?;
     let (actions, receiver) = sync_channel(8);
     let target = StatusItemTarget::new(actions, mtm);
-    let menu = NSMenu::initWithTitle(NSMenu::alloc(mtm), &NSString::from_str("Hex"));
+    let menu = NSMenu::initWithTitle(NSMenu::alloc(mtm), &NSString::from_str("Apprentice"));
     let meeting_sections_menu =
         NSMenu::initWithTitle(NSMenu::alloc(mtm), &NSString::from_str("Copy Section"));
     let recent_menu = NSMenu::initWithTitle(
@@ -661,8 +661,8 @@ pub fn install() -> Result<Receiver<StatusItemAction>> {
     let button = item
         .button(mtm)
         .ok_or_else(|| eyre!("status item button is unavailable"))?;
-    let symbol = status_bar_icon(IDLE_ICON_PNG, "Hex")?;
-    let recording_symbol = status_bar_icon(RECORDING_ICON_PNG, "Hex is recording a meeting")?;
+    let symbol = status_bar_icon(IDLE_ICON_PNG, "Apprentice")?;
+    let recording_symbol = status_bar_icon(RECORDING_ICON_PNG, "Apprentice is recording a meeting")?;
     button.setImage(Some(&symbol));
     button.setImagePosition(NSCellImagePosition::ImageLeading);
     // SAFETY: the target answers `menuNeedsUpdate:` and outlives the menu's
@@ -720,7 +720,7 @@ pub fn install() -> Result<Receiver<StatusItemAction>> {
 fn status_bar_icon(png: &[u8], accessibility_description: &str) -> Result<Retained<NSImage>> {
     let data = NSData::with_bytes(png);
     let image = NSImage::initWithData(NSImage::alloc(), &data)
-        .ok_or_else(|| eyre!("could not decode Hex status item icon"))?;
+        .ok_or_else(|| eyre!("could not decode Apprentice status item icon"))?;
     image.setSize(NSSize::new(STATUS_ICON_POINTS, STATUS_ICON_POINTS));
     image.setTemplate(true);
     image.setAccessibilityDescription(Some(&NSString::from_str(accessibility_description)));
@@ -896,9 +896,9 @@ fn icon_shown(hide: bool, meeting_active: bool) -> bool {
 /// Hex while they are paused or a resume waits for a neutral keyboard.
 fn pause_title(suspended: bool) -> String {
     if suspended {
-        tr("Resume Hex").into()
+        tr("Resume Apprentice").into()
     } else {
-        tr("Pause Hex").into()
+        tr("Pause Apprentice").into()
     }
 }
 
@@ -1333,7 +1333,7 @@ mod tests {
                 "Copy Section".into(),
                 "Record Meeting".into(),
                 "—".into(),
-                "Pause Hex".into(),
+                "Pause Apprentice".into(),
                 "Paste Last Dictation".into(),
                 "Copy Last Dictation Audio".into(),
                 "Copy Recent Dictation".into(),
@@ -1448,9 +1448,9 @@ mod tests {
     fn the_pause_row_reads_pause_or_resume() {
         // Suspended covers a pause and the resume that waits for a neutral
         // keyboard, so the row never says Pause Hex while keys are inert.
-        assert_eq!(pause_title(false), "Pause Hex");
-        assert_eq!(pause_title(true), "Resume Hex");
-        assert_eq!(Row::PauseHex.title().as_deref(), Some("Pause Hex"));
+        assert_eq!(pause_title(false), "Pause Apprentice");
+        assert_eq!(pause_title(true), "Resume Apprentice");
+        assert_eq!(Row::PauseHex.title().as_deref(), Some("Pause Apprentice"));
         assert!(Row::PauseHex.action().is_some());
         assert!(Row::PauseHex.starts_hidden());
     }
@@ -1483,8 +1483,8 @@ mod tests {
     #[test]
     fn status_bar_icons_load_as_18pt_retina_templates() {
         for (png, description) in [
-            (IDLE_ICON_PNG, "Hex"),
-            (RECORDING_ICON_PNG, "Hex is recording a meeting"),
+            (IDLE_ICON_PNG, "Apprentice"),
+            (RECORDING_ICON_PNG, "Apprentice is recording a meeting"),
         ] {
             let icon = status_bar_icon(png, description).unwrap();
             assert!(icon.isTemplate());

@@ -24,7 +24,7 @@ impl LinuxControl {
     fn published(&self) -> std::result::Result<Arc<Published>, ControlError> {
         self.published
             .upgrade()
-            .ok_or_else(|| ControlError::new("unavailable", "Hex is quitting"))
+            .ok_or_else(|| ControlError::new("unavailable", "Apprentice is quitting"))
     }
 
     fn route(&self) -> std::result::Result<ShortcutRoute, ControlError> {
@@ -36,7 +36,7 @@ impl LinuxControl {
             .ok_or_else(|| {
                 ControlError::new(
                     "not-ready",
-                    "Hex is not listening; enable it in Settings or run `hex start`",
+                    "Apprentice is not listening; enable it in Settings or run `hex start`",
                 )
             })
     }
@@ -49,7 +49,7 @@ impl LinuxControl {
     fn window(&self, control: Control) -> std::result::Result<(), ControlError> {
         self.window
             .try_send(control)
-            .map_err(|_| ControlError::new("busy", "Hex is busy; try again"))
+            .map_err(|_| ControlError::new("busy", "Apprentice is busy; try again"))
     }
 }
 
@@ -61,7 +61,7 @@ impl crate::control::host::Host for LinuxControl {
             .lock()
             .unwrap()
             .clone()
-            .ok_or_else(|| ControlError::new("not-ready", "Hex is starting; try again"))?;
+            .ok_or_else(|| ControlError::new("not-ready", "Apprentice is starting; try again"))?;
         let mut listener = status.desktop.listener;
         // A listener that couldn't start says why, as the window does
         // ("Alt+Space is already in use by another X11 client").
@@ -96,7 +96,7 @@ impl crate::control::host::Host for LinuxControl {
                 .route()?
                 .commands
                 .try_send(ListenerCommand::StopAndPrint(print))
-                .map_err(|_| ControlError::new("busy", "Hex is busy; try again"));
+                .map_err(|_| ControlError::new("busy", "Apprentice is busy; try again"));
         }
         self.shortcut(match (action, raw) {
             (CaptureAction::Start, false) => ShortcutCommand::DictationStart,
@@ -230,7 +230,7 @@ impl crate::control::host::Host for LinuxControl {
                 match crate::capture_host::send_to_listener(
                     crate::capture_host::CaptureControl::Scrawl(action),
                 ) {
-                    Ok(()) => ControlReply::done("Sent to Hex"),
+                    Ok(()) => ControlReply::done("Sent to Apprentice"),
                     Err(error) => ControlReply::error("failed", format!("{error:#}")),
                 }
             }

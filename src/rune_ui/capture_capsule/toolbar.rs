@@ -97,7 +97,7 @@ impl Toolbar {
 /// Adds the toolbar, hidden.
 pub(crate) fn install<S: 'static>(app: &mut rune::App<S>) -> OverlayHandle<Toolbar> {
     let spec = rune::OverlaySpec {
-        name: "Hex recording toolbar",
+        name: "Apprentice recording toolbar",
         size: SIZE,
         edge: rune::ScreenEdge::Bottom,
         margin: MARGIN,

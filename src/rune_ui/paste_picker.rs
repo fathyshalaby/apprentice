@@ -16,7 +16,7 @@ pub(crate) fn install<S: 'static>(app: &mut rune::App<S>) {
         return;
     }
     let spec = OverlaySpec {
-        name: "Hex Paste Last",
+        name: "Apprentice Paste Last",
         size: (422., 544.),
         edge: ScreenEdge::Top,
         margin: 40.,

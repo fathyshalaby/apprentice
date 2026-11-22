@@ -749,7 +749,7 @@ pub(crate) fn add<S: 'static>(playground: Playground<S>) -> Playground<S> {
             Onboard::new(Flow::Shout)
         }))
         .story(story(
-            "Prototypes/Onboarding/Without Hex · With Hex",
+            "Prototypes/Onboarding/Without Apprentice · With Apprentice",
             || Onboard::new(Flow::Versus),
         ))
         .story(first_run())
@@ -857,7 +857,7 @@ fn first_run() -> Story<Onboard> {
     .variant("Mac in French", |s| s.wants = Language::Other)
     .variant("Model already downloaded", |s| s.had_model = true)
     .variant("Permissions already granted", |s| s.granted = true)
-    .variant("Hex is ready", |s| {
+    .variant("Apprentice is ready", |s| {
         s.had_model = true;
         s.jump_to_ready();
     })
@@ -1566,7 +1566,7 @@ mod tests {
         let mut s = Onboard::new(Flow::FirstRun);
         s.jump_to_try();
         assert_eq!(s.step, Step::Try);
-        s.practice.text = "Testing live dictation in Hex.".into();
+        s.practice.text = "Testing live dictation in Apprentice.".into();
         let mut tx = Tx::default();
         s.on_practice_change(&mut tx);
         assert_eq!(s.step, Step::TryHeard);
@@ -1579,7 +1579,7 @@ mod tests {
         let mut s = Onboard::new(Flow::FirstRun);
         s.granted = true;
         s.jump_to_try();
-        s.practice.text = "Testing live dictation in Hex.".into();
+        s.practice.text = "Testing live dictation in Apprentice.".into();
         s.on_practice_change(&mut Tx::default());
         s.press_continue();
         assert_eq!(s.step, Step::Ready);
@@ -1732,7 +1732,7 @@ mod tests {
             .count();
         assert_eq!(
             triumphs, 2,
-            "`With Hex`'s payoff and the game's first score card"
+            "`With Apprentice`'s payoff and the game's first score card"
         );
     }
 

@@ -295,7 +295,7 @@ fn footer(ui: &Ui, p: Paint) -> El {
         // (#1120); the hourly check alone never changes its words.
         Some(status @ (DesktopUpdateStatus::Current | DesktopUpdateStatus::Failed)) => {
             let words = match status {
-                DesktopUpdateStatus::Current if ui.update_asked => tr("Hex is up to date"),
+                DesktopUpdateStatus::Current if ui.update_asked => tr("Apprentice is up to date"),
                 DesktopUpdateStatus::Failed if ui.update_asked => tr("Couldn't check for updates"),
                 _ => tr("Check for updates"),
             };
@@ -369,9 +369,9 @@ fn footer(ui: &Ui, p: Paint) -> El {
             .center_y()
             .child(version)
             .child(
-                line("quit", tr("Quit Hex"), c.text_muted)
+                line("quit", tr("Quit Apprentice"), c.text_muted)
                     .role("button")
-                    .label(tr("Quit Hex"))
+                    .label(tr("Quit Apprentice"))
                     .hover(c.hover)
                     .press(c.pressed)
                     .focusable(true)

@@ -107,7 +107,7 @@ pub(crate) fn open(ui: &mut Ui, target: Target, tx: &mut Tx) {
                     ui.select_pane(pane, tx);
                 }
                 _ => {
-                    tracing::warn!(pane = %name, "a settings link named no pane this Hex shows");
+                    tracing::warn!(pane = %name, "a settings link named no pane this Apprentice shows");
                     super::show(ui, super::Destination::Settings, tx);
                 }
             }

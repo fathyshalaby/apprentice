@@ -877,14 +877,14 @@ impl MeetingCapsules {
         };
         let panel = overlay(
             app,
-            "Hex meeting",
+            "Apprentice meeting",
             (MEETING_PANEL_WIDTH, MEETING_PANEL_HEIGHT),
             false,
         );
         let pill = Pill {
             handle: overlay(
                 app,
-                "Hex meeting recording",
+                "Apprentice meeting recording",
                 recording_window_size(false, None),
                 true,
             ),
@@ -1277,9 +1277,9 @@ fn view_body(capsule: &Capsule, cx: &mut Cx<Capsule>) -> El {
             p.danger(),
             tr_fill("{} left the call", app),
             if *auto_stop {
-                tr("Hex stops recording in 30 s unless you keep recording.")
+                tr("Apprentice stops recording in 30 s unless you keep recording.")
             } else {
-                tr("Hex is still recording.")
+                tr("Apprentice is still recording.")
             }
             .to_owned(),
             vec![
@@ -1376,7 +1376,7 @@ fn reminder(
         return (
             p.accent(),
             meeting.display_title(),
-            tr_fill("{} · Hex records automatically", &when),
+            tr_fill("{} · Apprentice records automatically", &when),
             actions,
         );
     }
@@ -1893,7 +1893,7 @@ mod tests {
     #[test]
     fn an_always_record_reminder_says_so_and_never_offers_record() {
         let (mut rt, commands, _) = runtime(reminder(true, true), false, true, REMINDER);
-        assert!(texts(&rt).contains(&"Starts in 1 min · Hex records automatically".to_string()));
+        assert!(texts(&rt).contains(&"Starts in 1 min · Apprentice records automatically".to_string()));
         assert!(rt.find("record").is_none());
         assert!(rt.find("join-record").is_none());
         tap(&mut rt, "join");
@@ -2348,7 +2348,7 @@ mod tests {
                 "system": {"file": "system.wav", "samples": 0, "dropped_packets": 0},
                 "microphone": {"file": "microphone.wav", "samples": 0, "dropped_packets": 0},
                 "error": null,
-                "export_path": "/Users/alex/Documents/Hex Meetings/Design sync.md"
+                "export_path": "/Users/alex/Documents/Apprentice Meetings/Design sync.md"
             }))
             .unwrap(),
         ))
@@ -2493,7 +2493,7 @@ mod tests {
     fn the_agent_prompt_names_real_commands() {
         assert_eq!(
             agent_prompt("hex", "2026-11-10-1430", "Q4 launch sync", Some(258_000)),
-            "Use my Hex meeting \"Q4 launch sync\" as context. It is still recording.\n\n\
+            "Use my Apprentice meeting \"Q4 launch sync\" as context. It is still recording.\n\n\
              Read the transcript so far:\n  hex meetings show 2026-11-10-1430 --md\n\n\
              Catch up on what was said since this prompt (the first turn may repeat):\n  \
              hex meetings show 2026-11-10-1430 --from 04:18 --md\n\n\
@@ -2502,7 +2502,7 @@ mod tests {
              hex meetings show 2026-11-10-1430 --from <mm:ss> --to <mm:ss> --md\n"
         );
         let finished = agent_prompt("hex", "m", "Design sync", None);
-        assert!(finished.starts_with("Use my Hex meeting \"Design sync\" as context.\n\n"));
+        assert!(finished.starts_with("Use my Apprentice meeting \"Design sync\" as context.\n\n"));
         assert!(finished.contains("  hex meetings show m --md\n"));
         assert!(!finished.contains("--from 0"));
     }
@@ -2514,8 +2514,8 @@ mod tests {
             "/Applications/Hex.app/Contents/MacOS/hex"
         );
         assert_eq!(
-            shell_word("/Users/alex/Hex Builds/hex"),
-            "'/Users/alex/Hex Builds/hex'"
+            shell_word("/Users/alex/Apprentice Builds/hex"),
+            "'/Users/alex/Apprentice Builds/hex'"
         );
         assert_eq!(shell_word("it's"), r"'it'\''s'");
     }
@@ -2571,7 +2571,7 @@ mod tests {
         let (mut rt, commands, _) = runtime(auto, false, true, CALL_ENDED);
         assert!(
             texts(&rt)
-                .contains(&"Hex stops recording in 30 s unless you keep recording.".to_string())
+                .contains(&"Apprentice stops recording in 30 s unless you keep recording.".to_string())
         );
         tap(&mut rt, "keep-recording");
         assert!(matches!(
@@ -2582,7 +2582,7 @@ mod tests {
 
         // Without the lab, Keep recording sends nothing.
         let (mut rt, commands, _) = runtime(call_ended(), false, true, CALL_ENDED);
-        assert!(texts(&rt).contains(&"Hex is still recording.".to_string()));
+        assert!(texts(&rt).contains(&"Apprentice is still recording.".to_string()));
         let kept = Arc::new(AtomicU64::new(0));
         let counted = kept.clone();
         rt.state.keep_recording = Some(Arc::new(move || {

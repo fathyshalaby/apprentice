@@ -784,7 +784,7 @@ fn unsaved_name(folder: &std::path::Path) -> String {
     #[cfg(target_os = "macos")]
     let path = crate::screenshots::save::free_path(folder, crate::screenshots::save::Stamp::now());
     #[cfg(not(target_os = "macos"))]
-    let path = folder.join("Hex Screenshot.png");
+    let path = folder.join("Apprentice Screenshot.png");
     path.file_name()
         .map_or_else(String::new, |name| name.to_string_lossy().into_owned())
 }
@@ -973,7 +973,7 @@ pub(crate) fn install<S: 'static>(app: &mut rune::App<S>) {
     use rune::{
         DisplayTarget, KeyPolicy, OverlayInput, OverlayOptions, OverlayPlacement, OverlaySpec,
     };
-    let spec = OverlaySpec::new("Hex screenshot editor", (1440.0, 900.0), view::view)
+    let spec = OverlaySpec::new("Apprentice screenshot editor", (1440.0, 900.0), view::view)
         .options(OverlayOptions {
             placement: Some(OverlayPlacement::FullScreen),
             display: DisplayTarget::UnderPointer,

@@ -378,7 +378,7 @@ pub(super) fn heading(p: Paint, s: &Onboard) -> El {
             tr("Talk instead of typing").to_string(),
             line(
                 "lead-intro",
-                tr("Hold a key and talk. Hex types it wherever your cursor is.").into(),
+                tr("Hold a key and talk. Apprentice types it wherever your cursor is.").into(),
             ),
         ),
         // The chip says it all; the line under it stays, empty, so the
@@ -387,7 +387,7 @@ pub(super) fn heading(p: Paint, s: &Onboard) -> El {
         // do, as `"With Hex"`'s does.
         Step::Parked if !scene_over(s) || s.demo_hears() => (
             "without",
-            tr("Without Hex").to_string(),
+            tr("Without Apprentice").to_string(),
             if Layout::chosen().two_lines() {
                 line("lead-type", "Type it by hand.".to_string())
             } else {
@@ -396,14 +396,14 @@ pub(super) fn heading(p: Paint, s: &Onboard) -> El {
         ),
         Step::Parked => (
             "with",
-            tr("With Hex").to_string(),
+            tr("With Apprentice").to_string(),
             line(
                 "lead-wait",
-                tr("Hex starts listening once the speech model has downloaded.").into(),
+                tr("Apprentice starts listening once the speech model has downloaded.").into(),
             ),
         ),
         Step::YourTurn | Step::Hearing | Step::Heard => {
-            ("with", tr("With Hex").to_string(), hold())
+            ("with", tr("With Apprentice").to_string(), hold())
         }
         _ if s.flow == Flow::FirstRun || s.flow == Flow::Versus => {
             let with = &script().with;

@@ -649,9 +649,9 @@ pub fn classify_tccutil_reset(code: Option<i32>, stderr: &str) -> TccResetOutcom
 /// unavailable (such as a loose binary).
 pub fn default_mac_bundle_id(test_build: Option<&str>) -> &'static str {
     if test_build == Some("1") {
-        "anomaly.hex.test"
+        "ai.apprentice.native.test"
     } else {
-        "anomaly.hex"
+        "ai.apprentice.native"
     }
 }
 
@@ -2222,9 +2222,9 @@ mod tests {
                 "com.kitlangton.Hex.debug"
             ]
         );
-        assert_eq!(default_mac_bundle_id(None), "anomaly.hex");
-        assert_eq!(default_mac_bundle_id(Some("0")), "anomaly.hex");
-        assert_eq!(default_mac_bundle_id(Some("1")), "anomaly.hex.test");
+        assert_eq!(default_mac_bundle_id(None), "ai.apprentice.native");
+        assert_eq!(default_mac_bundle_id(Some("0")), "ai.apprentice.native");
+        assert_eq!(default_mac_bundle_id(Some("1")), "ai.apprentice.native.test");
 
         assert_eq!(
             own_tcc_services(PermissionKind::Accessibility),

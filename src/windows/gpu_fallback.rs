@@ -60,7 +60,7 @@ pub(crate) fn watch() {
         SETTLED.store(true, Ordering::Relaxed);
         tracing::warn!(
             marker = %marker().map(|path| path.display().to_string()).unwrap_or_default(),
-            "a previous launch of this Hex crashed before drawing; drawing on the high-performance GPU until Hex updates or the marker is deleted"
+            "a previous launch of this Apprentice crashed before drawing; drawing on the high-performance GPU until Apprentice updates or the marker is deleted"
         );
         return;
     }

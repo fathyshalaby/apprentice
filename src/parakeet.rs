@@ -820,7 +820,7 @@ fn wait_for_dictation_idle() -> Result<()> {
         thread::sleep(std::time::Duration::from_millis(50));
     }
     if crate::desktop::process_exit::quitting() {
-        return Err(eyre!("Hex is quitting"));
+        return Err(eyre!("Apprentice is quitting"));
     }
     Ok(())
 }
@@ -1739,7 +1739,7 @@ mod tests {
                     recording: None,
                 })),
             },
-            &mut |_, _| Err(eyre!("clipboard changed while Hex was preserving it")),
+            &mut |_, _| Err(eyre!("clipboard changed while Apprentice was preserving it")),
             &mut last_transcript,
             None,
         );

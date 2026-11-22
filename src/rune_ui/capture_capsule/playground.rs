@@ -82,14 +82,14 @@ pub(crate) fn run(rune_args: Vec<String>) {
     }
     crate::feedback::set_volume(0.5);
     let spec = rune::AppSpec {
-        title: "Hex capsule playground",
+        title: "Apprentice capsule playground",
         min_size: Some(WINDOW),
         scenes: SCENES,
         fonts: rune_theme_opencode::FONTS,
         families: rune_theme_opencode::FAMILIES,
         poll: Some(poll),
         on_key: Some(on_key),
-        ..rune::AppSpec::new("Hex capsule playground", WINDOW, init, super::view)
+        ..rune::AppSpec::new("Apprentice capsule playground", WINDOW, init, super::view)
     };
     rune::App::new(spec).modifier_keys().args(rune_args).run();
 }
@@ -811,7 +811,7 @@ fn states(p: Paint) -> El {
                     ]
                 }))
                 .child(state_button(p, "No permission", || vec![needs_screen()]))
-                .child(state_button(p, "Restart Hex", || {
+                .child(state_button(p, "Restart Apprentice", || {
                     vec![
                         needs_screen(),
                         Step::Input(Input::Permission(

@@ -569,8 +569,8 @@ pub fn version_mismatch(version: u64) -> ControlError {
     ControlError::new(
         "version-mismatch",
         format!(
-            "this hex speaks control version {version}, but the running Hex speaks \
-             {CONTROL_VERSION}; use the hex inside the running app or restart Hex"
+            "this hex speaks control version {version}, but the running Apprentice speaks \
+             {CONTROL_VERSION}; use the hex inside the running app or restart Apprentice"
         ),
     )
 }
@@ -804,7 +804,7 @@ pub fn model_source(
         .filter(|_| installed)
         .and_then(|path| describe(&path));
     match (model.id.is_custom(), here) {
-        (true, Some(origin)) => format!("found: {origin} (not tested by Hex)"),
+        (true, Some(origin)) => format!("found: {origin} (not tested by Apprentice)"),
         (false, Some(origin)) => format!("found: {origin}"),
         (true, None) => "imported".into(),
         (false, None) if installed => "hex".into(),
@@ -870,7 +870,7 @@ pub fn model_infos(
                 model.architecture.as_str(),
                 "whisper" | "qwen3_asr"
             ),
-            source: format!("found: {} (not tested by Hex)", model.source()),
+            source: format!("found: {} (not tested by Apprentice)", model.source()),
         });
     }
     infos
@@ -977,7 +977,7 @@ fn model_selection_where(
     let definition = crate::transcription::models::definition(id);
     crate::transcription::models::validate_where(&selection, k_quants).map_err(|error| {
         let supported = if definition.languages.contains(&"*") {
-            "any language code Hex knows (en, de, fr, ja, …)".to_owned()
+            "any language code Apprentice knows (en, de, fr, ja, …)".to_owned()
         } else {
             definition.languages.join(", ")
         };
@@ -1525,7 +1525,7 @@ mod tests {
                     id: "1.scrawl".into(),
                     sent_to: Some(ScrawlCaptureSession {
                         session: "ses_1".into(),
-                        title: "Hex".into(),
+                        title: "Apprentice".into(),
                     }),
                     ..ScrawlCaptureSummary::default()
                 }],
@@ -1546,7 +1546,7 @@ mod tests {
             ControlReply::Transcript {
                 text: "Ship it.".into(),
             },
-            ControlReply::error("busy", "Hex is busy"),
+            ControlReply::error("busy", "Apprentice is busy"),
         ] {
             let response = ControlResponse::from(reply);
             let json = serde_json::to_string(&response).unwrap();

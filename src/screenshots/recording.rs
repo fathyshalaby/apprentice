@@ -222,7 +222,7 @@ mod tests {
         let second = save(&source, &[], &folder).unwrap();
         let name = first.file_name().unwrap().to_string_lossy().into_owned();
         assert!(
-            name.starts_with("Hex Recording ") && name.ends_with(".mp4"),
+            name.starts_with("Apprentice Recording ") && name.ends_with(".mp4"),
             "{name}"
         );
         assert_ne!(first, second);

@@ -447,7 +447,7 @@ pub(crate) mod cli {
                     });
                 if !replaceable {
                     return Err(std::io::Error::other(format!(
-                        "{} is not a dangling Hex link",
+                        "{} is not a dangling Apprentice link",
                         path.display()
                     )));
                 }

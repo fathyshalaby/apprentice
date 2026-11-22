@@ -110,7 +110,7 @@ fn warn_unremoved(failures: Vec<staging::Failure>) {
         tracing::warn!(
             error = %failure.error,
             path = %failure.path.display(),
-            "could not remove an earlier Hex update"
+            "could not remove an earlier Apprentice update"
         );
     }
 }
@@ -136,7 +136,7 @@ pub fn discard(staged: &Staged) {
         tracing::warn!(
             error = %error,
             path = %folder.display(),
-            "could not remove an unused Hex update"
+            "could not remove an unused Apprentice update"
         );
     }
 }
@@ -242,7 +242,7 @@ pub fn restart_into(staged: &Staged) -> Result<()> {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .wrap_err("could not schedule the updated Hex")?;
+        .wrap_err("could not schedule the updated Apprentice")?;
     Ok(())
 }
 

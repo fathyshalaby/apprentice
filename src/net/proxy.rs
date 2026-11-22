@@ -50,7 +50,7 @@ pub fn proxy_for(url: &str) -> Option<ureq::Proxy> {
     match ureq::Proxy::new(&proxy) {
         Ok(proxy) => Some(proxy),
         Err(error) => {
-            tracing::warn!(%error, proxy = %redact(&proxy), "ignoring a proxy Hex can't use");
+            tracing::warn!(%error, proxy = %redact(&proxy), "ignoring a proxy Apprentice can't use");
             None
         }
     }
@@ -189,7 +189,7 @@ pub(crate) fn first_usable(entries: &[SystemEntry]) -> Option<String> {
             SystemEntry::Http(None) => {}
             SystemEntry::Other(kind) if kind == "kCFProxyTypeNone" => return None,
             SystemEntry::Other(kind) => {
-                tracing::info!(kind, "passing over a system proxy entry Hex can't use");
+                tracing::info!(kind, "passing over a system proxy entry Apprentice can't use");
             }
         }
     }

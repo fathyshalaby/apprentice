@@ -514,7 +514,7 @@ impl Parser<'_> {
             };
             if line(op) && self.ops.iter().filter(|op| line(op)).count() == MAX_LINES + 1 {
                 return Err(format!(
-                    "too many lines: \"Without Hex\" holds {MAX_LINES}, counting yours and the ending"
+                    "too many lines: \"Without Apprentice\" holds {MAX_LINES}, counting yours and the ending"
                 ));
             }
         }
@@ -526,7 +526,7 @@ impl Parser<'_> {
                 .count();
             if lines == MAX_CHEERS + 1 {
                 return Err(format!(
-                    "too many cheers: \"With Hex\" holds {MAX_CHEERS} lines"
+                    "too many cheers: \"With Apprentice\" holds {MAX_CHEERS} lines"
                 ));
             }
         }

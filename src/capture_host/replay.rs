@@ -294,7 +294,7 @@ impl Controller {
                 return Err(denied);
             }
             let Some(jobs) = finisher else {
-                return Err(ControlReply::error("busy", "Hex is stopping"));
+                return Err(ControlReply::error("busy", "Apprentice is stopping"));
             };
             if self.worker.is_none() {
                 match start_worker() {
@@ -624,7 +624,7 @@ fn check_screen_permission() -> Option<ControlReply> {
         super::screen_access::ScreenAccess::Allowed => None,
         super::screen_access::ScreenAccess::NeedsRestart => Some(ControlReply::error(
             "permission",
-            "Screen Recording turns on after Hex restarts",
+            "Screen Recording turns on after Apprentice restarts",
         )),
         super::screen_access::ScreenAccess::Off => {
             super::permissions::report_capture(
@@ -633,7 +633,7 @@ fn check_screen_permission() -> Option<ControlReply> {
             );
             Some(ControlReply::error(
                 "permission",
-                "Screen Recording is off for Hex",
+                "Screen Recording is off for Apprentice",
             ))
         }
     }

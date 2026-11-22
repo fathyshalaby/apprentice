@@ -57,7 +57,7 @@ fn transcribe(
         Err(error) => {
             return ControlReply::error(
                 "failed",
-                format!("couldn't read Hex's settings: {error:#}"),
+                format!("couldn't read Apprentice's settings: {error:#}"),
             );
         }
     };
@@ -107,7 +107,7 @@ fn refused(file: &Path, error: PieceError) -> ControlReply {
         PieceError::Damaged { at_ms } => ControlReply::error(
             "unsupported",
             format!(
-                "{name} is damaged at {}; Hex couldn't decode its audio past there",
+                "{name} is damaged at {}; Apprentice couldn't decode its audio past there",
                 minute_second(at_ms)
             ),
         ),
@@ -117,26 +117,26 @@ fn refused(file: &Path, error: PieceError) -> ControlReply {
         ),
         PieceError::Incomplete => ControlReply::error(
             "unsupported",
-            format!("{name} is truncated or corrupt; Hex couldn't read all of its audio"),
+            format!("{name} is truncated or corrupt; Apprentice couldn't read all of its audio"),
         ),
         PieceError::NotMedia => ControlReply::error(
             "unsupported",
-            format!("{name} isn't an audio or video file Hex can read"),
+            format!("{name} isn't an audio or video file Apprentice can read"),
         ),
         PieceError::NoAudioTrack => {
             ControlReply::error("unsupported", format!("{name} has no audio track"))
         }
         PieceError::UnsupportedCodec(codec) => ControlReply::error(
             "unsupported",
-            format!("{name}'s audio is {codec}, which Hex can't decode"),
+            format!("{name}'s audio is {codec}, which Apprentice can't decode"),
         ),
         PieceError::Audio(AudioError::Unsupported) => ControlReply::error(
             "unsupported",
-            format!("{name} is a WAV whose sample rate or channels Hex can't decode"),
+            format!("{name} is a WAV whose sample rate or channels Apprentice can't decode"),
         ),
         PieceError::Audio(_) => ControlReply::error(
             "unsupported",
-            format!("{name} isn't a WAV file Hex can read"),
+            format!("{name} isn't a WAV file Apprentice can read"),
         ),
     }
 }
@@ -215,7 +215,7 @@ fn run_pieces(
             if length > MAX_TRANSCRIPT {
                 return ControlReply::error(
                     "resource-exhausted",
-                    format!("{name}'s transcript is longer than Hex prints"),
+                    format!("{name}'s transcript is longer than Apprentice prints"),
                 );
             }
             texts.push(text);
@@ -239,7 +239,7 @@ fn transcript(body: &[u8]) -> std::result::Result<String, ControlReply> {
         Ok(Transcript { transcript }) => Ok(transcript.trim().to_owned()),
         Err(_) => Err(ControlReply::error(
             "failed",
-            "Hex sent an unreadable transcript",
+            "Apprentice sent an unreadable transcript",
         )),
     }
 }
@@ -263,54 +263,54 @@ fn refusal(status: u16, code: &str, model: &str) -> ControlReply {
     match code {
         "unknown-model" => ControlReply::error(
             "unknown-model",
-            format!("Hex doesn't know `{model}`; run `hex model list`"),
+            format!("Apprentice doesn't know `{model}`; run `hex model list`"),
         ),
         "unsupported-model" => ControlReply::error(
             "model-unavailable",
-            format!("Hex can't use `{model}`; run `hex model list` to see what it has"),
+            format!("Apprentice can't use `{model}`; run `hex model list` to see what it has"),
         ),
-        "invalid-request" => ControlReply::error("failed", "Hex refused the request; update Hex"),
+        "invalid-request" => ControlReply::error("failed", "Apprentice refused the request; update Apprentice"),
         "unsupported-audio" | "invalid-audio" => ControlReply::error(
             "failed",
-            "Hex couldn't read the audio it was sent; update Hex",
+            "Apprentice couldn't read the audio it was sent; update Apprentice",
         ),
-        "length-required" => ControlReply::error("failed", "Hex refused the upload; update Hex"),
+        "length-required" => ControlReply::error("failed", "Apprentice refused the upload; update Apprentice"),
         "resource-exhausted" => ControlReply::error(
             "resource-exhausted",
-            "Hex says the audio is too large or too long to transcribe",
+            "Apprentice says the audio is too large or too long to transcribe",
         ),
         "model-not-ready" => ControlReply::error("model-unavailable", not_ready(model)),
         "queue-full" => {
-            ControlReply::error("busy", "Hex is busy with another transcription; try again")
+            ControlReply::error("busy", "Apprentice is busy with another transcription; try again")
         }
         "upload-timeout" => {
-            ControlReply::error("failed", "Hex timed out reading the audio; try again")
+            ControlReply::error("failed", "Apprentice timed out reading the audio; try again")
         }
-        "cancelled" => ControlReply::error("failed", "Hex cancelled the transcription; try again"),
+        "cancelled" => ControlReply::error("failed", "Apprentice cancelled the transcription; try again"),
         "service-gone" => ControlReply::error(
             "unavailable",
-            "Hex's transcription service stopped; try again",
+            "Apprentice's transcription service stopped; try again",
         ),
         "model-load-failed" => ControlReply::error(
             "failed",
-            format!("Hex couldn't load `{model}`; try again or pick another model"),
+            format!("Apprentice couldn't load `{model}`; try again or pick another model"),
         ),
         "transcription-failed" => {
-            ControlReply::error("failed", "Hex couldn't transcribe it; try again")
+            ControlReply::error("failed", "Apprentice couldn't transcribe it; try again")
         }
         _ => match status {
-            401 => ControlReply::error("failed", "Hex rejected the request; restart Hex"),
-            408 => ControlReply::error("failed", "Hex timed out reading the audio; try again"),
+            401 => ControlReply::error("failed", "Apprentice rejected the request; restart Apprentice"),
+            408 => ControlReply::error("failed", "Apprentice timed out reading the audio; try again"),
             409 => ControlReply::error("model-unavailable", not_ready(model)),
             413 => ControlReply::error(
                 "resource-exhausted",
-                "Hex says the audio is too large to transcribe",
+                "Apprentice says the audio is too large to transcribe",
             ),
-            429 => ControlReply::error("busy", "Hex is busy with another transcription; try again"),
+            429 => ControlReply::error("busy", "Apprentice is busy with another transcription; try again"),
             _ if code.is_empty() || code.starts_with("http-") => {
-                ControlReply::error("failed", format!("Hex answered HTTP {status}"))
+                ControlReply::error("failed", format!("Apprentice answered HTTP {status}"))
             }
-            _ => ControlReply::error("failed", format!("Hex answered HTTP {status} ({code})")),
+            _ => ControlReply::error("failed", format!("Apprentice answered HTTP {status} ({code})")),
         },
     }
 }
@@ -319,7 +319,7 @@ fn refusal(status: u16, code: &str, model: &str) -> ControlReply {
 /// was imported instead.
 fn not_ready(model: &str) -> String {
     if model.starts_with("custom-") {
-        format!("`{model}` isn't ready; check it in Hex's model picker")
+        format!("`{model}` isn't ready; check it in Apprentice's model picker")
     } else {
         format!("`{model}` isn't downloaded; run `hex model install {model}`")
     }
@@ -480,7 +480,7 @@ mod tests {
     fn a_refusal_follows_hexs_code_rather_than_its_status() {
         let (code, message) = error(refusal(415, "unsupported-audio", "parakeet_v2"));
         assert_eq!(code, "failed");
-        assert!(message.contains("update Hex"), "{message}");
+        assert!(message.contains("update Apprentice"), "{message}");
 
         let (code, message) = error(refusal(400, "unknown-model", "parakeet_v2"));
         assert_eq!(code, "unknown-model");
@@ -568,7 +568,7 @@ mod tests {
         ));
         assert_eq!(code, "unsupported");
         assert!(
-            message.contains("isn't a WAV file Hex can read"),
+            message.contains("isn't a WAV file Apprentice can read"),
             "{message}"
         );
     }
@@ -580,7 +580,7 @@ mod tests {
             (PieceError::NoAudioTrack, "has no audio track"),
             (
                 PieceError::UnsupportedCodec("Apple Lossless".into()),
-                "audio is Apple Lossless, which Hex can't decode",
+                "audio is Apple Lossless, which Apprentice can't decode",
             ),
             (PieceError::Damaged { at_ms: 61_000 }, "damaged at 1:01"),
             (

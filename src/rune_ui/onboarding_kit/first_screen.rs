@@ -44,14 +44,14 @@ pub(super) fn note(p: Paint, s: &Onboard) -> Option<El> {
             marked(
                 p,
                 &glyphs::LOCK,
-                tr("Hex hears you on this computer. Your voice never leaves it."),
+                tr("Apprentice hears you on this computer. Your voice never leaves it."),
             ),
         )),
         Step::Try | Step::TryHearing | Step::TryHeard | Step::Ready
             if s.live.as_ref().is_some_and(|live| live.mic_stays_open()) =>
         {
             let why = tr(
-                "macOS shows the mic as on because Hex keeps it warm, so dictation starts instantly.",
+                "macOS shows the mic as on because Apprentice keeps it warm, so dictation starts instantly.",
             );
             let only = tr_fill(
                 if s.toggle {

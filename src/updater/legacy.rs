@@ -157,7 +157,7 @@ mod linux {
         let data = dirs::data_dir().ok_or_else(|| color_eyre::eyre::eyre!("no data directory"))?;
         let config =
             dirs::config_dir().ok_or_else(|| color_eyre::eyre::eyre!("no config directory"))?;
-        let executable = std::env::current_exe().wrap_err("could not locate Hex")?;
+        let executable = std::env::current_exe().wrap_err("could not locate Apprentice")?;
         adopt_with(
             legacy,
             root,
@@ -243,7 +243,7 @@ mod linux {
         {
             command.env("HEX_APPLICATION_SUPPORT_DIR", root);
         }
-        Err(command.exec()).wrap_err("could not start the managed Hex")
+        Err(command.exec()).wrap_err("could not start the managed Apprentice")
     }
 }
 
@@ -271,20 +271,20 @@ mod windows {
             .write(true)
             .open(updates.join("update.lock"))?;
         lock.try_lock_exclusive()
-            .wrap_err("a Hex install or update is already in progress")?;
+            .wrap_err("a Apprentice install or update is already in progress")?;
         let staging = updates.join("hex.exe.staging");
         let _ = fs::remove_file(&staging);
-        fs::copy(std::env::current_exe()?, &staging).wrap_err("could not copy Hex")?;
+        fs::copy(std::env::current_exe()?, &staging).wrap_err("could not copy Apprentice")?;
         let executable = super::super::platform::activate(root, crate::VERSION, &staging, None)?;
         write_receipt(root)?;
         if super::super::receipt_channel(root).is_none() {
             bail!("the managed install's receipt does not verify");
         }
         if let Err(error) = replace_shortcut(&executable) {
-            tracing::warn!(%error, "could not point the Start Menu shortcut at the managed Hex");
+            tracing::warn!(%error, "could not point the Start Menu shortcut at the managed Apprentice");
         }
         if let Err(error) = crate::windows::login_item::repoint(&executable) {
-            tracing::warn!(%error, "could not point Launch at login at the managed Hex");
+            tracing::warn!(%error, "could not point Launch at login at the managed Apprentice");
         }
         match RegKey::predef(HKEY_CURRENT_USER).delete_subkey_all(LEGACY_UNINSTALL_KEY) {
             Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
@@ -325,12 +325,12 @@ mod windows {
                 "-Command",
                 "$shell = New-Object -ComObject WScript.Shell; \
                  if (Test-Path -LiteralPath $env:HEX_SHORTCUT) { \
-                 if ($shell.CreateShortcut($env:HEX_SHORTCUT).Description -ne 'Hex managed install') { exit 0 }; \
+                 if ($shell.CreateShortcut($env:HEX_SHORTCUT).Description -ne 'Apprentice managed install') { exit 0 }; \
                  Remove-Item -LiteralPath $env:HEX_SHORTCUT -Force }; \
                  $s = $shell.CreateShortcut($env:HEX_SHORTCUT); \
                  $s.TargetPath = $env:HEX_EXECUTABLE; \
                  $s.Arguments = 'app'; \
-                 $s.Description = 'Hex managed install'; \
+                 $s.Description = 'Apprentice managed install'; \
                  $s.WorkingDirectory = (Split-Path -Parent $env:HEX_EXECUTABLE); \
                  $s.Save()",
             ])
@@ -360,7 +360,7 @@ mod windows {
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
-            .wrap_err("could not start the managed Hex")?;
+            .wrap_err("could not start the managed Apprentice")?;
         Ok(())
     }
 }

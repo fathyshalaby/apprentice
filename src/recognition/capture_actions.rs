@@ -355,7 +355,7 @@ pub(super) fn control_dictation(
                 ),
                 finished => finish_reply(
                     Some(finished),
-                    "Finished recording; Hex pastes the text when it's ready",
+                    "Finished recording; Apprentice pastes the text when it's ready",
                 ),
             }
         }

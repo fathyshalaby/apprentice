@@ -44,7 +44,7 @@ pub(super) fn or_bundled(path: &str, bundled: &SamplesBuffer) -> SamplesBuffer {
         return bundled.clone();
     }
     let Some((channels, rate, mut samples)) = std::fs::read(path).ok().and_then(|b| caf(&b)) else {
-        tracing::debug!(path, "no macOS sound; playing Hex's own");
+        tracing::debug!(path, "no macOS sound; playing Apprentice's own");
         return bundled.clone();
     };
     let peak = |s: &[f32]| s.iter().fold(0.0_f32, |m, x| m.max(x.abs()));

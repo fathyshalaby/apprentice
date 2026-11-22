@@ -19,7 +19,7 @@ fn shot(size: [u32; 2]) -> Shot {
     );
     image.wait().unwrap();
     Shot {
-        path: PathBuf::from("/tmp/Hex Screenshot.png"),
+        path: PathBuf::from("/tmp/Apprentice Screenshot.png"),
         image,
         size,
         recording: None,
@@ -54,7 +54,7 @@ fn desktop(size: [u32; 2], hue: u8) -> Shot {
         std::thread::yield_now();
     }
     Shot {
-        path: PathBuf::from("/tmp/Hex Screenshot.png"),
+        path: PathBuf::from("/tmp/Apprentice Screenshot.png"),
         image,
         size,
         recording: None,

@@ -93,7 +93,7 @@ impl std::fmt::Display for FileTranscriptError {
             }
             Self::UnsupportedFormat { path } => write!(
                 formatter,
-                "{} is not a kind of audio file Hex can transcribe; drop a {FORMATS} file",
+                "{} is not a kind of audio file Apprentice can transcribe; drop a {FORMATS} file",
                 path.display()
             ),
             Self::Unreadable { path, reason } => {
@@ -101,7 +101,7 @@ impl std::fmt::Display for FileTranscriptError {
             }
             Self::UnsupportedCodec { path, codec } => write!(
                 formatter,
-                "{} holds audio in a codec Hex cannot decode ({codec})",
+                "{} holds audio in a codec Apprentice cannot decode ({codec})",
                 path.display()
             ),
             Self::NoAudioTrack { path } => {
@@ -278,7 +278,7 @@ fn transcribe_piece(
     let Some(admission) = handle.admit_audio() else {
         debug_assert!(false, "a file's fresh service refused its first clip");
         return Err(transcription_failed(
-            "Hex's transcription service refused the file's first clip",
+            "Apprentice's transcription service refused the file's first clip",
         ));
     };
     let job = handle
@@ -309,7 +309,7 @@ fn service_error(error: TranscriptionServiceError) -> FileTranscriptError {
             transcription_failed("Another transcription is running")
         }
         TranscriptionServiceError::Unavailable => {
-            transcription_failed("Hex's transcription service stopped")
+            transcription_failed("Apprentice's transcription service stopped")
         }
         TranscriptionServiceError::Cancelled => FileTranscriptError::Cancelled,
         TranscriptionServiceError::Model(message) => FileTranscriptError::ModelUnavailable(message),
@@ -358,7 +358,7 @@ fn file_error(path: &Path, error: PieceError) -> FileTranscriptError {
         },
         PieceError::NotMedia => FileTranscriptError::Unreadable {
             path: path.to_path_buf(),
-            reason: "it is not an audio or video file Hex can read".into(),
+            reason: "it is not an audio or video file Apprentice can read".into(),
         },
         PieceError::Audio(error) => FileTranscriptError::Unreadable {
             path: path.to_path_buf(),
@@ -386,7 +386,7 @@ fn clock(ms: u64) -> String {
 /// Why a WAV this build can't take was refused, for the unreadable message.
 fn audio_reason(error: &AudioError) -> &'static str {
     match error {
-        AudioError::Unsupported => "its sample rate or channels are ones Hex cannot decode",
+        AudioError::Unsupported => "its sample rate or channels are ones Apprentice cannot decode",
         AudioError::Invalid => "its WAV audio is malformed",
         AudioError::ResourceExhausted => "it is too large to decode",
     }
@@ -958,7 +958,7 @@ mod tests {
             PieceError::UnsupportedCodec("AC-3".into()),
         );
         assert!(
-            codec.to_string().contains("codec Hex cannot decode (AC-3)"),
+            codec.to_string().contains("codec Apprentice cannot decode (AC-3)"),
             "{codec}"
         );
         assert!(

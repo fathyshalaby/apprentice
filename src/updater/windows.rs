@@ -36,7 +36,7 @@ pub const DOWNLOAD_TARGET: &str = "windows-arm64-setup";
 /// anyone else are refused.
 pub const AUTHENTICODE_SIGNER: &str = "Anomaly Innovations, Inc https://anoma.ly/";
 /// `HKLM` (or `HKCU`) `\SOFTWARE\Policies\Anomaly\Hex`, value `DisableUpdates`.
-const POLICY_KEY: &str = r"SOFTWARE\Policies\Anomaly\Hex";
+const POLICY_KEY: &str = r"SOFTWARE\Policies\Anomaly\Apprentice";
 /// The Apps & Features entry that packaging/windows/hex.iss registers.
 const UNINSTALL_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\{6ED48C92-5177-41F4-B8D6-37B7B02CFDF4}_is1";
 
@@ -61,13 +61,13 @@ impl Ineligible {
     fn message(self) -> &'static str {
         match self {
             Self::NotInstalled => {
-                "This copy of Hex can't update itself because the Hex installer didn't install it. Install Hex from anoma.ly/hex to get updates in the app."
+                "This copy of Apprentice can't update itself because the Apprentice installer didn't install it. Install Apprentice from anoma.ly/hex to get updates in the app."
             }
             Self::OutsideProfile => {
-                "This copy of Hex can't update itself because it's installed outside your user folder. Reinstall Hex from anoma.ly/hex to get updates in the app."
+                "This copy of Apprentice can't update itself because it's installed outside your user folder. Reinstall Apprentice from anoma.ly/hex to get updates in the app."
             }
             Self::Receipt => {
-                "This copy of Hex can't update itself because its install record is from another installer. Reinstall Hex from anoma.ly/hex to get updates in the app."
+                "This copy of Apprentice can't update itself because its install record is from another installer. Reinstall Apprentice from anoma.ly/hex to get updates in the app."
             }
         }
     }
@@ -80,7 +80,7 @@ pub fn method() -> Method {
     match eligibility() {
         Ok(channel) => Method::Direct { channel },
         Err(why) => {
-            tracing::warn!(?why, "this Hex can't update itself");
+            tracing::warn!(?why, "this Apprentice can't update itself");
             Method::Unknown
         }
     }
@@ -238,10 +238,10 @@ pub fn stage(file: &Path, console: Option<&Path>, version: &str) -> Result<Stage
         tracing::warn!(%error, "could not put the updated hex.com on PATH");
     }
     if let Err(error) = crate::windows::login_item::repoint(&executable) {
-        tracing::warn!(%error, "could not repoint Launch at login to the updated Hex");
+        tracing::warn!(%error, "could not repoint Launch at login to the updated Apprentice");
     }
     if let Err(error) = repoint_start_menu_shortcut(&executable) {
-        tracing::warn!(%error, "could not repoint the Start Menu shortcut to the updated Hex");
+        tracing::warn!(%error, "could not repoint the Start Menu shortcut to the updated Apprentice");
     }
     if let Err(error) = update_uninstall_entry(version) {
         tracing::warn!(%error, "could not update the Apps & Features version");
@@ -297,7 +297,7 @@ fn repoint_start_menu_shortcut(executable: &Path) -> Result<()> {
             "Hidden",
             "-Command",
             "$s = (New-Object -ComObject WScript.Shell).CreateShortcut($env:HEX_SHORTCUT); \
-             if ($s.Description -eq 'Hex managed install') { \
+             if ($s.Description -eq 'Apprentice managed install') { \
              $s.TargetPath = $env:HEX_EXECUTABLE; \
              $s.WorkingDirectory = (Split-Path -Parent $env:HEX_EXECUTABLE); \
              $s.Save() }",
@@ -461,7 +461,7 @@ fn add_to_path(folder: &Path) -> Result<()> {
     let vtype = existing.map_or(REG_EXPAND_SZ, |value| value.vtype);
     environment
         .set_raw_value("Path", &RegValue { bytes, vtype })
-        .wrap_err("could not add Hex to PATH")?;
+        .wrap_err("could not add Apprentice to PATH")?;
     let name: Vec<u16> = "Environment".encode_utf16().chain([0]).collect();
     // SAFETY: `name` is NUL-terminated and outlives the call; a hung window
     // is skipped after the timeout.
@@ -544,7 +544,7 @@ pub(super) fn activate(
             && is_version_name(name)
             && let Err(error) = fs::remove_dir_all(entry.path())
         {
-            tracing::warn!(%error, path = %entry.path().display(), "could not prune an old Hex version");
+            tracing::warn!(%error, path = %entry.path().display(), "could not prune an old Apprentice version");
         }
     }
     Ok(executable)
@@ -568,7 +568,7 @@ pub fn restart_into(staged: &Staged) -> Result<()> {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .wrap_err("could not schedule the updated Hex version")?;
+        .wrap_err("could not schedule the updated Apprentice version")?;
     Ok(())
 }
 

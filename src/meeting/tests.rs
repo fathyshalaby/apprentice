@@ -703,8 +703,8 @@ fn the_exported_markdown_is_the_reveal_target_only_while_it_exists() {
 #[test]
 fn explorer_opens_a_folder_itself_without_the_select_switch() {
     assert_eq!(
-        explorer_open(Path::new(r"C:\Users\dax\Documents\Hex Meetings")).as_os_str(),
-        std::ffi::OsStr::new(r#""C:\Users\dax\Documents\Hex Meetings""#)
+        explorer_open(Path::new(r"C:\Users\dax\Documents\Apprentice Meetings")).as_os_str(),
+        std::ffi::OsStr::new(r#""C:\Users\dax\Documents\Apprentice Meetings""#)
     );
     assert_eq!(
         explorer_open(Path::new(r"D:\Notes,2026")).as_os_str(),
@@ -716,18 +716,18 @@ fn explorer_opens_a_folder_itself_without_the_select_switch() {
 fn explorer_selects_the_meeting_file_with_the_switch_outside_the_quotes() {
     assert_eq!(
         explorer_select(Path::new(
-            r"C:\Users\dax\Documents\Hex Meetings\Design sync.md"
+            r"C:\Users\dax\Documents\Apprentice Meetings\Design sync.md"
         ))
         .as_os_str(),
-        std::ffi::OsStr::new(r#"/select,"C:\Users\dax\Documents\Hex Meetings\Design sync.md""#)
+        std::ffi::OsStr::new(r#"/select,"C:\Users\dax\Documents\Apprentice Meetings\Design sync.md""#)
     );
     assert_eq!(
         explorer_select(Path::new(
-            r"C:\Users\dax\Documents\Hex Meetings\Design sync, notes.md"
+            r"C:\Users\dax\Documents\Apprentice Meetings\Design sync, notes.md"
         ))
         .as_os_str(),
         std::ffi::OsStr::new(
-            r#"/select,"C:\Users\dax\Documents\Hex Meetings\Design sync, notes.md""#
+            r#"/select,"C:\Users\dax\Documents\Apprentice Meetings\Design sync, notes.md""#
         )
     );
 }

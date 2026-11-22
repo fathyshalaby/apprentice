@@ -306,7 +306,7 @@ pub fn missing(why: &str, locale: &str, error: Option<&str>) -> MissingTranscrip
         },
         "unsupported" => MissingTranscript {
             reason: format!(
-                "this Mac has no Apple speech model for {locale}. Hex can transcribe instead \
+                "this Mac has no Apple speech model for {locale}. Apprentice can transcribe instead \
                  (Scrawl Settings › Recording)."
             ),
             retry: false,

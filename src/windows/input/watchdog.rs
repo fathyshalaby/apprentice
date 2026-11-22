@@ -242,7 +242,7 @@ fn tick() {
             if rearm::rearm_after_silence() {
                 if first {
                     tracing::info!(
-                        "input was reaching the session but not Hex's low-level hooks; re-armed them"
+                        "input was reaching the session but not Apprentice's low-level hooks; re-armed them"
                     );
                 }
                 BACKOFF
@@ -252,7 +252,7 @@ fn tick() {
             }
         }
         Decision::StreakEnded { rearms } => {
-            tracing::info!(rearms, "input is reaching Hex's keyboard hook again");
+            tracing::info!(rearms, "input is reaching Apprentice's keyboard hook again");
         }
     }
     heal_stale_chord(now, keyboard_quiet_threshold());

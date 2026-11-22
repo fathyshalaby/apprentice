@@ -163,7 +163,7 @@ impl RecoveringAudioInput {
     #[cfg(test)]
     pub fn pending_for_test() -> (Self, Sender<InputOpenResult>) {
         let mut input = Self::closed(
-            Some("Hex nonexistent microphone for pending open test"),
+            Some("Apprentice nonexistent microphone for pending open test"),
             0,
             None,
         );

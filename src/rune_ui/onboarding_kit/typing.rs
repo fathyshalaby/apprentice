@@ -1073,7 +1073,7 @@ pub(crate) fn check(t: &Timing, script: &'static Script<'static>) -> Vec<String>
     let mut problems = Vec::new();
     if !LENGTH.contains(&scene.duration()) {
         problems.push(format!(
-            "\"Without Hex\" runs {:.1} s; keep it between {} and {} s",
+            "\"Without Apprentice\" runs {:.1} s; keep it between {} and {} s",
             scene.duration(),
             LENGTH.start(),
             LENGTH.end()

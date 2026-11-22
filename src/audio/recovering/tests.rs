@@ -323,7 +323,7 @@ fn startup_retry_recovers_metadata_and_audio_without_restarting() {
 #[test]
 fn startup_recovery_opens_even_when_a_capture_is_pending() {
     let mut input = RecoveringAudioInput::closed(
-        Some("Hex nonexistent microphone for pending recovery test"),
+        Some("Apprentice nonexistent microphone for pending recovery test"),
         3,
         None,
     );

@@ -477,7 +477,7 @@ fn uninstall_row(ui: &Ui, p: Paint) -> El {
     let hint = match status.map(|s| &s.action_state) {
         Some(DriverActionState::Failed(reason)) => format!("{} · {}", tr("Failed"), reason),
         Some(DriverActionState::Cancelled) => tr("Uninstall cancelled").into(),
-        _ => tr("Voice Filter isn't in this version of Hex. Uninstall its driver to remove Hex Microphone from your inputs.").into(),
+        _ => tr("Voice Filter isn't in this version of Apprentice. Uninstall its driver to remove Hex Microphone from your inputs.").into(),
     };
     setting_row(
         p,

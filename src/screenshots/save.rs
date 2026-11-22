@@ -37,7 +37,7 @@ impl Stamp {
 /// A shot's file name, as [`name_as`] names it.
 #[cfg(test)]
 pub(crate) fn file_name(at: Stamp, copy: u32) -> String {
-    name_as("Hex Screenshot", "png", at, copy)
+    name_as("Apprentice Screenshot", "png", at, copy)
 }
 
 /// `<stem> 2026-11-04 at 14.03.22.<extension>`, then ` (2)`, ` (3)`… for
@@ -61,13 +61,13 @@ fn name_as(stem: &str, extension: &str, at: Stamp, copy: u32) -> String {
 
 /// A path in `folder` no file holds yet.
 pub(crate) fn free_path(folder: &Path, at: Stamp) -> PathBuf {
-    free_path_as(folder, at, "Hex Screenshot", "png")
+    free_path_as(folder, at, "Apprentice Screenshot", "png")
 }
 
 /// A path in `folder` no file holds yet for a recording:
 /// `Hex Recording 2026-11-04 at 14.03.22.mp4`.
 pub(crate) fn recording_path(folder: &Path) -> PathBuf {
-    free_path_as(folder, Stamp::now(), "Hex Recording", "mp4")
+    free_path_as(folder, Stamp::now(), "Apprentice Recording", "mp4")
 }
 
 fn free_path_as(folder: &Path, at: Stamp, stem: &str, extension: &str) -> PathBuf {
@@ -204,11 +204,11 @@ mod tests {
     fn a_screenshot_is_named_as_macos_names_its_own() {
         assert_eq!(
             file_name(AT, 1),
-            "Hex Screenshot 2026-11-04 at 14.03.22.png"
+            "Apprentice Screenshot 2026-11-04 at 14.03.22.png"
         );
         assert_eq!(
             file_name(AT, 2),
-            "Hex Screenshot 2026-11-04 at 14.03.22 (2).png"
+            "Apprentice Screenshot 2026-11-04 at 14.03.22 (2).png"
         );
     }
 

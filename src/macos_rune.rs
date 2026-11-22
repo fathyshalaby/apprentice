@@ -163,11 +163,11 @@ impl RuntimeHandle {
             // choice, so it cannot later undo the newer manual choice.
             self.requests
                 .send(Request::InputSourceChanged(source))
-                .map_err(|_| eyre!("Hex's runtime stopped"))?;
+                .map_err(|_| eyre!("Apprentice's runtime stopped"))?;
         }
         self.requests
             .send(request)
-            .map_err(|_| eyre!("Hex's runtime stopped"))
+            .map_err(|_| eyre!("Apprentice's runtime stopped"))
     }
 
     pub(crate) fn published(&self) -> Option<Arc<Published>> {
@@ -269,9 +269,9 @@ fn quit_legacy_hex() {
                 &NSString::from_str(bundle_id),
             ) {
                 if app.terminate() {
-                    tracing::info!(bundle_id, "asked the old Hex to quit");
+                    tracing::info!(bundle_id, "asked the old Apprentice to quit");
                 } else {
-                    tracing::warn!(bundle_id, "the old Hex did not agree to quit");
+                    tracing::warn!(bundle_id, "the old Apprentice did not agree to quit");
                 }
             }
         }
@@ -444,7 +444,7 @@ pub fn run(shutdown: &'static AtomicBool, listener: ListenerConfig, hidden: bool
     };
     RUNTIME
         .set(handle.clone())
-        .map_err(|_| eyre!("the Hex runtime already started"))?;
+        .map_err(|_| eyre!("the Apprentice runtime already started"))?;
     let runtime_settings = settings.clone();
     let runtime = thread::Builder::new()
         .name("hex-runtime".into())
@@ -638,7 +638,7 @@ pub fn run(shutdown: &'static AtomicBool, listener: ListenerConfig, hidden: bool
     // keeps running instead (`rune_ui::run_app`).
     let started = app.try_run();
     if let Err(error) = &started {
-        tracing::error!(%error, "the Hex window failed; Hex stops");
+        tracing::error!(%error, "the Apprentice window failed; Apprentice stops");
     }
 
     PUMP.with(|slot| {
@@ -730,7 +730,7 @@ fn start_main_thread_after(seconds: f64) {
 /// the pump's timer; the first call does, later ones do nothing.
 fn start_main_thread() {
     let Some(mtm) = MainThreadMarker::new() else {
-        tracing::error!("Hex's main-thread setup ran off the main thread");
+        tracing::error!("Apprentice's main-thread setup ran off the main thread");
         return;
     };
     let Some(Launch { mut pump, target }) = LAUNCH.with(|slot| slot.borrow_mut().take()) else {
@@ -741,7 +741,7 @@ fn start_main_thread() {
     }) {
         Ok(actions) => Some(actions),
         Err(error) => {
-            tracing::error!(%error, "could not install Hex status item; opening the window");
+            tracing::error!(%error, "could not install Apprentice status item; opening the window");
             show(&pump.window, Destination::Settings);
             None
         }

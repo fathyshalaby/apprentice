@@ -160,7 +160,7 @@ const GRADUATED: [(&str, &str); 24] = [
     ),
     (
         "more-call-apps",
-        "more-call-apps graduated: Hex always offers to record calls in every call app and website it knows now",
+        "more-call-apps graduated: Apprentice always offers to record calls in every call app and website it knows now",
     ),
     (
         "meeting-notes-vocabulary",
@@ -228,7 +228,7 @@ const GRADUATED: [(&str, &str); 24] = [
     ),
     (
         "quit-closes-window",
-        "quit-closes-window was removed: ⌘Q quits Hex",
+        "quit-closes-window was removed: ⌘Q quits Apprentice",
     ),
     (
         "api-browser-access",
@@ -244,7 +244,7 @@ pub(super) fn resolve(name: &str, reaches: impl Fn(Feature) -> bool + Copy) -> R
         .filter(|feature| feature.on_this_os() && reaches(*feature))
         .ok_or_else(|| {
             eyre!(
-                "unknown Labs feature {name:?}; this Hex has: {}",
+                "unknown Labs feature {name:?}; this Apprentice has: {}",
                 Feature::available_where(reaches)
                     .map(Feature::name)
                     .collect::<Vec<_>>()

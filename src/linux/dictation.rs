@@ -153,7 +153,7 @@ fn readiness_message(
     shortcuts: &DesktopShortcuts,
     commands: bool,
 ) -> String {
-    let ready = format!("Hex dictation is ready on {device}.");
+    let ready = format!("Apprentice dictation is ready on {device}.");
     match shortcuts {
         DesktopShortcuts::Registered | DesktopShortcuts::Portal(_) => {
             format!("{ready} Hold {hotkey} to dictate; Ctrl-C stops.")
@@ -1505,7 +1505,7 @@ mod tests {
     fn the_ready_line_names_what_starts_dictation() {
         assert_eq!(
             readiness_message("System default", "Alt", &DesktopShortcuts::Registered, true),
-            "Hex dictation is ready on System default. Hold Alt to dictate; Ctrl-C stops."
+            "Apprentice dictation is ready on System default. Hold Alt to dictate; Ctrl-C stops."
         );
         assert_eq!(
             readiness_message(
@@ -1514,7 +1514,7 @@ mod tests {
                 &DesktopShortcuts::Portal(Vec::new()),
                 false
             ),
-            "Hex dictation is ready on Yeti. Hold Alt+Space to dictate; Ctrl-C stops."
+            "Apprentice dictation is ready on Yeti. Hold Alt+Space to dictate; Ctrl-C stops."
         );
         let unregistered =
             readiness_message("Yeti", "Alt+Space", &DesktopShortcuts::Unregistered, true);
@@ -1994,7 +1994,7 @@ mod tests {
         let output = DictationOutput::from_settings(&AppSettings::default(), None);
         let mut last_dictation = Some("an older dictation".to_string());
         let mut paste = |_: &str, _: bool, _: bool| -> Result<()> {
-            Err(eyre!("clipboard changed while Hex was preserving it"))
+            Err(eyre!("clipboard changed while Apprentice was preserving it"))
         };
 
         let result = output.deliver(

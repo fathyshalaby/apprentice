@@ -78,17 +78,17 @@ pub fn discovery_path() -> PathBuf {
 pub fn parse_discovery(bytes: &[u8]) -> Result<Endpoint> {
     // serde's messages can quote the offending value, so none of them are passed on.
     let Ok(discovery) = serde_json::from_slice::<Discovery>(bytes) else {
-        bail!("Hex discovery file is not valid");
+        bail!("Apprentice discovery file is not valid");
     };
     ensure!(
         discovery.api_version == "2",
-        "Hex API version {:?} is not supported (need 2)",
+        "Apprentice API version {:?} is not supported (need 2)",
         discovery.api_version
     );
-    ensure!(discovery.port != 0, "Hex discovery file has no port");
+    ensure!(discovery.port != 0, "Apprentice discovery file has no port");
     ensure!(
         !discovery.token.is_empty() && !discovery.token.contains(['\r', '\n']),
-        "Hex discovery file has no usable token"
+        "Apprentice discovery file has no usable token"
     );
     Ok(Endpoint {
         port: discovery.port,
@@ -116,7 +116,7 @@ fn request(
 ) -> Result<Response> {
     let address = SocketAddr::from((Ipv4Addr::LOCALHOST, endpoint.port));
     let mut stream =
-        TcpStream::connect_timeout(&address, CONNECT_TIMEOUT).context("Could not reach Hex")?;
+        TcpStream::connect_timeout(&address, CONNECT_TIMEOUT).context("Could not reach Apprentice")?;
     stream.set_write_timeout(Some(UPLOAD_TIMEOUT))?;
     stream.set_read_timeout(Some(timeouts.read))?;
     write!(
@@ -135,20 +135,20 @@ fn request(
     }
     ensure!(
         bytes.len() as u64 <= RESPONSE_LIMIT,
-        "Hex response too large"
+        "Apprentice response too large"
     );
     let split = bytes
         .windows(4)
         .position(|window| window == b"\r\n\r\n")
-        .context("Invalid Hex HTTP response")?;
-    let header = std::str::from_utf8(&bytes[..split]).context("Invalid Hex HTTP header")?;
+        .context("Invalid Apprentice HTTP response")?;
+    let header = std::str::from_utf8(&bytes[..split]).context("Invalid Apprentice HTTP header")?;
     let status: u16 = header
         .lines()
         .next()
         .and_then(|line| line.split_whitespace().nth(1))
-        .context("Missing Hex HTTP status")?
+        .context("Missing Apprentice HTTP status")?
         .parse()
-        .context("Invalid Hex HTTP status")?;
+        .context("Invalid Apprentice HTTP status")?;
     let body = bytes[split + 4..].to_vec();
     if let Some(length) = header
         .lines()
@@ -156,10 +156,10 @@ fn request(
         .find(|(key, _)| key.eq_ignore_ascii_case("content-length"))
         .and_then(|(_, value)| value.trim().parse::<usize>().ok())
     {
-        ensure!(body.len() == length, "Incomplete Hex HTTP response");
+        ensure!(body.len() == length, "Incomplete Apprentice HTTP response");
     }
     if status == 200 {
-        upload.context("Hex upload failed")?;
+        upload.context("Apprentice upload failed")?;
     }
     Ok(Response { status, body })
 }
@@ -188,9 +188,9 @@ pub enum Failure {
 impl std::fmt::Display for Failure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Busy => write!(f, "Hex is busy"),
+            Self::Busy => write!(f, "Apprentice is busy"),
             Self::Rejected { status, code } => {
-                write!(f, "Hex rejected the audio ({status} {code})")
+                write!(f, "Apprentice rejected the audio ({status} {code})")
             }
             Self::Unavailable(reason) => write!(f, "{reason}"),
         }
@@ -263,7 +263,7 @@ impl Client {
     }
 
     pub fn connect_at(path: &Path) -> Result<Self> {
-        let bytes = std::fs::read(path).context("Hex is not running (no discovery file)")?;
+        let bytes = std::fs::read(path).context("Apprentice is not running (no discovery file)")?;
         let client = Self {
             endpoint: parse_discovery(&bytes)?,
         };
@@ -283,11 +283,11 @@ impl Client {
         )?;
         ensure!(
             response.status != 401,
-            "Hex rejected Scrawl's credentials (restart Hex?)"
+            "Apprentice rejected Scrawl's credentials (restart Apprentice?)"
         );
         ensure!(
             response.status == 200,
-            "Hex answered {path} with HTTP {}",
+            "Apprentice answered {path} with HTTP {}",
             response.status
         );
         Ok(response)
@@ -296,17 +296,17 @@ impl Client {
     /// Hex's version, after checking it speaks API 2.
     pub fn health(&self) -> Result<String> {
         let health: Health = serde_json::from_slice(&self.get("/health")?.body)
-            .context("Invalid Hex health response")?;
+            .context("Invalid Apprentice health response")?;
         ensure!(
             health.api_version == "2",
-            "Hex API version {:?} is not supported (need 2)",
+            "Apprentice API version {:?} is not supported (need 2)",
             health.api_version
         );
         Ok(health.version)
     }
 
     pub fn models(&self) -> Result<Vec<Model>> {
-        serde_json::from_slice(&self.get("/models")?.body).context("Invalid Hex model list")
+        serde_json::from_slice(&self.get("/models")?.body).context("Invalid Apprentice model list")
     }
 
     pub fn status(&self) -> Result<Status> {
@@ -335,14 +335,14 @@ impl Client {
         match response.status {
             200 => serde_json::from_slice::<Transcription>(&response.body)
                 .map(|transcription| transcription.transcript)
-                .map_err(|_| Failure::Unavailable("Invalid Hex transcription response".into())),
+                .map_err(|_| Failure::Unavailable("Invalid Apprentice transcription response".into())),
             429 => Err(Failure::Busy),
             status @ (400 | 408 | 411 | 413 | 415) => Err(Failure::Rejected {
                 status,
                 code: error_code(&response.body),
             }),
             status => Err(Failure::Unavailable(format!(
-                "Hex transcription failed (HTTP {status} {})",
+                "Apprentice transcription failed (HTTP {status} {})",
                 error_code(&response.body)
             ))),
         }
@@ -453,7 +453,7 @@ pub fn transcribe_clips(
     let mut rejected = 0;
     let mut texts: Vec<String> = Vec::new();
     for &(start, end) in clips {
-        ensure!(Instant::now() < deadline, "Hex took too long");
+        ensure!(Instant::now() < deadline, "Apprentice took too long");
         let from = (start.saturating_sub(CLIP_PAD_MS) * SAMPLE_RATE_KHZ) as usize;
         let to = (((end + CLIP_PAD_MS) * SAMPLE_RATE_KHZ) as usize).min(samples.len());
         if from >= to {
@@ -464,7 +464,7 @@ pub fn transcribe_clips(
             Ok(text) => text,
             Err(Failure::Rejected { status, code }) => {
                 crate::log::scrawl_log(format!(
-                    "Hex rejected a clip ({status} {code}); skipping it"
+                    "Apprentice rejected a clip ({status} {code}); skipping it"
                 ));
                 rejected += 1;
                 continue;
@@ -482,7 +482,7 @@ pub fn transcribe_clips(
     }
     ensure!(
         rejected == 0 || rejected < clips.len(),
-        "Hex refused every clip"
+        "Apprentice refused every clip"
     );
     transcript.text = texts.join(" ");
     Ok(transcript)

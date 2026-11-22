@@ -85,7 +85,7 @@ pub(super) fn ensure_system_audio() -> Result<()> {
         request_screen_recording();
     }
     Err(eyre!(
-        "Allow Hex in System Settings › Privacy & Security › Screen & System Audio Recording, then try again"
+        "Allow Apprentice in System Settings › Privacy & Security › Screen & System Audio Recording, then try again"
     ))
 }
 
@@ -149,7 +149,7 @@ pub(super) fn open_system_audio(
     }
     if !screen_permitted {
         return Err(eyre!(
-            "Allow Hex under System Settings › Privacy & Security › Screen & System Audio Recording"
+            "Allow Apprentice under System Settings › Privacy & Security › Screen & System Audio Recording"
         ));
     }
     ScreenCaptureSource::start(sink).map(|source| Box::new(source) as Box<dyn LiveSource>)
@@ -185,7 +185,7 @@ impl ProcessTapSource {
                 CATapDescription::alloc(),
                 &excluded,
             );
-            description.setName(&NSString::from_str("Hex meeting system audio"));
+            description.setName(&NSString::from_str("Apprentice meeting system audio"));
             description.setPrivate(true);
             description.setMuteBehavior(CATapMuteBehavior::Unmuted);
             description
@@ -222,7 +222,7 @@ impl ProcessTapSource {
         let tap_uid = unsafe { description.UUID() }.UUIDString();
         source.aggregate = create_tap_aggregate(
             &tap_uid,
-            "Hex Meeting System Audio",
+            "Apprentice Meeting System Audio",
             &format!("anomaly.hex.meeting-tap.{}", std::process::id()),
         )?;
 

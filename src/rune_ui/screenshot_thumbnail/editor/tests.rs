@@ -189,10 +189,10 @@ fn a_shot_without_a_file_is_offered_a_new_screenshot_name() {
     let file_dialog::Target::Save { filters, file_name } = editor.save_dialog().target else {
         panic!("a save panel");
     };
-    assert!(file_name.starts_with("Hex Screenshot"), "{file_name}");
+    assert!(file_name.starts_with("Apprentice Screenshot"), "{file_name}");
     #[cfg(target_os = "macos")]
     assert!(
-        file_name.starts_with("Hex Screenshot "),
+        file_name.starts_with("Apprentice Screenshot "),
         "dated: {file_name}"
     );
     assert!(file_name.ends_with(".png"), "{file_name}");
@@ -204,7 +204,7 @@ fn a_shot_without_a_file_is_offered_a_new_screenshot_name() {
 fn the_path_chosen_gets_the_recording() {
     let folder = std::env::temp_dir().join(format!("hex-editor-save-{}", std::process::id()));
     std::fs::create_dir_all(&folder).unwrap();
-    let movie = folder.join("Hex Recording.mp4");
+    let movie = folder.join("Apprentice Recording.mp4");
     std::fs::write(&movie, b"movie").unwrap();
     let mut recording = clip();
     recording.movie = movie;

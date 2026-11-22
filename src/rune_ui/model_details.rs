@@ -109,7 +109,7 @@ pub(super) fn section(ui: &Ui, p: Paint, model: &ModelDefinition) -> Option<El> 
         .child(line(
             p,
             "experimental",
-            tr("Experimental: Hex has run it only on Linux (Vulkan) so far.").to_owned(),
+            tr("Experimental: Apprentice has run it only on Linux (Vulkan) so far.").to_owned(),
         ))
         .child(
             text(details.attribution)
@@ -134,7 +134,7 @@ pub(super) fn section(ui: &Ui, p: Paint, model: &ModelDefinition) -> Option<El> 
 /// conditions beside them. They rank nothing in Hex.
 fn published(ui: &Ui, p: Paint, details: &ModelDetails) -> El {
     let open = ui.picker.details.published;
-    let label = tr("Published benchmarks; not measured in Hex");
+    let label = tr("Published benchmarks; not measured in Apprentice");
     let disclosure = Button::new(label)
         .variant(ButtonVariant::Ghost)
         .control_size(ControlSize::Small)

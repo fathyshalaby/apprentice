@@ -673,12 +673,12 @@ fn select_installed(
         Handoff::Done(code) => code,
         #[cfg(target_os = "linux")]
         Handoff::OlderHex => fail(&format!(
-            "the model is installed, but an older Hex is still running; \
+            "the model is installed, but an older Apprentice is still running; \
              run `hex restart`, then `hex model use {}`",
             selection.model.as_str()
         )),
         Handoff::Deadline => fail(&format!(
-            "the model is installed, but Hex is starting and holds its settings; \
+            "the model is installed, but Apprentice is starting and holds its settings; \
              run `hex model use {}` once it answers",
             selection.model.as_str()
         )),
@@ -797,7 +797,7 @@ fn offline_model(command: ModelCommand) -> u8 {
             );
             Ok(())
         }
-        _ => unreachable!("Hex carries out the other model commands"),
+        _ => unreachable!("Apprentice carries out the other model commands"),
     })())
 }
 
@@ -1153,7 +1153,7 @@ fn apply_settings(file: &std::path::Path, output: Output) -> u8 {
         Handoff::Deadline => print(
             ControlReply::error(
                 "busy",
-                "Hex is starting but didn't answer; run `hex settings apply` again",
+                "Apprentice is starting but didn't answer; run `hex settings apply` again",
             ),
             output,
         ),
@@ -1229,7 +1229,7 @@ fn call(request: ControlRequest) -> Result<ControlResponse, ControlReply> {
 }
 
 pub(crate) fn not_running() -> ControlReply {
-    ControlReply::error("not-running", "Hex is not running; run `hex start`")
+    ControlReply::error("not-running", "Apprentice is not running; run `hex start`")
 }
 
 /// Why no Hex answered `/control`: on Linux an older Hex an update left
@@ -1247,7 +1247,7 @@ fn absent() -> ControlReply {
 fn older_hex() -> ControlReply {
     ControlReply::error(
         "outdated",
-        "an older Hex is still running (Hex was updated) and doesn't take `hex` commands; run `hex restart`",
+        "an older Apprentice is still running (Apprentice was updated) and doesn't take `hex` commands; run `hex restart`",
     )
 }
 
@@ -1260,7 +1260,7 @@ fn restart_older_hex() -> ControlReply {
     if !crate::linux::service::supervised() {
         return ControlReply::error(
             "failed",
-            "an older Hex is running outside its systemd unit; quit it from its window or tray, then run `hex start`",
+            "an older Apprentice is running outside its systemd unit; quit it from its window or tray, then run `hex start`",
         );
     }
     if let Err(error) = crate::linux::service::restart() {
@@ -1269,11 +1269,11 @@ fn restart_older_hex() -> ControlReply {
     let started = Instant::now();
     while started.elapsed() < Duration::from_secs(20) {
         if running() {
-            return ControlReply::done("Restarted Hex");
+            return ControlReply::done("Restarted Apprentice");
         }
         std::thread::sleep(Duration::from_millis(200));
     }
-    ControlReply::done("Restarted Hex; it isn't answering yet (it may be loading its model)")
+    ControlReply::done("Restarted Apprentice; it isn't answering yet (it may be loading its model)")
 }
 
 fn logs(process: bool, lines: usize, follow: bool) -> u8 {
@@ -1453,7 +1453,7 @@ mod tests {
         report.meeting.elapsed_seconds = Some(3723);
         report.features.meetings = true;
         let text = human_status(&report);
-        assert!(text.starts_with("Hex 2.3.1 (pid 42, 412 MB)\n"));
+        assert!(text.starts_with("Apprentice 2.3.1 (pid 42, 412 MB)\n"));
         assert!(text.contains("Meeting      recording “Design sync” for 1:02:03\n"));
         assert!(text.ends_with("Labs         none\n"));
         report.labs = vec!["live-text".into(), "meetings".into()];

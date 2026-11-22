@@ -49,7 +49,7 @@ impl DeleteRefusal {
             Self::Transcribing => "Wait for the transcript to finish before deleting it",
             Self::Notes => "Wait for the notes to finish before deleting",
             Self::FinalPending => "Wait for its final transcript before deleting it",
-            Self::Busy => "Hex is still working on this meeting",
+            Self::Busy => "Apprentice is still working on this meeting",
         }
     }
 }

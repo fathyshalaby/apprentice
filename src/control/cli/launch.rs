@@ -12,7 +12,7 @@ const START_GRACE: std::time::Duration = std::time::Duration::from_secs(2);
 
 /// What `hex start` says when Hex runs but hasn't answered yet.
 #[cfg(not(target_os = "macos"))]
-const STILL_STARTING: &str = "Started Hex; it isn't answering yet (it may be loading its model)";
+const STILL_STARTING: &str = "Started Apprentice; it isn't answering yet (it may be loading its model)";
 
 /// `hex start` on macOS: `open`s the Hex.app this `hex` belongs to, then
 /// waits until it answers.
@@ -22,7 +22,7 @@ pub(super) fn start(output: Output) -> u8 {
 
     if let Some(pid) = crate::local_api::running_pid() {
         return print(
-            ControlReply::unchanged(format!("Hex is already running (pid {pid})")),
+            ControlReply::unchanged(format!("Apprentice is already running (pid {pid})")),
             output,
         );
     }
@@ -47,14 +47,14 @@ pub(super) fn start(output: Output) -> u8 {
     while started.elapsed() < Duration::from_secs(20) {
         if let Some(pid) = crate::local_api::running_pid() {
             return print(
-                ControlReply::done(format!("Started Hex (pid {pid})")),
+                ControlReply::done(format!("Started Apprentice (pid {pid})")),
                 output,
             );
         }
         std::thread::sleep(Duration::from_millis(200));
     }
     print(
-        ControlReply::done("Opened Hex; it isn't answering yet (setup may be waiting)"),
+        ControlReply::done("Opened Apprentice; it isn't answering yet (setup may be waiting)"),
         output,
     )
 }
@@ -75,7 +75,7 @@ pub(super) fn reopen_after_restart(old: Option<crate::local_api::ExitWatch>) -> 
 
     #[cfg(target_os = "linux")]
     if crate::linux::service::supervised() {
-        return ControlReply::done("Restarting Hex");
+        return ControlReply::done("Restarting Apprentice");
     }
     // The watch was taken while the old Hex still ran, before it got the
     // quit, so it can only be about that process. The local API was the wrong
@@ -96,7 +96,7 @@ pub(super) fn reopen_after_restart(old: Option<crate::local_api::ExitWatch>) -> 
     if !gone {
         return ControlReply::error(
             "failed",
-            "Hex is still finishing its work; run `hex start` once it quits",
+            "Apprentice is still finishing its work; run `hex start` once it quits",
         );
     }
     start_reply()
@@ -107,7 +107,7 @@ fn start_reply() -> ControlReply {
     use std::time::{Duration, Instant};
 
     if running() {
-        return ControlReply::unchanged("Hex is already running");
+        return ControlReply::unchanged("Apprentice is already running");
     }
     #[cfg(target_os = "linux")]
     if crate::linux::service::instance_answers() {
@@ -143,7 +143,7 @@ fn start_reply() -> ControlReply {
     let mut child = match command.spawn() {
         Ok(child) => child,
         Err(error) => {
-            return ControlReply::error("failed", format!("couldn't start Hex: {error}"));
+            return ControlReply::error("failed", format!("couldn't start Apprentice: {error}"));
         }
     };
     let started = Instant::now();
@@ -157,7 +157,7 @@ fn start_reply() -> ControlReply {
     // successor of a Hex still finishing its drain is seen if it does arrive.
     loop {
         if running() {
-            return ControlReply::done("Started Hex");
+            return ControlReply::done("Started Apprentice");
         }
         if exited.is_none()
             && let Ok(Some(status)) = child.try_wait()
@@ -184,13 +184,13 @@ fn start_reply() -> ControlReply {
         // instance; a failed one never became Hex at all.
         Some(status) if status.success() => ControlReply::error(
             "failed",
-            "Hex started and exited right away; another Hex is probably still shutting \
+            "Apprentice started and exited right away; another Apprentice is probably still shutting \
              down, so run `hex start` again",
         ),
         Some(status) => ControlReply::error(
             "failed",
             format!(
-                "Hex exited right away ({status}); see process.log, then run `hex start` again"
+                "Apprentice exited right away ({status}); see process.log, then run `hex start` again"
             ),
         ),
         None => ControlReply::done(STILL_STARTING),

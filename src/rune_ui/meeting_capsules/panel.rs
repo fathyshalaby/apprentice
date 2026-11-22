@@ -1045,14 +1045,14 @@ pub(super) fn agent_prompt(hex: &str, id: &str, title: &str, recording: Option<u
     );
     match recording {
         Some(reached_ms) => format!(
-            "Use my Hex meeting {title:?} as context. It is still recording.\n\n\
+            "Use my Apprentice meeting {title:?} as context. It is still recording.\n\n\
              Read the transcript so far:\n  {hex} meetings show {id} --md\n\n\
              Catch up on what was said since this prompt (the first turn may repeat):\n  \
              {hex} meetings show {id} --from {} --md\n\n{search}",
             meeting::format_duration(reached_ms),
         ),
         None => format!(
-            "Use my Hex meeting {title:?} as context.\n\n\
+            "Use my Apprentice meeting {title:?} as context.\n\n\
              Read its notes and transcript:\n  {hex} meetings show {id} --md\n\n{search}"
         ),
     }

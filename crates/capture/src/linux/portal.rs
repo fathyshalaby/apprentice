@@ -106,7 +106,7 @@ impl Portal {
         .await;
         let sender = connection
             .unique_name()
-            .ok_or_else(|| anyhow!("the session bus gave Hex no name"))?
+            .ok_or_else(|| anyhow!("the session bus gave Apprentice no name"))?
             .trim_start_matches(':')
             .replace('.', "_");
         Ok(Self {

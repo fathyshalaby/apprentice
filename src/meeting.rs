@@ -466,7 +466,7 @@ pub fn record(
     updates: Option<SyncSender<RecordingUpdate>>,
 ) -> Result<MeetingManifest> {
     if crate::desktop::process_exit::quitting() {
-        return Err(eyre!("Hex is quitting"));
+        return Err(eyre!("Apprentice is quitting"));
     }
     let (_, transcription_selection) = crate::app_settings::transcription_selection();
     let transcription_model = crate::transcription::models::validate(&transcription_selection)?;
@@ -488,7 +488,7 @@ pub fn record(
     if crate::desktop::process_exit::quitting() {
         drop(_active);
         recovery::discard_refused_start(&meeting_dir);
-        return Err(eyre!("Hex is quitting"));
+        return Err(eyre!("Apprentice is quitting"));
     }
     // Held until this recording returns: a quit or a restart to update can
     // see it and wait for the audio to be finalised.
@@ -644,7 +644,7 @@ pub fn record(
             write_manifest(&meeting_dir, &manifest)?;
             tracing::info!(
                 meeting = manifest.id,
-                "Hex quit while recording; the transcript finishes at the next launch"
+                "Apprentice quit while recording; the transcript finishes at the next launch"
             );
             return Ok(manifest);
         }
@@ -677,7 +677,7 @@ pub fn record(
                 tracing::info!(
                     meeting = manifest.id,
                     %error,
-                    "Hex quit during final transcription; the transcript finishes at the next launch"
+                    "Apprentice quit during final transcription; the transcript finishes at the next launch"
                 );
                 return Ok(manifest);
             }

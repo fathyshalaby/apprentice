@@ -84,7 +84,7 @@ impl AppSettings {
                         Some(LaunchNote::Unparseable(reason.launch_note()))
                     }
                     Some(LoadIssue::Unreadable) => Some(LaunchNote::Failed(
-                        "Hex couldn't read settings.json and started with defaults. Your file wasn't changed; restart Hex once it can be read.".into(),
+                        "Apprentice couldn't read settings.json and started with defaults. Your file wasn't changed; restart Apprentice once it can be read.".into(),
                     )),
                     None => None,
                 };
@@ -95,7 +95,7 @@ impl AppSettings {
                 LaunchLoad {
                     settings: Self::default(),
                     note: Some(LaunchNote::Failed(format!(
-                        "Hex couldn't read its settings and started with defaults. ({error:#})"
+                        "Apprentice couldn't read its settings and started with defaults. ({error:#})"
                     ))),
                 }
             }
@@ -355,7 +355,7 @@ impl AppSettings {
         // They may be stale defaults, so a fixed file must be loaded instead.
         if self.source.revision != 0 && !self.source.writable {
             return Err(eyre!(
-                "settings.json couldn't be read when Hex loaded it. Restart Hex to load the fixed file. Nothing was saved."
+                "settings.json couldn't be read when Apprentice loaded it. Restart Apprentice to load the fixed file. Nothing was saved."
             ));
         }
         match &original {
@@ -505,7 +505,7 @@ impl LoadIssue {
         match self {
             Self::Unparseable(reason) => reason.reload_error(),
             Self::Unreadable => {
-                "Hex couldn't read settings.json; keeping the settings it already has.".into()
+                "Apprentice couldn't read settings.json; keeping the settings it already has.".into()
             }
         }
     }
@@ -537,7 +537,7 @@ impl Unparseable {
 
     fn launch_note(&self) -> String {
         format!(
-            "Hex couldn't read settings.json and started with defaults. Your file wasn't changed; fix or remove it, then restart Hex. ({})",
+            "Apprentice couldn't read settings.json and started with defaults. Your file wasn't changed; fix or remove it, then restart Apprentice. ({})",
             self.reason()
         )
     }
@@ -545,7 +545,7 @@ impl Unparseable {
     /// The error a save returns; nothing is written.
     fn save_error(&self) -> String {
         format!(
-            "settings.json {}. Fix or remove it, then restart Hex. Nothing was saved.",
+            "settings.json {}. Fix or remove it, then restart Apprentice. Nothing was saved.",
             self.sentence()
         )
     }
@@ -554,7 +554,7 @@ impl Unparseable {
     #[cfg(target_os = "linux")]
     fn reload_error(&self) -> String {
         format!(
-            "settings.json {}. Fix or remove it, then restart Hex.",
+            "settings.json {}. Fix or remove it, then restart Apprentice.",
             self.sentence()
         )
     }

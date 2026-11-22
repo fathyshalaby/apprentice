@@ -107,7 +107,7 @@ impl Backend {
             ) => crate::macos_rune::update_action(&action),
             request => match &self.runtime {
                 Some(runtime) => runtime.send(request),
-                None => Err(eyre!("Hex's runtime is not running")),
+                None => Err(eyre!("Apprentice's runtime is not running")),
             },
         }
     }
@@ -140,7 +140,7 @@ impl Backend {
     pub(super) fn error(&self) -> Option<String> {
         self.runtime
             .is_none()
-            .then(|| "Hex's runtime is not running".into())
+            .then(|| "Apprentice's runtime is not running".into())
     }
 
     pub(super) fn state(&self) -> Option<HostState> {
@@ -615,7 +615,7 @@ impl MacHost {
     }
 
     fn runtime(&self) -> Result<RuntimeHandle, String> {
-        crate::macos_rune::runtime().ok_or_else(|| "Hex's runtime is not running".into())
+        crate::macos_rune::runtime().ok_or_else(|| "Apprentice's runtime is not running".into())
     }
 
     fn meeting(&mut self, request: MeetingRequest) -> Result<(), String> {
@@ -702,7 +702,7 @@ impl NativeHost for MacHost {
             }
             PlatformRequest::Permission(PermissionAction::Restart) => {
                 if !crate::desktop::onboarding::spawn_relaunch() {
-                    return Err("could not restart Hex".into());
+                    return Err("could not restart Apprentice".into());
                 }
                 crate::macos_rune::quit();
             }
@@ -740,7 +740,7 @@ impl NativeHost for MacHost {
                     tracing::warn!(%error, "could not record the onboarding relaunch");
                 }
                 if !crate::desktop::onboarding::spawn_relaunch() {
-                    return Err("could not relaunch Hex".into());
+                    return Err("could not relaunch Apprentice".into());
                 }
                 crate::macos_rune::quit();
             }
@@ -909,7 +909,7 @@ impl NativeHost for MacHost {
             }
         }
         if self.returning.poll(now, focus) {
-            tracing::info!("permission granted in System Settings; bringing Hex back");
+            tracing::info!("permission granted in System Settings; bringing Apprentice back");
             crate::macos_rune::bring_window_forward();
         }
         changed |= update(&mut state.permissions_stale, next_stale);

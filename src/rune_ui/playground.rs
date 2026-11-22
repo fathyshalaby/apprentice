@@ -277,7 +277,7 @@ const PATHS: &[(&str, &str)] = &[
     ),
     ("mac-production", "Window/General/Production build"),
     ("mac-activity", "Window/Activity/Activity"),
-    ("mac-onboarding", "Window/Onboarding/Setting up Hex"),
+    ("mac-onboarding", "Window/Onboarding/Setting up Apprentice"),
     (
         "mac-onboarding-permissions",
         "Window/Onboarding/Permissions",
@@ -304,10 +304,10 @@ const PATHS: &[(&str, &str)] = &[
         "mac-onboarding-reopen",
         "Window/Onboarding/Your turn · reopen",
     ),
-    ("mac-onboarding-ready", "Window/Onboarding/Hex is ready"),
+    ("mac-onboarding-ready", "Window/Onboarding/Apprentice is ready"),
     (
         "mac-onboarding-ready-tap",
-        "Window/Onboarding/Hex is ready · tap to start",
+        "Window/Onboarding/Apprentice is ready · tap to start",
     ),
     ("portal", "Linux & Windows/Settings · portal shortcuts"),
     ("commands", "Linux & Windows/Settings · hex commands"),
@@ -402,7 +402,7 @@ fn playground() -> Playground<Ui> {
     let playground = Playground::new()
         .enabled(true)
         .bar(false)
-        .sizes(&[("Hex window", WINDOW_SIZE)])
+        .sizes(&[("Apprentice window", WINDOW_SIZE)])
         .group_order(GROUPS)
         .start_folded(true);
     let playground = super::onboarding_kit::stories(playground);

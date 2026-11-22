@@ -502,12 +502,12 @@ fn refuse_unless(
     tracing::warn!(
         target: "hex_config",
         capability,
-        "a transformation needs permission; allow it in Hex's Output pane"
+        "a transformation needs permission; allow it in Apprentice's Output pane"
     );
     Err(Exception::throw_message(
         ctx,
         &format!(
-            "Hex has not allowed this config to {action}. Allow it in Hex's Output pane; Hex asks again whenever the config changes"
+            "Apprentice has not allowed this config to {action}. Allow it in Apprentice's Output pane; Apprentice asks again whenever the config changes"
         ),
     ))
 }

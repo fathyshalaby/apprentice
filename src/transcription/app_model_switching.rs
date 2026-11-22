@@ -394,7 +394,7 @@ mod tests {
         // new is due, and the mode is never even looked up.
         assert!(!switcher.observe(
             Observation::Ignored,
-            |_, _| panic!("Hex's own window must not name a mode"),
+            |_, _| panic!("Apprentice's own window must not name a mode"),
             now + Duration::from_secs(1),
         ));
         assert_eq!(

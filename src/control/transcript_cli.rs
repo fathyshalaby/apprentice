@@ -776,7 +776,7 @@ pub fn meetings(command: &MeetingsCommand) -> Result<()> {
         MeetingsCommand::Record { .. }
         | MeetingsCommand::Stop { .. }
         | MeetingsCommand::CopyLast { .. }
-        | MeetingsCommand::Delete { .. } => Err(eyre!("this command needs the running Hex")),
+        | MeetingsCommand::Delete { .. } => Err(eyre!("this command needs the running Apprentice")),
     }
 }
 

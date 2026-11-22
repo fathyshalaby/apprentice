@@ -254,7 +254,7 @@ pub(crate) fn hex_logo(
         let core = rounded_hex(centre, INNER * half * scale, line * 0.75);
         shape = shape.fill(core, p.text().alpha(shown));
     }
-    canvas(shape).key(key).size(total, total).label("Hex")
+    canvas(shape).key(key).size(total, total).label("Apprentice")
 }
 
 fn meter_shape(p: Paint, size: f32, progress: f32, closed: f32) -> Shape {

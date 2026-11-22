@@ -350,7 +350,7 @@ mod tests {
             &folder,
             &format!("scrawl-{}-1-1.scrawl", now - 60_000),
             now - 60_000,
-            r#","video":"recording.mp4","destination":{"session":"ses_1","title":"Hex","via":"chosen"}"#,
+            r#","video":"recording.mp4","destination":{"session":"ses_1","title":"Apprentice","via":"chosen"}"#,
         );
         let newer = write(&folder, &format!("{}.scrawl", now - 1_000), now - 1_000, "");
         fs::write(newer.join("recording.mp4"), b"mp4").unwrap();
@@ -368,7 +368,7 @@ mod tests {
         let older = &listed[1];
         assert_eq!(older.words, "make it blue");
         assert_eq!(older.app.as_deref(), Some("Brave"));
-        assert_eq!(older.sent_to.as_deref(), Some("Hex"));
+        assert_eq!(older.sent_to.as_deref(), Some("Apprentice"));
         assert!(older.expired && older.movie.is_none(), "its movie is gone");
         assert_eq!(
             older.picture,
@@ -378,7 +378,7 @@ mod tests {
             !listed[0].expired,
             "a bundle that never had a movie hasn't lost one"
         );
-        assert!(older.matches(&["blue".into(), "hex".into()]));
+        assert!(older.matches(&["blue".into(), "apprentice".into()]));
         assert!(older.matches(&["annotation".into()]));
         assert!(!older.matches(&["red".into()]));
         assert_ne!(listed[0].id, listed[1].id);

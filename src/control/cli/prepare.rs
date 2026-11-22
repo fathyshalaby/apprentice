@@ -108,7 +108,7 @@ pub(super) fn prepare(
             Some(Err(code)) => Err(failed(name, &code)),
             None => Err(ControlReply::error(
                 "failed",
-                format!("Hex stopped preparing {name} before it finished; try again"),
+                format!("Apprentice stopped preparing {name} before it finished; try again"),
             )),
         },
         Ok((status, body)) => {
@@ -116,12 +116,12 @@ pub(super) fn prepare(
             Err(match code.as_str() {
                 "prepare-busy" => ControlReply::error(
                     "busy",
-                    "Hex is already preparing a model; try again once it finishes",
+                    "Apprentice is already preparing a model; try again once it finishes",
                 ),
                 "unknown-model" => ControlReply::error(
                     "unknown-model",
                     format!(
-                        "Hex doesn't know `{}`; run `hex model list`",
+                        "Apprentice doesn't know `{}`; run `hex model list`",
                         selection.model.as_str()
                     ),
                 ),
@@ -130,7 +130,7 @@ pub(super) fn prepare(
                     format!("{name} doesn't support `{}`", selection.language),
                 ),
                 _ => {
-                    ControlReply::error("failed", format!("Hex refused to prepare {name} ({code})"))
+                    ControlReply::error("failed", format!("Apprentice refused to prepare {name} ({code})"))
                 }
             })
         }
@@ -146,7 +146,7 @@ fn failed(name: &str, code: &str) -> ControlReply {
         "cancelled" => "stopped preparing",
         _ => "couldn't prepare",
     };
-    ControlReply::error("failed", format!("Hex {what} {name}; try again"))
+    ControlReply::error("failed", format!("Apprentice {what} {name}; try again"))
 }
 
 #[cfg(test)]

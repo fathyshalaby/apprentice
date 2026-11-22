@@ -50,7 +50,7 @@ fn refresh_in(directory: &Path, launcher: &Path) -> Result<()> {
         && program(&current).is_none_or(|program| superseded(&program, launcher))
         && launcher.is_file()
     {
-        tracing::info!(entry = %entry.display(), "pointed Launch at login at this Hex");
+        tracing::info!(entry = %entry.display(), "pointed Launch at login at this Apprentice");
         self::entry(launcher)
     } else {
         crate::linux::portal::with_icon(&current)
@@ -157,7 +157,7 @@ pub fn set_enabled(enabled: bool) -> Result<()> {
             return Ok(());
         }
         bail!(
-            "Hex starts at login through its systemd user service (hex.service); \
+            "Apprentice starts at login through its systemd user service (hex.service); \
              turn it off where it was enabled, such as programs.hex.autostart in \
              Home Manager or `systemctl --user disable hex.service`"
         );
@@ -168,7 +168,7 @@ pub fn set_enabled(enabled: bool) -> Result<()> {
         && !ours(entry)
     {
         bail!(
-            "{} is not Hex's; edit or remove it yourself",
+            "{} is not Apprentice's; edit or remove it yourself",
             path.display()
         );
     }
@@ -269,7 +269,7 @@ fn ours(entry: &str) -> bool {
 /// The executable the entry starts: a managed install's `current/hex`,
 /// which outlives the version directory this process runs from.
 pub(crate) fn launcher() -> Result<PathBuf> {
-    let executable = std::env::current_exe().wrap_err("could not locate the Hex executable")?;
+    let executable = std::env::current_exe().wrap_err("could not locate the Apprentice executable")?;
     // Linux names a running binary that was removed or replaced "… (deleted)".
     let executable = match executable
         .to_str()
@@ -404,7 +404,7 @@ fn entry(executable: &Path) -> String {
     format!(
         "[Desktop Entry]\n\
          Type=Application\n\
-         Name=Hex\n\
+         Name=Apprentice\n\
          Comment=Local voice dictation\n\
          Exec={} start\n\
          Icon={}\n\
