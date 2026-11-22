@@ -308,13 +308,21 @@ fn shape(text: &str, keep_letters: bool) -> String {
 /// A file name with its words and numbers abstracted, a well-known
 /// extension kept: `2026-11-03 Telekom.pdf` becomes `#-#-# a.pdf`.
 pub fn name_shape(name: &str) -> String {
-    if let Some((stem, ext)) = name.rsplit_once('.') {
-        let ext = ext.to_lowercase();
-        if !stem.is_empty() && KNOWN_EXTENSIONS.contains(&ext.as_str()) {
-            return format!("{}.{ext}", shape(stem, false));
+    match known_extension(name) {
+        Some(ext) => {
+            let stem = &name[..name.len() - ext.len() - 1];
+            format!("{}.{ext}", shape(stem, false))
         }
+        None => shape(name, false),
     }
-    shape(name, false)
+}
+
+/// The lowercased extension of `name` when it is on the allow-list, else
+/// `None`: an unknown extension can be part of a name (`J.Smith`).
+pub fn known_extension(name: &str) -> Option<String> {
+    let (stem, ext) = name.rsplit_once('.')?;
+    let ext = ext.to_lowercase();
+    (!stem.is_empty() && KNOWN_EXTENSIONS.contains(&ext.as_str())).then_some(ext)
 }
 
 /// A relative folder path with its numbers abstracted, words kept:
