@@ -195,6 +195,7 @@ impl Feature {
             Self::VocabularyFiles => settings.labs.vocabulary_files,
             Self::AnnotateAgentTools => settings.labs.annotate_agent_tools,
             Self::AnnotateAgentInstall => settings.labs.annotate_agent_install,
+            Self::WatchAndLearn => settings.labs.watch_and_learn,
         }
     }
 
@@ -282,6 +283,7 @@ impl Feature {
             &mut labs.vocabulary_files,
             &mut labs.annotate_agent_tools,
             &mut labs.annotate_agent_install,
+            &mut labs.watch_and_learn,
         ]
     }
 
@@ -380,6 +382,7 @@ impl Feature {
             Self::VocabularyFiles => settings.labs.vocabulary_files = on,
             Self::AnnotateAgentTools => settings.labs.annotate_agent_tools = on,
             Self::AnnotateAgentInstall => settings.labs.annotate_agent_install = on,
+            Self::WatchAndLearn => settings.labs.watch_and_learn = on,
             // Off, no shortcut keeps a key only the feature allows.
             Self::StandaloneSpecialKeys => {
                 settings.labs.standalone_special_keys = on;
@@ -575,6 +578,10 @@ static PASTE_LAST_PICKER: AtomicBool = AtomicBool::new(false);
 /// reads it in a CLI process that never applied settings.
 static ANNOTATE_AGENT_TOOLS: AtomicBool = AtomicBool::new(false);
 
+/// Labs › Watch and learn's switch: its own atomic like
+/// [`ANNOTATE_AGENT_TOOLS`], written by [`state`] and [`apply`].
+static WATCH_AND_LEARN: AtomicBool = AtomicBool::new(false);
+
 /// The words that start a voice prompt, set beside [`STATE`] by [`state`] and
 /// [`apply`]. An invalid saved phrase reads as the default.
 static VOICE_PROMPT_PHRASE: LazyLock<RwLock<String>> =
@@ -618,6 +625,7 @@ fn state() -> u64 {
                 MICROPHONE_KEY.store(microphone_key_enabled(&saved), Ordering::Release);
                 PASTE_LAST_PICKER.store(paste_last_picker_enabled(&saved), Ordering::Release);
                 ANNOTATE_AGENT_TOOLS.store(annotate_agent_tools_enabled(&saved), Ordering::Release);
+                WATCH_AND_LEARN.store(watch_and_learn_enabled(&saved), Ordering::Release);
                 store_voice_prompt_phrase(&saved.voice_prompt_phrase);
                 store_stop_phrase_text(&saved.stop_phrase_text);
             }
@@ -766,6 +774,14 @@ fn annotate_agent_tools_enabled(settings: &LabsSettings) -> bool {
         && Feature::AnnotateAgentTools.managed().is_none()
 }
 
+/// Whether `settings` turn on Labs › Watch and learn in this build, before
+/// its managed lock; the state word has no bit for it.
+fn watch_and_learn_enabled(settings: &LabsSettings) -> bool {
+    settings.watch_and_learn
+        && Feature::WatchAndLearn.shipped()
+        && Feature::WatchAndLearn.managed().is_none()
+}
+
 /// Records the trigger phrase matching reads; an invalid value never turns
 /// matching off.
 fn store_voice_prompt_phrase(phrase: &str) {
@@ -825,6 +841,7 @@ pub(crate) fn apply(settings: &LabsSettings) {
     MICROPHONE_KEY.store(microphone_key_enabled(settings), Ordering::Release);
     PASTE_LAST_PICKER.store(paste_last_picker_enabled(settings), Ordering::Release);
     ANNOTATE_AGENT_TOOLS.store(annotate_agent_tools_enabled(settings), Ordering::Release);
+    WATCH_AND_LEARN.store(watch_and_learn_enabled(settings), Ordering::Release);
     store_voice_prompt_phrase(&settings.voice_prompt_phrase);
     store_stop_phrase_text(&settings.stop_phrase_text);
     // Labs › Pause from menu bar: turning it off resumes at once, without
@@ -1020,6 +1037,7 @@ pub fn log_launch() {
         playground = playground(),
         screen_vocabulary = screen_vocabulary(),
         learn_from_corrections = learn_from_corrections(),
+        watch_and_learn = watch_and_learn(),
         cursor_context = cursor_context(),
         copy_dictation_audio = copy_dictation_audio(),
         hold_through_keys = hold_through_keys(),
@@ -1797,6 +1815,39 @@ mod tests {
             "labs.screen_vocabulary"
         );
         assert_eq!(Feature::ScreenVocabulary.name(), "screen-vocabulary");
+    }
+
+    #[test]
+    fn watch_and_learn_is_its_own_switch_and_macos_only() {
+        let mut labs = LabsSettings::default();
+        assert!(!watch_and_learn_enabled(&labs));
+        assert!(!Feature::WatchAndLearn.on(&AppSettings::default()));
+        labs.watch_and_learn = true;
+        labs.unload_idle_minutes = 24 * 60;
+        assert!(watch_and_learn_enabled(&labs));
+        // The state word has no bit for it: the other switches keep theirs.
+        let state = encode_where(&labs, |_| true);
+        assert_eq!(state & SPEAKERS_ONLY, 0);
+        assert_eq!((state >> MINUTES_SHIFT) & MINUTES_MASK, 24 * 60);
+        assert_eq!(
+            Feature::WatchAndLearn.on_this_os(),
+            cfg!(target_os = "macos")
+        );
+        assert_eq!(Feature::WatchAndLearn.added(), 20261122);
+        assert_eq!(Feature::WatchAndLearn.audience(), Audience::Everyone);
+        assert_eq!(Feature::WatchAndLearn.group(), Group::Annotate);
+        assert_eq!(
+            Feature::WatchAndLearn.settings_key(),
+            "labs.watch_and_learn"
+        );
+        assert_eq!(Feature::WatchAndLearn.name(), "watch-and-learn");
+        assert_eq!(Feature::WatchAndLearn.oses(), &[Os::Macos]);
+        assert!(!Feature::WatchAndLearn.title().is_empty());
+        assert!(!Feature::WatchAndLearn.summary().is_empty());
+        assert!(!Feature::WatchAndLearn.description().is_empty());
+        // An Annotate lock holds the gate off.
+        let annotate = crate::policy::Policy::default().with(crate::policy::Lock::Annotate);
+        assert!(!watch_and_learn_under(annotate));
     }
 
     #[test]

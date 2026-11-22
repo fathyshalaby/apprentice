@@ -487,6 +487,26 @@ pub(crate) fn annotate_agent_tools_under(policy: crate::policy::Policy) -> bool 
         && policy.labs_lock(Feature::AnnotateAgentTools).is_none()
 }
 
+/// Labs › Watch and learn: the Skills pane and its lessons (macOS; read where
+/// a lesson starts, a draft runs, and a skill installs, not only where the
+/// pane draws). An Annotate lock holds it off even with its saved switch on.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub fn watch_and_learn() -> bool {
+    watch_and_learn_under(crate::policy::Policy::current())
+}
+
+/// [`watch_and_learn`] under an explicit policy, so its managed lock is read
+/// where the gate is tested.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub(crate) fn watch_and_learn_under(policy: crate::policy::Policy) -> bool {
+    // The state word is full, so the switch has its own atomic, loaded here
+    // first in a process that never applied its settings.
+    let _ = state();
+    WATCH_AND_LEARN.load(Ordering::Acquire)
+        && Feature::WatchAndLearn.on_this_os()
+        && policy.labs_lock(Feature::WatchAndLearn).is_none()
+}
+
 /// Labs › Transcribe dropped audio: a file with one of this build's
 /// extensions, dropped on the window, is transcribed in this process and saved
 /// as a text file beside it (read as each drop starts, and by the window's

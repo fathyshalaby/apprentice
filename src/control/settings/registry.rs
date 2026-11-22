@@ -380,6 +380,21 @@ pub(super) const KEYS: &[Key] = &[
         "Labs: add names corrected in text Apprentice just pasted to Vocabulary, watching only that field for up to 5 minutes; nothing leaves this Mac (macOS)",
     ),
     key(
+        "labs.watch_and_learn",
+        Kind::Bool,
+        "Labs: Watch and learn (macOS): record your whole screen and voice for a lesson, then draft a skill from it with a local model you choose",
+    ),
+    optional(
+        "apprentice.model",
+        Kind::Text,
+        "The model that drafts skills from a lesson: apple-intelligence or ollama:<name>; none means no model is chosen (macOS)",
+    ),
+    key(
+        "apprentice.ollama_url",
+        Kind::Text,
+        "Ollama's address for Watch and learn; it must be an http address on this computer, such as http://127.0.0.1:11434 (macOS)",
+    ),
+    key(
         "labs.cursor_context",
         Kind::Bool,
         "Labs: the mode's OpenCode rewrite reads the text around the cursor, so names and terms match where the result lands (macOS); password fields are never read",

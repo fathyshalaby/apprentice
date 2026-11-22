@@ -222,6 +222,9 @@ pub struct LabsSettings {
     /// coding agents' own folders and, on macOS, links `hex` onto PATH
     /// (Labs › Install agent skill from Annotate).
     pub annotate_agent_install: bool,
+    /// The Skills pane: record a narrated lesson and draft a SKILL.md from it
+    /// with a local model (macOS, Labs › Watch and learn).
+    pub watch_and_learn: bool,
     /// The local API's `process=global` returns transcripts after Global
     /// mode's output processing.
     pub api_processing: bool,
@@ -429,6 +432,7 @@ impl Default for LabsSettings {
             vocabulary_files: false,
             annotate_agent_tools: false,
             annotate_agent_install: false,
+            watch_and_learn: false,
             api_processing: false,
             api_timestamps: false,
             speakers_only: false,

@@ -12,6 +12,7 @@ use std::sync::atomic::{AtomicU8, Ordering};
 use strings::TRANSLATIONS;
 
 mod agents;
+mod apprentice;
 mod clock;
 mod failures;
 mod french;
@@ -379,6 +380,7 @@ pub(super) fn all_translations() -> impl Iterator<Item = &'static (&'static str,
         .chain(meetings::TRANSLATIONS)
         .chain(labs::TRANSLATIONS)
         .chain(agents::TRANSLATIONS)
+        .chain(apprentice::TRANSLATIONS)
         .chain(failures::TRANSLATIONS)
         .chain(onboarding::TRANSLATIONS)
         .chain(menu::TRANSLATIONS)

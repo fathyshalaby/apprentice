@@ -88,7 +88,8 @@ impl Feature {
             | Self::ModesEditor
             | Self::VocabularyFiles
             | Self::AnnotateAgentTools
-            | Self::AnnotateAgentInstall => Audience::Everyone,
+            | Self::AnnotateAgentInstall
+            | Self::WatchAndLearn => Audience::Everyone,
         }
     }
 
@@ -159,6 +160,7 @@ impl Feature {
             Self::LearnFromCorrections | Self::AnnotateAgentTools | Self::AnnotateAgentInstall => {
                 20261121
             }
+            Self::WatchAndLearn => 20261122,
         }
     }
 
@@ -266,7 +268,8 @@ impl Feature {
             | Self::MoreDictationShortcuts
             | Self::CalendarMenu
             | Self::CalendarSelectAll
-            | Self::PasteLastPicker => MACOS,
+            | Self::PasteLastPicker
+            | Self::WatchAndLearn => MACOS,
             Self::CleanUpWithAppleIntelligence => MACOS,
             Self::NeutralVoice => MACOS,
             Self::CopyOnly => MACOS_WINDOWS,
@@ -393,6 +396,7 @@ impl Feature {
             Self::VocabularyFiles => "vocabulary-files",
             Self::AnnotateAgentTools => "annotate-agent-tools",
             Self::AnnotateAgentInstall => "annotate-agent-install",
+            Self::WatchAndLearn => "watch-and-learn",
         }
     }
 
@@ -477,6 +481,7 @@ impl Feature {
             Self::VocabularyFiles => "labs.vocabulary_files",
             Self::AnnotateAgentTools => "labs.annotate_agent_tools",
             Self::AnnotateAgentInstall => "labs.annotate_agent_install",
+            Self::WatchAndLearn => "labs.watch_and_learn",
         }
     }
 

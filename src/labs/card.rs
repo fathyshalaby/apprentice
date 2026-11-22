@@ -86,6 +86,7 @@ impl Feature {
             Self::VocabularyFiles => "Vocabulary files",
             Self::AnnotateAgentTools => "Agent tools for captures",
             Self::AnnotateAgentInstall => "Install agent skill from Annotate",
+            Self::WatchAndLearn => "Watch and learn",
         }
     }
 
@@ -313,6 +314,9 @@ impl Feature {
             }
             Self::AnnotateAgentInstall => {
                 "Adds an Agents section to the Annotate pane that writes the hex-annotate skill into Claude Code, Codex, OpenCode, or Pi, and on macOS links hex onto PATH"
+            }
+            Self::WatchAndLearn => {
+                "Show Apprentice a task once and it writes a skill your coding agents can follow"
             }
         }
     }

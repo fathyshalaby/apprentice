@@ -65,6 +65,12 @@ fn unavailable_under(name: &str, policy: crate::policy::Policy) -> Option<Contro
             format!("`{name}` belongs to a Labs feature this OS doesn't have"),
         ));
     }
+    if name.starts_with("apprentice.") && !cfg!(target_os = "macos") {
+        return Some(ControlError::new(
+            "unsupported",
+            format!("`{name}` belongs to Labs › Watch and learn, which only macOS has"),
+        ));
+    }
     if name.starts_with("screenshots.") && !cfg!(target_os = "macos") {
         return Some(ControlError::new(
             "unsupported",
@@ -448,6 +454,22 @@ pub fn apply(
         "labs.screenshots" if candidate.labs.screenshots => {
             candidate.clear_record_shortcut_sharing_capture();
         }
+        "apprentice.model"
+            if candidate.apprentice.model.is_some() && candidate.apprentice.choice().is_none() =>
+        {
+            return Err(invalid(
+                name,
+                "expected apple-intelligence or ollama:<model name>",
+            ));
+        }
+        "apprentice.ollama_url"
+            if !crate::app_settings::is_loopback_http_url(&candidate.apprentice.ollama_url) =>
+        {
+            return Err(invalid(
+                name,
+                "expected an http address on this computer, such as http://127.0.0.1:11434",
+            ));
+        }
         "labs.standalone_special_keys" => candidate.repair_special_keys(),
         "labs.section_key_alone" => candidate.repair_section_key(),
         "labs.microphone_key" => candidate.repair_microphone_key(),
@@ -813,6 +835,10 @@ mod tests {
                 retention: Some(crate::app_settings::MeetingRetention::Day),
                 audio_retention: Some(crate::app_settings::MeetingRetention::Day),
                 opencode_model: Some("anthropic/claude-haiku".into()),
+                ..Default::default()
+            },
+            apprentice: crate::app_settings::ApprenticeSettings {
+                model: Some("apple-intelligence".into()),
                 ..Default::default()
             },
             ..Default::default()

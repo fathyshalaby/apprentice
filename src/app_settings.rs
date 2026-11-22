@@ -1,9 +1,8 @@
-use std::fs;
-use std::path::PathBuf;
 #[cfg(test)]
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU32, Ordering};
 use std::sync::{Arc, OnceLock, RwLock};
+use std::{fs, path::PathBuf};
 
 use color_eyre::eyre::{Result, eyre};
 #[cfg(target_os = "macos")]
@@ -15,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use crate::dictation::vocabulary::{VocabularyEntry, serialize_saved};
 use crate::transcription::models::{TranscriptionModelId, TranscriptionSelection};
 
+mod apprentice;
 #[cfg(hex_capture)]
 mod capture;
 mod dictation_processing;
@@ -32,6 +32,7 @@ pub(crate) use persistence::LaunchNote;
 mod shortcut_repair;
 mod typing_speed;
 
+pub use apprentice::*;
 #[cfg(hex_capture)]
 pub use capture::*;
 pub use dictation_processing::{
@@ -355,6 +356,7 @@ pub struct AppSettings {
     pub labs: LabsSettings,
     /// Labs › Screenshots' shortcut and folder (macOS).
     pub screenshots: ScreenshotSettings,
+    pub apprentice: ApprenticeSettings,
     /// Start listening when Hex opens (Windows and Linux, where the
     /// listener can be off).
     pub enable_on_launch: bool,
@@ -493,6 +495,7 @@ impl Default for AppSettings {
             experimental: ExperimentalSettings::default(),
             labs: LabsSettings::default(),
             screenshots: ScreenshotSettings::default(),
+            apprentice: ApprenticeSettings::default(),
             enable_on_launch: true,
             paste_with_shift: false,
             gnome_keyboard_shortcuts: false,

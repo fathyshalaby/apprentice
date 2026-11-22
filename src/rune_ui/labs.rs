@@ -776,6 +776,22 @@ fn rows(ui: &Ui) -> Vec<Row> {
             on: !install_locked && Feature::AnnotateAgentInstall.on(settings),
             ..agent_install
         });
+        // Watch and learn records through Annotate's engine, so the same lock
+        // holds it off (macOS).
+        if caps.os == super::platform::Os::Macos {
+            let watch_locked = annotate_locked || Feature::WatchAndLearn.managed().is_some();
+            let watch = row(Feature::WatchAndLearn, Some(&BOOK));
+            rows.push(Row {
+                locked: watch_locked,
+                about: if watch_locked {
+                    super::managed_note().into()
+                } else {
+                    watch.about.clone()
+                },
+                on: !watch_locked && Feature::WatchAndLearn.on(settings),
+                ..watch
+            });
+        }
         let locked = annotate_locked;
         rows.push(Row {
             lab: Lab::Annotate,
@@ -915,6 +931,7 @@ fn row_key(lab: Lab) -> &'static str {
         Feature::CopyCaptureZip => "lab-copy-capture-zip",
         Feature::AnnotateAgentTools => "lab-annotate-agent-tools",
         Feature::AnnotateAgentInstall => "lab-annotate-agent-install",
+        Feature::WatchAndLearn => "lab-watch-and-learn",
         Feature::MeetingImport => "lab-meeting-import",
         Feature::OpenCodeInWsl => "lab-opencode-in-wsl",
         Feature::YoloMode => "lab-yolo-mode",

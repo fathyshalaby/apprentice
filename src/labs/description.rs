@@ -228,6 +228,9 @@ impl Feature {
             Self::AnnotateAgentInstall => {
                 "Adds an Agents section to the Annotate pane: one checked row per coding agent writes the hex-annotate skill into its own skills folder, a row copies the npx skills add command, and on macOS the Command-line tool row links hex onto PATH (/opt/homebrew/bin, /usr/local/bin, else ~/.local/bin) without replacing a hex another program owns"
             }
+            Self::WatchAndLearn => {
+                "Adds a Skills pane (macOS): Learn a task records your whole screen and your voice while you do it once, then a local model you choose drafts a SKILL.md from the key frames and what you said, and asks up to five questions about your decisions. Nothing is drafted, saved, or installed until you click, video and audio never reach a model, and the lesson is never copied or sent anywhere"
+            }
         }
     }
 }

@@ -19,6 +19,7 @@ impl Feature {
                     | Self::CopyCaptureZip
                     | Self::AnnotateAgentTools
                     | Self::AnnotateAgentInstall
+                    | Self::WatchAndLearn
             )
     }
 
@@ -126,6 +127,7 @@ mod tests {
             Feature::CopyCaptureZip,
             Feature::AnnotateAgentTools,
             Feature::AnnotateAgentInstall,
+            Feature::WatchAndLearn,
         ] {
             assert!(!feature.on_the_web(), "{}", feature.name());
         }
