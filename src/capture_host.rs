@@ -95,8 +95,12 @@ use own_windows::{OWN_WINDOWS, own_windows_of};
 pub use own_windows::{OwnWindow, exclude_window, own_windows_recorded, record_own_windows};
 
 // Read by Watch and learn's lesson list and hook (macOS).
+pub use lesson::LESSON_MARK;
 #[allow(unused_imports)]
-pub use lesson::{LESSON_MARK, Purpose, on_lesson_written};
+pub use lesson::{Purpose, on_lesson_written};
+// Read by Watch and learn's lesson list (macOS).
+#[allow(unused_imports)]
+pub(crate) use library::load as load_capture;
 pub use library::{
     explain as explain_capture, list as list_captures, send as send_capture, show as show_capture,
 };

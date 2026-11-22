@@ -20,6 +20,8 @@ mod apple_intelligence;
 #[cfg(target_os = "macos")]
 mod apple_speech;
 mod application_catalog;
+#[cfg(all(target_os = "macos", hex_capture))]
+mod apprentice;
 #[cfg_attr(any(target_os = "linux", target_os = "windows"), allow(dead_code))]
 mod audio;
 #[cfg_attr(any(target_os = "linux", target_os = "windows"), allow(dead_code))]

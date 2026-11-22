@@ -96,7 +96,7 @@ pub(super) fn resolve(capture: &str) -> Result<PathBuf, ControlError> {
         .map_err(|error| ControlError::new("not-found", format!("{error:#}")))
 }
 
-pub(super) fn load(dir: &Path) -> Option<ScrawlBundle> {
+pub(crate) fn load(dir: &Path) -> Option<ScrawlBundle> {
     scrawl_capture::bundle::load_bundle_in(None, dir)
         .ok()
         .map(|(_, bundle)| bundle)
