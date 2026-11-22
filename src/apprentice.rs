@@ -4,6 +4,7 @@ pub(crate) mod evidence;
 pub(crate) mod install;
 pub(crate) mod lessons;
 pub(crate) mod models;
+pub(crate) mod notice;
 pub(crate) mod ollama;
 pub(crate) mod run;
 pub(crate) mod skill;
