@@ -58,6 +58,8 @@ pub enum ModelError {
     Refused,
     /// No answer in time.
     Timeout,
+    /// The person stopped it (a download's Cancel).
+    Cancelled,
     Failed(String),
 }
 
@@ -70,6 +72,7 @@ impl ModelError {
             Self::NotLoopback => tr("Ollama's address must be on this computer").to_owned(),
             Self::Refused => tr("The model refused this lesson").to_owned(),
             Self::Timeout => tr("The model took too long to answer").to_owned(),
+            Self::Cancelled => tr("Cancelled").to_owned(),
             Self::Failed(reason) => tr_fill("The model failed: {}", reason),
         }
     }
@@ -146,7 +149,7 @@ pub fn chat(
 
 /// Downloads `model`, reporting each progress line until Ollama says
 /// `success`. `cancel` is read between lines; a cancelled download returns
-/// `Failed("cancelled")`, and Ollama keeps what it has for the next pull.
+/// [`ModelError::Cancelled`], and Ollama keeps what it has for the next pull.
 // Started by the Skills pane's Download button (Task 10).
 #[allow(dead_code)]
 pub fn pull(
@@ -174,14 +177,17 @@ pub fn pull(
     let reader = response.body_mut().with_config().limit(u64::MAX).reader();
     for line in BufReader::new(reader).lines() {
         if cancel.load(Ordering::Acquire) {
-            return Err(ModelError::Failed("cancelled".into()));
+            return Err(ModelError::Cancelled);
         }
-        let line = line.map_err(|error| ModelError::Failed(error.to_string()))?;
+        let line = line.map_err(|error| {
+            tracing::warn!(%error, "an Ollama download stopped");
+            ModelError::Failed(tr("The download stopped").to_owned())
+        })?;
         if line.trim().is_empty() {
             continue;
         }
         let line: PullLine = serde_json::from_str(&line)
-            .map_err(|_| ModelError::Failed("Ollama sent an unreadable line".into()))?;
+            .map_err(|_| ModelError::Failed(tr("Ollama sent an unreadable line").to_owned()))?;
         if let Some(error) = line.error {
             return Err(ModelError::Failed(error));
         }
@@ -194,7 +200,9 @@ pub fn pull(
             total: line.total,
         });
     }
-    Err(ModelError::Failed("the download ended early".into()))
+    Err(ModelError::Failed(
+        tr("The download ended early").to_owned(),
+    ))
 }
 
 /// `url` without a trailing slash, once it is known to be on this computer.
@@ -218,7 +226,7 @@ fn post(base: &str, path: &str, body: &Value) -> Result<Request<Vec<u8>>, ModelE
 }
 
 fn invalid(error: ureq::http::Error) -> ModelError {
-    ModelError::Failed(format!("invalid request: {error}"))
+    ModelError::Failed(tr_fill("The request was invalid: {}", &error.to_string()))
 }
 
 /// Sends `request` and reads a JSON answer; `model` names a model that a
@@ -239,7 +247,7 @@ fn read_json<T: DeserializeOwned>(
         .read_to_vec()
         .map_err(from_ureq)?;
     serde_json::from_slice(&body)
-        .map_err(|_| ModelError::Failed("Ollama sent an unreadable answer".into()))
+        .map_err(|_| ModelError::Failed(tr("Ollama sent an unreadable answer").to_owned()))
 }
 
 /// An error status as a [`ModelError`], from Ollama's `{"error": …}` body.
@@ -258,7 +266,7 @@ fn refusal(response: &mut ureq::http::Response<ureq::Body>, model: Option<&str>)
             ModelError::NotDownloaded(model.to_owned())
         }
         (_, Some(error)) => ModelError::Failed(error),
-        (_, None) => ModelError::Failed(format!("Ollama answered HTTP {status}")),
+        (_, None) => ModelError::Failed(tr_fill("Ollama answered HTTP {}", &status.to_string())),
     }
 }
 
@@ -548,6 +556,22 @@ mod tests {
     }
 
     #[test]
+    fn a_cancelled_pull_reads_cancelled() {
+        let lines = [
+            json!({ "status": "pulling manifest" }).to_string(),
+            json!({ "status": "success" }).to_string(),
+        ]
+        .join("\n");
+        let (url, server) = serve(vec![("POST /api/pull".into(), 200, lines)]);
+        let mut seen = 0;
+        let error = pull(&url, "m", &mut |_| seen += 1, &AtomicBool::new(true));
+        assert_eq!(error, Err(ModelError::Cancelled));
+        assert_eq!(seen, 0);
+        assert_eq!(ModelError::Cancelled.message(), tr("Cancelled"));
+        server.join().unwrap();
+    }
+
+    #[test]
     fn a_non_loopback_url_is_refused() {
         let url = "http://example.com:11434";
         assert_eq!(installed(url), Err(ModelError::NotLoopback));
@@ -585,6 +609,7 @@ mod tests {
             ModelError::NotLoopback,
             ModelError::Refused,
             ModelError::Timeout,
+            ModelError::Cancelled,
             ModelError::Failed("boom".into()),
         ] {
             assert!(!error.message().is_empty(), "{error:?}");

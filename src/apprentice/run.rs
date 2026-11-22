@@ -103,8 +103,13 @@ pub fn draft(
                     deadline,
                     &events,
                 ),
+                // The one way a build fails: the lesson's bundle is gone.
                 Err(reason) => {
-                    let _ = events.send(Progress::Failed(tr(&reason).to_owned()));
+                    tracing::warn!(lesson = %lesson.id, %reason, "could not read a lesson");
+                    let _ = events.send(Progress::Failed(
+                        tr("This lesson's notes are gone, so there is nothing to learn from")
+                            .to_owned(),
+                    ));
                 }
             }
         });
@@ -198,13 +203,20 @@ fn drive(
     });
 }
 
-/// `segments` joined down to at most `max` parts, neighbours with the least
-/// text together, keeping every line. A joined part keeps at most
-/// `frames_per_call` key frames, evenly spread, since no call sends more.
+/// `segments` joined down to at most `max` parts, keeping every line: the
+/// neighbours whose key frames still fit one call together first, then those
+/// with the least text. Only a part left with more than `frames_per_call`
+/// frames (no call sends more) is thinned, evenly, and the log says so.
 fn fit(mut segments: Vec<Segment>, max: usize, frames_per_call: usize) -> Vec<Segment> {
     while segments.len() > max.max(1) {
         let at = (0..segments.len() - 1)
-            .min_by_key(|&i| segments[i].text.len() + segments[i + 1].text.len())
+            .min_by_key(|&i| {
+                let (left, right) = (&segments[i], &segments[i + 1]);
+                (
+                    left.frames.len() + right.frames.len() > frames_per_call,
+                    left.text.len() + right.text.len(),
+                )
+            })
             .unwrap_or(0);
         let next = segments.remove(at + 1);
         let joined = &mut segments[at];
@@ -216,6 +228,11 @@ fn fit(mut segments: Vec<Segment>, max: usize, frames_per_call: usize) -> Vec<Se
     for segment in &mut segments {
         let count = segment.frames.len();
         if count > frames_per_call {
+            tracing::warn!(
+                frames = count,
+                kept = frames_per_call,
+                "a joined lesson part had more key frames than one call sends"
+            );
             let frames = std::mem::take(&mut segment.frames);
             segment.frames = frames
                 .into_iter()
@@ -304,7 +321,7 @@ mod tests {
     /// A model that answers from a queue and remembers each call.
     struct Fake {
         replies: RefCell<VecDeque<Result<String, ModelError>>>,
-        calls: RefCell<Vec<(String, usize)>>,
+        calls: RefCell<Vec<(String, Vec<Vec<u8>>)>>,
         cancel_after: Option<(usize, Arc<AtomicBool>)>,
     }
 
@@ -330,7 +347,7 @@ mod tests {
             assert!(timeout <= Duration::from_secs(180));
             self.calls
                 .borrow_mut()
-                .push((prompt.to_owned(), images.len()));
+                .push((prompt.to_owned(), images.to_vec()));
             if let Some((after, cancel)) = &self.cancel_after
                 && self.calls.borrow().len() == *after
             {
@@ -397,7 +414,7 @@ mod tests {
         let calls = model.calls.borrow();
         assert_eq!(calls.len(), 1);
         assert!(calls[0].0.contains("open finder"));
-        assert_eq!(calls[0].1, 2, "the part's frames are attached");
+        assert_eq!(calls[0].1.len(), 2, "the part's frames are attached");
     }
 
     #[test]
@@ -416,7 +433,7 @@ mod tests {
         assert_eq!(calls.len(), 3);
         assert!(calls[2].0.contains("steps of part one"));
         assert!(calls[2].0.contains("steps of part two"));
-        assert_eq!(calls[2].1, 0, "the merge sends no frames");
+        assert_eq!(calls[2].1.len(), 0, "the merge sends no frames");
     }
 
     #[test]
@@ -438,7 +455,39 @@ mod tests {
                 "{text} was dropped"
             );
         }
-        assert!(calls[..8].iter().all(|(_, images)| *images <= 4));
+        assert!(calls[..8].iter().all(|(_, images)| images.len() <= 4));
+    }
+
+    #[test]
+    fn joining_parts_keeps_every_frame_that_fits() {
+        let model = Fake::new(Vec::new());
+        let segments = (0..11)
+            .map(|i| {
+                let mut part = segment(&format!("part-{i}"), 0);
+                if i < 3 {
+                    part.frames = (0..4)
+                        .map(|f| Frame {
+                            t_ms: f,
+                            png: vec![i as u8, f as u8],
+                        })
+                        .collect();
+                }
+                part
+            })
+            .collect();
+        run(segments, &model, soon());
+        let calls = model.calls.borrow();
+        assert_eq!(calls.len(), 9, "eight parts and one merge");
+        let mut sent: Vec<Vec<u8>> = calls[..8]
+            .iter()
+            .flat_map(|(_, images)| images.clone())
+            .collect();
+        sent.sort();
+        let expected: Vec<Vec<u8>> = (0..3u8)
+            .flat_map(|i| (0..4u8).map(move |f| vec![i, f]))
+            .collect();
+        assert_eq!(sent, expected, "every frame is sent");
+        assert!(calls[..8].iter().all(|(_, images)| images.len() <= 4));
     }
 
     #[test]

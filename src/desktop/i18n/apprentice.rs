@@ -21,6 +21,13 @@ pub(super) const TRANSLATIONS: &[(&str, [&str; 6])] = &[
     ("Sees images · strongest that fits", ["Widzi obrazy · najmocniejszy, który się mieści", "可识别图像 · 可容纳的最强模型", "画像を認識 · 収まる中で最も高性能", "Erkennt Bilder · das stärkste, das passt", "Ve imágenes · el más potente que cabe", "Бачить зображення · найпотужніша, що вміщається"]),
     ("Sees images · lighter", ["Widzi obrazy · lżejszy", "可识别图像 · 更轻量", "画像を認識 · 軽め", "Erkennt Bilder · leichter", "Ve imágenes · más ligero", "Бачить зображення · легша"]),
     ("Sees images · lightest", ["Widzi obrazy · najlżejszy", "可识别图像 · 最轻量", "画像を認識 · 最軽量", "Erkennt Bilder · am leichtesten", "Ve imágenes · el más ligero", "Бачить зображення · найлегша"]),
+    ("The download stopped", ["Pobieranie zostało przerwane", "下载已中断", "ダウンロードが中断されました", "Der Download wurde unterbrochen", "La descarga se interrumpió", "Завантаження перервано"]),
+    ("Ollama sent an unreadable line", ["Ollama wysłała nieczytelny wiersz", "Ollama 发送了无法读取的行", "Ollama から読み取れない行が届きました", "Ollama hat eine unlesbare Zeile gesendet", "Ollama envió una línea ilegible", "Ollama надіслала нечитабельний рядок"]),
+    ("The download ended early", ["Pobieranie zakończyło się przedwcześnie", "下载提前结束", "ダウンロードが途中で終了しました", "Der Download hat zu früh geendet", "La descarga terminó antes de tiempo", "Завантаження завершилося передчасно"]),
+    ("The request was invalid: {}", ["Żądanie było nieprawidłowe: {}", "请求无效：{}", "リクエストが無効でした: {}", "Die Anfrage war ungültig: {}", "La solicitud no era válida: {}", "Запит був недійсним: {}"]),
+    ("Ollama sent an unreadable answer", ["Ollama wysłała nieczytelną odpowiedź", "Ollama 发送了无法读取的回答", "Ollama から読み取れない応答が届きました", "Ollama hat eine unlesbare Antwort gesendet", "Ollama envió una respuesta ilegible", "Ollama надіслала нечитабельну відповідь"]),
+    ("Ollama answered HTTP {}", ["Ollama odpowiedziała kodem HTTP {}", "Ollama 返回了 HTTP {}", "Ollama が HTTP {} を返しました", "Ollama hat mit HTTP {} geantwortet", "Ollama respondió HTTP {}", "Ollama відповіла HTTP {}"]),
+    ("This lesson's notes are gone, so there is nothing to learn from", ["Notatki tej lekcji zniknęły, więc nie ma z czego się uczyć", "这节课的笔记已不存在，因此没有可学习的内容", "このレッスンのメモがなくなったため、学べる内容がありません", "Die Notizen dieser Lektion sind weg, daher gibt es nichts zu lernen", "Las notas de esta lección ya no están, así que no hay nada que aprender", "Нотатки цього уроку зникли, тож немає з чого вчитися"]),
 ];
 
 /// Brazilian Portuguese, for the card and the pane.
@@ -43,6 +50,13 @@ pub(super) const PORTUGUESE: &[(&str, &str)] = &[
     ("Sees images · strongest that fits", "Vê imagens · o mais forte que cabe"),
     ("Sees images · lighter", "Vê imagens · mais leve"),
     ("Sees images · lightest", "Vê imagens · o mais leve"),
+    ("The download stopped", "O download foi interrompido"),
+    ("Ollama sent an unreadable line", "O Ollama enviou uma linha ilegível"),
+    ("The download ended early", "O download terminou antes do esperado"),
+    ("The request was invalid: {}", "A solicitação era inválida: {}"),
+    ("Ollama sent an unreadable answer", "O Ollama enviou uma resposta ilegível"),
+    ("Ollama answered HTTP {}", "O Ollama respondeu HTTP {}"),
+    ("This lesson's notes are gone, so there is nothing to learn from", "As notas desta lição sumiram, então não há nada para aprender"),
 ];
 
 /// French, for the card and the pane.
@@ -65,6 +79,13 @@ pub(super) const FRENCH: &[(&str, &str)] = &[
     ("Sees images · strongest that fits", "Voit les images · le plus puissant qui tient"),
     ("Sees images · lighter", "Voit les images · plus léger"),
     ("Sees images · lightest", "Voit les images · le plus léger"),
+    ("The download stopped", "Le téléchargement s'est interrompu"),
+    ("Ollama sent an unreadable line", "Ollama a envoyé une ligne illisible"),
+    ("The download ended early", "Le téléchargement s'est terminé trop tôt"),
+    ("The request was invalid: {}", "La requête n'était pas valide : {}"),
+    ("Ollama sent an unreadable answer", "Ollama a envoyé une réponse illisible"),
+    ("Ollama answered HTTP {}", "Ollama a répondu HTTP {}"),
+    ("This lesson's notes are gone, so there is nothing to learn from", "Les notes de cette leçon ont disparu, il n'y a donc rien à apprendre"),
 ];
 
 /// Russian, for the card and the pane.
@@ -87,4 +108,11 @@ pub(super) const RUSSIAN: &[(&str, &str)] = &[
     ("Sees images · strongest that fits", "Видит изображения · самая мощная, что помещается"),
     ("Sees images · lighter", "Видит изображения · полегче"),
     ("Sees images · lightest", "Видит изображения · самая лёгкая"),
+    ("The download stopped", "Загрузка прервалась"),
+    ("Ollama sent an unreadable line", "Ollama прислала нечитаемую строку"),
+    ("The download ended early", "Загрузка завершилась раньше времени"),
+    ("The request was invalid: {}", "Запрос был недопустимым: {}"),
+    ("Ollama sent an unreadable answer", "Ollama прислала нечитаемый ответ"),
+    ("Ollama answered HTTP {}", "Ollama ответила HTTP {}"),
+    ("This lesson's notes are gone, so there is nothing to learn from", "Заметки этого урока пропали, поэтому учиться не на чем"),
 ];
