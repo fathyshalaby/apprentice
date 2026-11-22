@@ -339,6 +339,8 @@ pub fn run(shutdown: &'static AtomicBool, listener: ListenerConfig, hidden: bool
     };
     let event_path = listener.event_path.clone();
     let event_log = crate::desktop::events::EventLog::create(&event_path)?;
+    #[cfg(hex_capture)]
+    crate::apprentice::events::set_log(event_log.clone());
     let drained_event_log = event_log.clone();
     let transformations = Arc::new(crate::personal_commands::TransformationClient::default());
     let (developer_sender, developer_receiver) = mpsc::sync_channel(8);

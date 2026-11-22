@@ -11,6 +11,7 @@ use serde_json::{Value, json};
 use ureq::http::Request;
 
 use crate::app_settings::is_loopback_http_url;
+use crate::apprentice::events::{self, ApprenticeAction};
 use crate::desktop::base64;
 use crate::desktop::i18n::{tr, tr_fill};
 
@@ -192,6 +193,7 @@ pub fn pull(
             return Err(ModelError::Failed(error));
         }
         if line.status == "success" {
+            events::emit(ApprenticeAction::ModelDownloaded, model, None);
             return Ok(());
         }
         progress(PullProgress {

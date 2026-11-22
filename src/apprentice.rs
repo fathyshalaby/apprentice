@@ -1,5 +1,6 @@
 mod draft;
 pub(crate) mod install;
+pub(crate) mod events;
 mod evidence;
 mod lessons;
 mod models;

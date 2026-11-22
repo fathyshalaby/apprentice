@@ -1,5 +1,6 @@
 //! Drafts and approved skills on disk, owner-only, under `<support>/skills`.
 
+use crate::apprentice::events::{self, ApprenticeAction};
 use crate::apprentice::skill::{self, Skill};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -222,6 +223,7 @@ impl Store {
         }
         self.write_skill(&skill)?;
         let _ = fs::remove_dir_all(self.drafts_dir().join(id));
+        events::emit(ApprenticeAction::SkillApproved, &skill.slug, None);
         Ok(Approved {
             slug: skill.slug.clone(),
             skill,
@@ -262,6 +264,11 @@ impl Store {
         skill.version = old.version + 1;
         skill.updated_ms = crate::history::now_ms().max(old.updated_ms + 1);
         self.write_skill(&skill)?;
+        events::emit(
+            ApprenticeAction::SkillEdited,
+            &skill.slug,
+            Some(skill.version),
+        );
         Ok(skill)
     }
 

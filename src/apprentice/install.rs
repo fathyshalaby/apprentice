@@ -8,6 +8,7 @@
 #![allow(dead_code)]
 
 use crate::agent_install::{self, Agent, Paths, SkillFile};
+use crate::apprentice::events::{self, ApprenticeAction};
 use crate::apprentice::skill::{self, Skill};
 use crate::desktop::i18n::tr_fill;
 use serde::{Deserialize, Serialize};
@@ -103,6 +104,7 @@ pub fn install(paths: &Paths, agent: Agent, skill: &Skill) -> Result<(), String>
         Installed::Missing | Installed::Current | Installed::Older => {}
     }
     let slug = skill::slug(&skill.slug);
+    let id = slug.clone();
     let markdown = skill::markdown(skill);
     let file = SkillFile {
         folder: &folder(&slug),
@@ -115,7 +117,9 @@ pub fn install(paths: &Paths, agent: Agent, skill: &Skill) -> Result<(), String>
     })
     .map_err(|error| error.to_string())?;
     crate::durable::write(&mark_path(&path), &mark)
-        .map_err(|error| format!("{}: {}", mark_path(&path).display(), error))
+        .map_err(|error| format!("{}: {}", mark_path(&path).display(), error))?;
+    events::emit(ApprenticeAction::SkillInstalled, &id, None);
+    Ok(())
 }
 
 /// Removes what Apprentice wrote for this slug: its SKILL.md and mark, and
@@ -147,6 +151,7 @@ pub fn remove(paths: &Paths, agent: Agent, slug: &str) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         let _ = std::fs::remove_dir(parent);
     }
+    events::emit(ApprenticeAction::SkillRemoved, &slug, None);
     Ok(())
 }
 

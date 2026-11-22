@@ -8,6 +8,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use super::draft::{ParseError, instructions, merge_prompt, parse, schema, segment_prompt};
+use super::events::{self, ApprenticeAction};
 use super::evidence::{self, Limits, Segment};
 use super::lessons::Lesson;
 use super::ollama::{self, ModelError};
@@ -84,6 +85,7 @@ pub fn draft(
     let spawned = thread::Builder::new()
         .name("apprentice-draft".into())
         .spawn(move || {
+            events::emit(ApprenticeAction::DraftStarted, &lesson.id, None);
             let (model, limits): (Box<dyn Model>, Limits) = match choice {
                 ModelChoice::Ollama { model } => {
                     (Box::new(Ollama { url, model }), Limits::for_vision())
@@ -106,6 +108,7 @@ pub fn draft(
                 // The one way a build fails: the lesson's bundle is gone.
                 Err(reason) => {
                     tracing::warn!(lesson = %lesson.id, %reason, "could not read a lesson");
+                    events::emit(ApprenticeAction::DraftFailed, &lesson.id, None);
                     let _ = events.send(Progress::Failed(
                         tr("This lesson's notes are gone, so there is nothing to learn from")
                             .to_owned(),
@@ -134,6 +137,7 @@ fn drive(
     events: &Sender<Progress>,
 ) {
     let fail = |message: &str| {
+        events::emit(ApprenticeAction::DraftFailed, lesson_id, None);
         let _ = events.send(Progress::Failed(message.to_owned()));
     };
     let segments = fit(segments, MAX_PARTS, frames_per_call);
@@ -197,10 +201,18 @@ fn drive(
             Err(message) => return fail(&message),
         }
     };
-    let _ = events.send(match parse(&raw, lesson_id, crate::history::now_ms()) {
-        Ok(skill) => Progress::Done(skill),
-        Err(error) => Progress::Unparsed(error),
-    });
+    let finished = match parse(&raw, lesson_id, crate::history::now_ms()) {
+        Ok(skill) => {
+            let steps = u32::try_from(skill.steps.len()).unwrap_or(u32::MAX);
+            events::emit(ApprenticeAction::DraftFinished, lesson_id, Some(steps));
+            Progress::Done(skill)
+        }
+        Err(error) => {
+            events::emit(ApprenticeAction::DraftFailed, lesson_id, None);
+            Progress::Unparsed(error)
+        }
+    };
+    let _ = events.send(finished);
 }
 
 /// `segments` joined down to at most `max` parts, keeping every line: the

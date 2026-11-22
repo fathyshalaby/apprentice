@@ -70,6 +70,29 @@ pub enum VoiceEvent {
         method: String,
         path: String,
     },
+    /// What Apprentice did. `id` names a lesson, draft, skill slug, or model:
+    /// an identifier, never text.
+    Apprentice {
+        timestamp_ms: u64,
+        action: ApprenticeAction,
+        id: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        count: Option<u32>,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ApprenticeAction {
+    LessonWritten,
+    DraftStarted,
+    DraftFinished,
+    DraftFailed,
+    SkillApproved,
+    SkillEdited,
+    SkillInstalled,
+    SkillRemoved,
+    ModelDownloaded,
 }
 
 impl VoiceEvent {
@@ -83,7 +106,8 @@ impl VoiceEvent {
             | Self::Context { timestamp_ms, .. }
             | Self::ApiServerStarted { timestamp_ms, .. }
             | Self::ApiServerStopped { timestamp_ms }
-            | Self::ApiAuthFailed { timestamp_ms, .. } => *timestamp_ms,
+            | Self::ApiAuthFailed { timestamp_ms, .. }
+            | Self::Apprentice { timestamp_ms, .. } => *timestamp_ms,
         }
     }
 
@@ -98,6 +122,7 @@ impl VoiceEvent {
             Self::ApiServerStarted { .. } => "api_server_started",
             Self::ApiServerStopped { .. } => "api_server_stopped",
             Self::ApiAuthFailed { .. } => "api_auth_failed",
+            Self::Apprentice { .. } => "apprentice",
         }
     }
 }
@@ -842,6 +867,31 @@ mod tests {
         // the words instead.
         assert!(!written.contains("bank pin"), "{written}");
         fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn apprentice_events_round_trip() {
+        let event = VoiceEvent::Apprentice {
+            timestamp_ms: 7,
+            action: ApprenticeAction::SkillEdited,
+            id: "send-invoice".into(),
+            count: Some(2),
+        };
+        let line = serde_json::to_string(&event).unwrap();
+        assert_eq!(
+            line,
+            r#"{"kind":"apprentice","timestamp_ms":7,"action":"skill_edited","id":"send-invoice","count":2}"#
+        );
+        assert_eq!(serde_json::from_str::<VoiceEvent>(&line).unwrap(), event);
+        let bare = VoiceEvent::Apprentice {
+            timestamp_ms: 8,
+            action: ApprenticeAction::DraftFailed,
+            id: "lesson-1".into(),
+            count: None,
+        };
+        let line = serde_json::to_string(&bare).unwrap();
+        assert!(!line.contains("count"), "{line}");
+        assert_eq!(serde_json::from_str::<VoiceEvent>(&line).unwrap(), bare);
     }
 
     #[test]

@@ -211,6 +211,7 @@ pub(crate) fn event_summary(event: &VoiceEvent) -> String {
         VoiceEvent::ApiAuthFailed { method, path, .. } => {
             format!("Rejected unauthenticated {method} {path}")
         }
+        VoiceEvent::Apprentice { action, id, .. } => format!("Apprentice {action:?}: {id}"),
     }
 }
 
