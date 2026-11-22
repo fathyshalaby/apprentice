@@ -12,7 +12,7 @@ use super::snapshot::{Change, ChangeKind, known_extension, name_shape};
 const KEEP_MS: u64 = 14 * 24 * 60 * 60 * 1000;
 const MAX_LINES: usize = 20_000;
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[serde(rename_all = "snake_case")]
 pub enum EventKind {
     Added,

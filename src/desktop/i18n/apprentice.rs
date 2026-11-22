@@ -106,6 +106,12 @@ pub(super) const TRANSLATIONS: &[(&str, [&str; 6])] = &[
     ("This model runs in the cloud, so Apprentice won't use it", ["Ten model działa w chmurze, więc Apprentice go nie użyje", "此模型在云端运行，因此 Apprentice 不会使用它", "このモデルはクラウドで動作するため、Apprentice は使用しません", "Dieses Modell läuft in der Cloud, deshalb verwendet Apprentice es nicht", "Este modelo se ejecuta en la nube, así que Apprentice no lo usará", "Ця модель працює в хмарі, тому Apprentice її не використовуватиме"]),
     ("Inputs (one per line)", ["Dane wejściowe (jedna na wiersz)", "输入（每行一个）", "入力（1 行に 1 つ）", "Eingaben (eine pro Zeile)", "Entradas (una por línea)", "Вхідні дані (по одному на рядок)"]),
     ("Apprentice can't open its skills folder", ["Apprentice nie może otworzyć folderu umiejętności", "Apprentice 无法打开它的技能文件夹", "Apprentice はスキルフォルダを開けません", "Apprentice kann seinen Ordner für Skills nicht öffnen", "Apprentice no puede abrir su carpeta de habilidades", "Apprentice не може відкрити свою папку навичок"]),
+    ("Moves {kind} from {root} into folders like {folder}", ["Przenosi {kind} z {root} do folderów takich jak {folder}", "将 {root} 中的{kind}移入类似 {folder} 的文件夹", "{root} の{kind}を {folder} のようなフォルダに移動します", "Verschiebt {kind} aus {root} in Ordner wie {folder}", "Mueve {kind} de {root} a carpetas como {folder}", "Переміщує {kind} з {root} до папок на кшталт {folder}"]),
+    (", then renames them like {shape}", [", potem zmienia ich nazwy na wzór {shape}", "，然后按 {shape} 的样式重命名", "、そのあと {shape} のように名前を変えます", ", benennt sie dann wie {shape} um", ", y luego les cambia el nombre como {shape}", ", потім перейменовує їх за зразком {shape}"]),
+    ("Renames {kind} in {root} like {shape}", ["Zmienia nazwy: {kind} w {root} na wzór {shape}", "将 {root} 中的{kind}按 {shape} 的样式重命名", "{root} の{kind}を {shape} のように名前変更します", "Benennt {kind} in {root} wie {shape} um", "Cambia el nombre de {kind} en {root} como {shape}", "Перейменовує {kind} у {root} за зразком {shape}"]),
+    ("Makes folders like {folder} in {root}", ["Tworzy w {root} foldery takie jak {folder}", "在 {root} 中创建类似 {folder} 的文件夹", "{root} に {folder} のようなフォルダを作ります", "Legt in {root} Ordner wie {folder} an", "Crea en {root} carpetas como {folder}", "Створює в {root} папки на кшталт {folder}"]),
+    ("Removes {kind} from {root}", ["Usuwa {kind} z {root}", "从 {root} 中删除{kind}", "{root} から{kind}を削除します", "Entfernt {kind} aus {root}", "Elimina {kind} de {root}", "Видаляє {kind} з {root}"]),
+    ("files", ["pliki", "文件", "ファイル", "Dateien", "archivos", "файли"]),
 ];
 
 /// Brazilian Portuguese, for the card and the pane.
@@ -215,6 +221,12 @@ pub(super) const PORTUGUESE: &[(&str, &str)] = &[
     ("This model runs in the cloud, so Apprentice won't use it", "Este modelo roda na nuvem, então o Apprentice não vai usá-lo"),
     ("Inputs (one per line)", "Entradas (uma por linha)"),
     ("Apprentice can't open its skills folder", "O Apprentice não consegue abrir a pasta de habilidades"),
+    ("Moves {kind} from {root} into folders like {folder}", "Move {kind} de {root} para pastas como {folder}"),
+    (", then renames them like {shape}", ", depois renomeia como {shape}"),
+    ("Renames {kind} in {root} like {shape}", "Renomeia {kind} em {root} como {shape}"),
+    ("Makes folders like {folder} in {root}", "Cria em {root} pastas como {folder}"),
+    ("Removes {kind} from {root}", "Remove {kind} de {root}"),
+    ("files", "arquivos"),
 ];
 
 /// French, for the card and the pane.
@@ -324,6 +336,12 @@ pub(super) const FRENCH: &[(&str, &str)] = &[
     ("This model runs in the cloud, so Apprentice won't use it", "Ce modèle s'exécute dans le cloud, donc Apprentice ne l'utilisera pas"),
     ("Inputs (one per line)", "Entrées (une par ligne)"),
     ("Apprentice can't open its skills folder", "Apprentice ne peut pas ouvrir son dossier de compétences"),
+    ("Moves {kind} from {root} into folders like {folder}", "Move {kind} de {root} vers des dossiers comme {folder}"),
+    (", then renames them like {shape}", ", puis les renomme comme {shape}"),
+    ("Renames {kind} in {root} like {shape}", "Renomme {kind} dans {root} comme {shape}"),
+    ("Makes folders like {folder} in {root}", "Crée dans {root} des dossiers comme {folder}"),
+    ("Removes {kind} from {root}", "Supprime {kind} de {root}"),
+    ("files", "fichiers"),
 ];
 
 /// Russian, for the card and the pane.
@@ -433,4 +451,10 @@ pub(super) const RUSSIAN: &[(&str, &str)] = &[
     ("This model runs in the cloud, so Apprentice won't use it", "Эта модель работает в облаке, поэтому Apprentice не будет её использовать"),
     ("Inputs (one per line)", "Входные данные (по одному на строку)"),
     ("Apprentice can't open its skills folder", "Apprentice не может открыть свою папку навыков"),
+    ("Moves {kind} from {root} into folders like {folder}", "Перемещает {kind} из {root} в папки вроде {folder}"),
+    (", then renames them like {shape}", ", затем переименовывает их по образцу {shape}"),
+    ("Renames {kind} in {root} like {shape}", "Переименовывает {kind} в {root} по образцу {shape}"),
+    ("Makes folders like {folder} in {root}", "Создаёт в {root} папки вроде {folder}"),
+    ("Removes {kind} from {root}", "Удаляет {kind} из {root}"),
+    ("files", "файлы"),
 ];
