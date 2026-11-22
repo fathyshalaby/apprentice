@@ -118,6 +118,12 @@ impl SkillsPane {
                     }),
                 );
                 pane.lessons = vec![lesson];
+                // What Ollama said of the scene's model: it sees images.
+                pane.picker.installed = Some(Ok(vec![ollama::Installed {
+                    name: "gemma4:26b".into(),
+                    size: 17_200_000_000,
+                    vision: true,
+                }]));
             }
             Fixture::Draft => {
                 let draft = Draft {
