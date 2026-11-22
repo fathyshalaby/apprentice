@@ -167,16 +167,29 @@ fn order(rel: &Path) -> (usize, &Path) {
     (rel.components().count(), rel)
 }
 
-impl Snapshot {
+/// Each entry's identity by its path, built once per diff so finding a
+/// parent is a lookup, not a scan of every entry.
+struct ByPath<'a>(HashMap<&'a Path, Key>);
+
+impl<'a> ByPath<'a> {
+    fn of(snapshot: &'a Snapshot) -> Self {
+        ByPath(
+            snapshot
+                .entries
+                .values()
+                .map(|entry| (entry.rel.as_path(), entry.key()))
+                .collect(),
+        )
+    }
+
     /// Identity of the folder holding `entry`; `None` is the root.
     fn parent_key(&self, entry: &Entry) -> Option<Key> {
         let parent = entry.rel.parent().filter(|p| !p.as_os_str().is_empty())?;
-        self.entries
-            .values()
-            .find(|e| e.rel == parent)
-            .map(Entry::key)
+        self.0.get(parent).copied()
     }
+}
 
+impl Snapshot {
     /// The last entry in reading order, where a cut-off snapshot stopped.
     fn cut(&self) -> Option<&Path> {
         if !self.truncated {
@@ -230,6 +243,7 @@ fn removed(before: &Entry) -> Change {
 /// reported. Sorted by destination folder, then name.
 pub fn diff(old: &Snapshot, new: &Snapshot) -> Vec<Change> {
     let (old_cut, new_cut) = (old.cut(), new.cut());
+    let (old_paths, new_paths) = (ByPath::of(old), ByPath::of(new));
     let mut changes = Vec::new();
     for (key, now) in &new.entries {
         match old.entries.get(key) {
@@ -244,7 +258,7 @@ pub fn diff(old: &Snapshot, new: &Snapshot) -> Vec<Change> {
             }
             Some(before) => {
                 let renamed = name_of(&before.rel) != name_of(&now.rel);
-                let kind = if old.parent_key(before) != new.parent_key(now) {
+                let kind = if old_paths.parent_key(before) != new_paths.parent_key(now) {
                     ChangeKind::Moved { renamed }
                 } else if renamed {
                     ChangeKind::Renamed
@@ -556,6 +570,111 @@ mod tests {
         old.entries.insert((1, 7), entry("a.txt", 1, 1));
         new.entries.insert((1, 7), entry("b.txt", 2, 2));
         assert_eq!(diff(&old, &new).len(), 2);
+    }
+
+    /// The diff as it was first written: each parent found by scanning every
+    /// entry. Kept to check the indexed lookup gives the same answer.
+    fn diff_by_scanning(old: &Snapshot, new: &Snapshot) -> Vec<Change> {
+        let parent = |snapshot: &Snapshot, entry: &Entry| {
+            let parent = entry.rel.parent().filter(|p| !p.as_os_str().is_empty())?;
+            snapshot
+                .entries
+                .values()
+                .find(|e| e.rel == parent)
+                .map(Entry::key)
+        };
+        let mut changes = Vec::new();
+        for (key, now) in &new.entries {
+            match old.entries.get(key) {
+                None => changes.push(added(now)),
+                Some(before) if replaced(before, now) => {
+                    changes.push(removed(before));
+                    changes.push(added(now));
+                }
+                Some(before) => {
+                    let renamed = name_of(&before.rel) != name_of(&now.rel);
+                    let kind = if parent(old, before) != parent(new, now) {
+                        ChangeKind::Moved { renamed }
+                    } else if renamed {
+                        ChangeKind::Renamed
+                    } else {
+                        continue;
+                    };
+                    changes.push(Change {
+                        kind,
+                        folder: now.folder,
+                        from: parent_of(&before.rel),
+                        to: parent_of(&now.rel),
+                        name: name_of(&now.rel),
+                    });
+                }
+            }
+        }
+        for (key, before) in &old.entries {
+            if !new.entries.contains_key(key) {
+                changes.push(removed(before));
+            }
+        }
+        changes.sort_by(|a, b| (&a.to, &a.name).cmp(&(&b.to, &b.name)));
+        changes
+    }
+
+    /// 50 folders of 99 files each: a full snapshot.
+    fn full(rel_of: impl Fn(u64, u64) -> PathBuf) -> Snapshot {
+        let mut snapshot = Snapshot::default();
+        let mut put = |ino: u64, rel: PathBuf, folder: bool| {
+            snapshot.entries.insert(
+                (1, ino),
+                Entry {
+                    dev: 1,
+                    ino,
+                    rel,
+                    folder,
+                    size: 1,
+                    mtime_ns: 1,
+                },
+            );
+        };
+        for f in 0..50 {
+            let folder = 1_000_000 + f;
+            put(folder, rel_of(f, u64::MAX), true);
+            for i in 0..99 {
+                put(f * 1000 + i, rel_of(f, i), false);
+            }
+        }
+        assert_eq!(snapshot.entries.len(), MAX_ENTRIES);
+        snapshot
+    }
+
+    #[test]
+    fn a_full_snapshot_diffs_quickly() {
+        let name = |f: u64| format!("Folder {f}");
+        let rel = |f: u64, i: u64| {
+            if i == u64::MAX {
+                PathBuf::from(name(f))
+            } else {
+                PathBuf::from(name(f)).join(format!("f{i}.pdf"))
+            }
+        };
+        let old = full(rel);
+        // Folder 0 is renamed, ten files move from folder 1 into folder 2,
+        // and one file in folder 3 is renamed.
+        let new = full(|f, i| match (f, i) {
+            (0, u64::MAX) => PathBuf::from("Renamed"),
+            (0, i) => PathBuf::from("Renamed").join(format!("f{i}.pdf")),
+            (1, i) if i < 10 => PathBuf::from(name(2)).join(format!("moved{i}.pdf")),
+            (3, 0) => PathBuf::from(name(3)).join("new name.pdf"),
+            _ => rel(f, i),
+        });
+        let started = std::time::Instant::now();
+        let changes = diff(&old, &new);
+        let took = started.elapsed();
+        assert_eq!(changes, diff_by_scanning(&old, &new));
+        assert_eq!(changes.len(), 12, "{changes:?}");
+        assert!(
+            took < std::time::Duration::from_millis(200),
+            "diffing two full snapshots took {took:?}"
+        );
     }
 
     #[test]
