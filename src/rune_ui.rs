@@ -71,6 +71,8 @@ mod shortcut_mode;
 mod shortcut_rule;
 mod sidebar;
 mod sidebar_update;
+#[cfg(all(target_os = "macos", hex_capture))]
+mod skills;
 mod sound_sets;
 mod spark;
 mod speech_model;
@@ -693,6 +695,8 @@ pub(crate) struct Ui {
     drop: drop_transcribe::DropTranscribe,
     #[cfg(hex_capture)]
     captures: captures::CapturesPane,
+    #[cfg(all(target_os = "macos", hex_capture))]
+    skills: skills::SkillsPane,
     /// The Annotate pane's Agents section: coding agents' skill folders and
     /// the hex link, read when the pane opens and after an install.
     #[cfg(hex_capture)]
@@ -826,6 +830,8 @@ impl Ui {
             drop: drop_transcribe::DropTranscribe::default(),
             #[cfg(hex_capture)]
             captures: captures::CapturesPane::default(),
+            #[cfg(all(target_os = "macos", hex_capture))]
+            skills: skills::SkillsPane::default(),
             #[cfg(hex_capture)]
             agents: scrawl::Agents::default(),
             modes,
@@ -1377,6 +1383,7 @@ fn poll(ui: &mut Ui, clock: f64, tx: &mut Tx) -> bool {
     #[cfg(all(target_os = "macos", hex_capture))]
     {
         changed |= history::unified::poll(ui);
+        changed |= ui.skills.poll(ui.pane == Pane::Skills && !ui.labs_open);
     }
     if ui.pane == Pane::Output && !ui.labs_open {
         changed |= output::poll(ui, clock, tx);
@@ -1522,6 +1529,8 @@ fn view(ui: &Ui, cx: &mut Cx<Ui>) -> El {
         Pane::Meetings => meetings::pane(ui, p, &mut layer),
         #[cfg(hex_capture)]
         Pane::Annotate => (Vec::new(), scrawl::pane(ui, p, &mut layer)),
+        #[cfg(all(target_os = "macos", hex_capture))]
+        Pane::Skills => skills::pane(ui, p),
         Pane::VoiceFilter => (Vec::new(), fun::pane(ui, p)),
         Pane::HudLab => hud_lab::pane(ui, p),
         Pane::Activity => activity::pane(ui, p),

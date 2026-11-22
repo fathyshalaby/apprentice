@@ -906,6 +906,17 @@ mod tests {
         assert_eq!(follow.next(&CaptureSnapshot::default()), []);
     }
 
+    /// A lesson records the whole screen: its capsule offers no target
+    /// chips to switch it to a window, an area, or the iPhone.
+    #[test]
+    fn a_lesson_shows_no_target_chips() {
+        let mut follow = Follow::default();
+        let mut lesson = recording("lesson");
+        lesson.recording.as_mut().unwrap().lesson = true;
+        assert_eq!(follow.next(&lesson), [Input::Stage(Stage::Recording)]);
+        assert_eq!(follow.next(&lesson), []);
+    }
+
     /// A recording discarded with no outcome (and, from an older host, a
     /// switch whose start failed): the timer must not count on.
     #[test]

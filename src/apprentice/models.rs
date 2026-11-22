@@ -13,8 +13,6 @@ pub struct Recommended {
 }
 
 /// The models the Skills pane suggests, best first.
-// Listed by the Skills pane (Task 10).
-#[allow(dead_code)]
 pub const RECOMMENDED: [Recommended; 4] = [
     Recommended {
         name: "gemma4:26b",

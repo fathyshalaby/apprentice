@@ -44,8 +44,6 @@ struct DraftStep {
 }
 
 /// The system prompt for every drafting call.
-// Sent by the drafting steps (Task 6).
-#[allow(dead_code)]
 pub fn instructions() -> &'static str {
     "You turn a recorded lesson into a skill that an AI coding agent can follow later.\n\
 The evidence is a time-ordered list of lines. `[mm:ss] said:` is what the person said aloud. \
@@ -62,8 +60,6 @@ Answer with JSON in the given schema only, with no other text."
 }
 
 /// The JSON schema a model's answer must follow (Ollama's `format`).
-// Sent by the drafting steps (Task 6).
-#[allow(dead_code)]
 pub fn schema() -> Value {
     let strings = json!({ "type": "array", "items": { "type": "string" } });
     json!({
@@ -93,8 +89,6 @@ pub fn schema() -> Value {
 }
 
 /// The user prompt for one part of a long lesson.
-// Sent by the drafting steps (Task 6).
-#[allow(dead_code)]
 pub fn segment_prompt(seg: &Segment, n: usize, of: usize) -> String {
     format!(
         "Part {n} of {of} of the lesson. List the steps shown in this part, in the schema.\n\n{}",
@@ -103,8 +97,6 @@ pub fn segment_prompt(seg: &Segment, n: usize, of: usize) -> String {
 }
 
 /// The user prompt that joins per-part step lists into one skill.
-// Sent by the drafting steps (Task 6).
-#[allow(dead_code)]
 pub fn merge_prompt(step_lists: &[String]) -> String {
     let mut out = String::from(
         "These are the steps found in each part of one lesson. Combine them into one complete \

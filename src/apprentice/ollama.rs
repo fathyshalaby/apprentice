@@ -80,8 +80,6 @@ impl ModelError {
 }
 
 /// The models Ollama at `url` has, each checked for vision.
-// Listed by the Skills pane (Task 10).
-#[allow(dead_code)]
 pub fn installed(url: &str) -> Result<Vec<Installed>, ModelError> {
     let base = base(url)?;
     let agent = agent(Some(LIST_TIMEOUT));
@@ -151,8 +149,6 @@ pub fn chat(
 /// Downloads `model`, reporting each progress line until Ollama says
 /// `success`. `cancel` is read between lines; a cancelled download returns
 /// [`ModelError::Cancelled`], and Ollama keeps what it has for the next pull.
-// Started by the Skills pane's Download button (Task 10).
-#[allow(dead_code)]
 pub fn pull(
     url: &str,
     model: &str,

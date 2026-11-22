@@ -1,10 +1,10 @@
 mod draft;
-pub(crate) mod install;
 pub(crate) mod events;
-mod evidence;
-mod lessons;
-mod models;
-mod ollama;
-mod run;
-mod skill;
-mod store;
+pub(crate) mod evidence;
+pub(crate) mod install;
+pub(crate) mod lessons;
+pub(crate) mod models;
+pub(crate) mod ollama;
+pub(crate) mod run;
+pub(crate) mod skill;
+pub(crate) mod store;

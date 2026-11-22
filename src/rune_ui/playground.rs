@@ -225,6 +225,19 @@ const PATHS: &[(&str, &str)] = &[
     ),
     #[cfg(all(target_os = "macos", hex_capture))]
     ("mac-history-empty", "Window/History/Nothing yet"),
+    #[cfg(all(target_os = "macos", hex_capture))]
+    ("mac-skills-empty", "Window/Skills/Nothing yet"),
+    #[cfg(all(target_os = "macos", hex_capture))]
+    ("mac-skills-lesson", "Window/Skills/A new lesson"),
+    #[cfg(all(target_os = "macos", hex_capture))]
+    (
+        "mac-skills-draft",
+        "Window/Skills/A draft with why? questions",
+    ),
+    #[cfg(all(target_os = "macos", hex_capture))]
+    ("mac-skills-models", "Window/Skills/Choosing a model"),
+    #[cfg(all(target_os = "macos", hex_capture))]
+    ("mac-skills-list", "Window/Skills/Skills and their agents"),
     #[cfg(hex_capture)]
     ("captures", "Window/Captures/Captures"),
     #[cfg(hex_capture)]
@@ -304,7 +317,10 @@ const PATHS: &[(&str, &str)] = &[
         "mac-onboarding-reopen",
         "Window/Onboarding/Your turn · reopen",
     ),
-    ("mac-onboarding-ready", "Window/Onboarding/Apprentice is ready"),
+    (
+        "mac-onboarding-ready",
+        "Window/Onboarding/Apprentice is ready",
+    ),
     (
         "mac-onboarding-ready-tap",
         "Window/Onboarding/Apprentice is ready · tap to start",

@@ -23,8 +23,6 @@ pub struct Evidence {
     pub thin: Thin,
 }
 
-// Read by the drafting steps (Task 6).
-#[allow(dead_code)]
 /// A stretch of the lesson: its lines and the key frames inside it.
 #[derive(Debug)]
 pub struct Segment {
@@ -34,11 +32,11 @@ pub struct Segment {
     pub frames: Vec<Frame>,
 }
 
-// Read by the drafting steps (Task 6).
-#[allow(dead_code)]
 /// A downscaled key frame as PNG bytes.
 #[derive(Debug)]
 pub struct Frame {
+    /// When it was taken; tests check it, nothing sends it yet.
+    #[allow(dead_code)]
     pub t_ms: u64,
     pub png: Vec<u8>,
 }
@@ -61,8 +59,6 @@ pub struct Limits {
     pub frame_width: u32,
 }
 
-// Read by the drafting steps (Task 6).
-#[allow(dead_code)]
 impl Limits {
     /// Vision models: four frames a call, twelve a draft, 1024 px wide.
     pub fn for_vision() -> Self {
@@ -99,8 +95,6 @@ struct Item {
     after_gap: bool,
 }
 
-// Read by the drafting steps (Task 6).
-#[allow(dead_code)]
 /// The lesson's evidence. Fails only when its bundle can't be loaded.
 pub fn build(lesson: &Lesson, limits: &Limits) -> Result<Evidence, String> {
     let bundle = load_capture(&lesson.bundle).ok_or_else(|| {

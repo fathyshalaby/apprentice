@@ -79,8 +79,6 @@ impl Store {
     }
 
     /// The store in the data folder.
-    // Used by the skills pane (Task 10).
-    #[allow(dead_code)]
     pub fn open() -> color_eyre::Result<Store> {
         Ok(Store::at(crate::app_paths::support_dir()?.join("skills")))
     }
@@ -98,8 +96,6 @@ impl Store {
     }
 
     /// A fresh draft id, `<created_ms>-<4 hex>`, whose folder does not exist.
-    // Used by the drafting flow (Task 10).
-    #[allow(dead_code)]
     pub fn new_draft_id(&self, created_ms: u64) -> String {
         loop {
             let mut bytes = [0u8; 2];
@@ -116,8 +112,6 @@ impl Store {
         }
     }
 
-    // Used by the drafting flow (Task 10).
-    #[allow(dead_code)]
     pub fn save_draft(&self, draft: &Draft) -> Result<(), StoreError> {
         if !safe_draft_id(&draft.id) {
             return Err(StoreError::NotFound);
@@ -140,8 +134,6 @@ impl Store {
     }
 
     /// Drafts, newest first.
-    // Used by the skills pane (Task 10).
-    #[allow(dead_code)]
     pub fn drafts(&self) -> Vec<Draft> {
         let Ok(entries) = fs::read_dir(self.drafts_dir()) else {
             return Vec::new();
@@ -166,8 +158,6 @@ impl Store {
         drafts
     }
 
-    // Used by the skills pane (Task 10).
-    #[allow(dead_code)]
     pub fn discard_draft(&self, id: &str) -> Result<(), StoreError> {
         if !safe_draft_id(id) {
             return Err(StoreError::NotFound);
@@ -193,8 +183,6 @@ impl Store {
         serde_json::from_slice(&fs::read(self.root.join(slug).join("skill.json")).ok()?).ok()
     }
 
-    // Used by the skills pane (Task 10).
-    #[allow(dead_code)]
     pub fn approve(&self, id: &str, clash: Option<Clash>) -> Result<Approved, StoreError> {
         if !safe_draft_id(id) {
             return Err(StoreError::NotFound);
@@ -231,8 +219,6 @@ impl Store {
     }
 
     /// Approved skills, sorted by name.
-    // Used by the skills pane (Task 10).
-    #[allow(dead_code)]
     pub fn skills(&self) -> Vec<Skill> {
         let Ok(entries) = fs::read_dir(&self.root) else {
             return Vec::new();
@@ -255,8 +241,6 @@ impl Store {
         skills
     }
 
-    // Used by the skills pane (Task 10).
-    #[allow(dead_code)]
     pub fn save_edit(&self, mut skill: Skill) -> Result<Skill, StoreError> {
         let old = self.read_skill(&skill.slug).ok_or(StoreError::NotFound)?;
         skill.created_ms = old.created_ms;
@@ -272,8 +256,6 @@ impl Store {
         Ok(skill)
     }
 
-    // Used by the skills pane (Task 10).
-    #[allow(dead_code)]
     pub fn delete_skill(&self, slug: &str) -> Result<(), StoreError> {
         if !safe_name(slug) || !self.root.join(slug).join("skill.json").is_file() {
             return Err(StoreError::NotFound);

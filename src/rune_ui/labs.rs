@@ -49,6 +49,8 @@ pub(super) fn main_panes(ui: &Ui) -> Vec<Pane> {
         Pane::Captures,
         Pane::Meetings,
         Pane::Annotate,
+        #[cfg(target_os = "macos")]
+        Pane::Skills,
         Pane::VoiceFilter,
     ];
     #[cfg(not(hex_capture))]

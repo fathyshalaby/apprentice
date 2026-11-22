@@ -75,6 +75,10 @@ pub(super) enum Pane {
     /// Dev builds, macOS and Linux only.
     #[cfg(hex_capture)]
     Annotate,
+    /// Lessons, drafts, and skills (macOS, while Labs › Watch and learn
+    /// is on).
+    #[cfg(all(target_os = "macos", hex_capture))]
+    Skills,
     /// The Hex Microphone's driver, tuning, and try-it demo (macOS, while
     /// its Labs toggle is on).
     VoiceFilter,
@@ -118,6 +122,8 @@ impl Pane {
             Pane::Captures if ui.history.unified.enabled => false,
             #[cfg(hex_capture)]
             Pane::Captures => ui.settings.labs.screenshots,
+            #[cfg(all(target_os = "macos", hex_capture))]
+            Pane::Skills => ui.settings.labs.watch_and_learn,
             _ => true,
         }
     }
@@ -133,6 +139,8 @@ impl Pane {
             Pane::Meetings => tr("Meetings"),
             #[cfg(hex_capture)]
             Pane::Annotate => tr("Annotate"),
+            #[cfg(all(target_os = "macos", hex_capture))]
+            Pane::Skills => tr("Skills"),
             Pane::VoiceFilter => tr("Voice Filter"),
             Pane::HudLab => "HUD Lab",
             Pane::Activity => tr("Activity"),
@@ -151,6 +159,8 @@ impl Pane {
             Pane::Meetings => "nav-meetings",
             #[cfg(hex_capture)]
             Pane::Annotate => "nav-annotate",
+            #[cfg(all(target_os = "macos", hex_capture))]
+            Pane::Skills => "nav-skills",
             Pane::VoiceFilter => "nav-voice-filter",
             Pane::HudLab => "nav-hud-lab",
             Pane::Activity => "nav-activity",
@@ -169,6 +179,8 @@ impl Pane {
             Pane::Meetings => &MEETINGS_ICON,
             #[cfg(hex_capture)]
             Pane::Annotate => &SCRAWL_ICON,
+            #[cfg(all(target_os = "macos", hex_capture))]
+            Pane::Skills => &super::skills::SKILLS_ICON,
             Pane::VoiceFilter => &VOICE_FILTER_ICON,
             Pane::HudLab => &HUD_LAB_ICON,
             Pane::Activity => &ACTIVITY_ICON,

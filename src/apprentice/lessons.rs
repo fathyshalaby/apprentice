@@ -31,8 +31,6 @@ pub struct Lesson {
     pub frames: usize,
 }
 
-// Read by the lesson picker and the drafting steps (later tasks).
-#[allow(dead_code)]
 /// Every lesson under `captures`, newest first.
 pub fn list(captures: &Path) -> Vec<Lesson> {
     let Ok(entries) = fs::read_dir(captures) else {

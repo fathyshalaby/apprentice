@@ -304,7 +304,7 @@ pub enum CaptureCommand {
     /// under clicks on, never copied or routed, marked and handed to
     /// [`on_lesson_written`] once written. Refused while the lab is off.
     /// Sent by the Skills pane and the menu bar (macOS).
-    #[allow(dead_code)]
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     Lesson(CaptureTarget),
     /// Looks for a cabled iPhone off the listener's thread;
     /// [`CaptureSnapshot::phone`] follows. Each start also looks.

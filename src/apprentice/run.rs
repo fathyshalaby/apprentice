@@ -29,8 +29,6 @@ const TEMPERATURE: f64 = 0.2;
 
 /// What a drafting job reports, in order; the last is `Done`, `Failed`, or
 /// `Unparsed`.
-// Read by the Skills pane (Task 10).
-#[allow(dead_code)]
 #[derive(Debug)]
 pub enum Progress {
     /// Asking about part `n` of `of`.
@@ -64,8 +62,6 @@ pub trait Model {
 /// `Unparsed`. Any model error ends the draft: nothing retries or switches to
 /// another model. Video and audio are never sent; Ollama gets each part's key
 /// frames, Apple Intelligence text alone.
-// Started by the Skills pane's Draft button (Task 10).
-#[allow(dead_code)]
 pub fn draft(
     lesson: &Lesson,
     choice: &ModelChoice,

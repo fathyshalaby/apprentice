@@ -129,6 +129,28 @@ pub(super) const SCENES: &[Scene] = &[
         ui.history = history::HistoryPane::fixture_empty();
         ui.pane = Pane::History;
     }),
+    // Labs › Watch and learn's Skills pane (macOS): nothing yet, a new
+    // lesson, a draft with why? questions, the model picker, and skills.
+    #[cfg(all(target_os = "macos", hex_capture))]
+    ("mac-skills-empty", |ui| {
+        skills_scene(ui, skills::Fixture::Empty)
+    }),
+    #[cfg(all(target_os = "macos", hex_capture))]
+    ("mac-skills-lesson", |ui| {
+        skills_scene(ui, skills::Fixture::Lesson)
+    }),
+    #[cfg(all(target_os = "macos", hex_capture))]
+    ("mac-skills-draft", |ui| {
+        skills_scene(ui, skills::Fixture::Draft)
+    }),
+    #[cfg(all(target_os = "macos", hex_capture))]
+    ("mac-skills-models", |ui| {
+        skills_scene(ui, skills::Fixture::Models)
+    }),
+    #[cfg(all(target_os = "macos", hex_capture))]
+    ("mac-skills-list", |ui| {
+        skills_scene(ui, skills::Fixture::Skills)
+    }),
     // Labs › Paste Last picker (macOS): dictations, annotations, screenshots
     // and recordings in one History, with its type filter, its search, and
     // its empty states. The unified pane has no golden: it exists only in
@@ -973,6 +995,19 @@ fn unified_history(ui: &mut Ui) {
     ui.history.reload(ui.settings.labs.history_stats);
     ui.captures = captures::CapturesPane::fixture();
     ui.pane = Pane::History;
+}
+
+/// The Skills pane with Watch and learn on and a model chosen, except
+/// before anything is recorded.
+#[cfg(all(target_os = "macos", hex_capture))]
+fn skills_scene(ui: &mut Ui, kind: skills::Fixture) {
+    *ui = mac_fixture();
+    ui.settings.labs.watch_and_learn = true;
+    if kind != skills::Fixture::Empty {
+        ui.settings.apprentice.model = Some("ollama:gemma4:26b".into());
+    }
+    ui.skills = skills::SkillsPane::fixture(kind);
+    ui.pane = Pane::Skills;
 }
 
 pub(super) fn mac_fixture() -> Ui {
