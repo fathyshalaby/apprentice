@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 /// How much a skill may do on its own. A new skill only observes.
-// Later levels are chosen in the skills pane (Task 7).
+// The later levels come with replay; nothing sets them yet.
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -78,7 +78,7 @@ pub fn markdown(skill: &Skill) -> String {
         "---\nname: {}\ndescription: {}\n---\n\n# {}\n",
         skill.slug,
         front_matter_value(&skill.description),
-        skill.name
+        one_line(&skill.name)
     );
     if !skill.when_to_use.trim().is_empty() {
         out.push_str(&format!(
@@ -89,9 +89,15 @@ pub fn markdown(skill: &Skill) -> String {
     bullets(&mut out, "Inputs", &skill.inputs);
     out.push_str("\n## Steps\n\n");
     for (i, step) in skill.steps.iter().enumerate() {
-        out.push_str(&format!("{}. **{}**\n", i + 1, step.title));
-        if !step.detail.trim().is_empty() {
-            out.push_str(&format!("   {}\n", step.detail.trim()));
+        out.push_str(&format!("{}. **{}**\n", i + 1, one_line(&step.title)));
+        // Every line indented, so a long detail stays inside its step.
+        for line in step.detail.trim().lines() {
+            let line = line.trim_end();
+            if line.is_empty() {
+                out.push('\n');
+            } else {
+                out.push_str(&format!("   {line}\n"));
+            }
         }
     }
     let decisions: Vec<&Step> = skill
@@ -110,7 +116,9 @@ pub fn markdown(skill: &Skill) -> String {
                 .unwrap_or("not answered");
             out.push_str(&format!(
                 "**{}** — {}\nWhy: {}\n\n",
-                step.title, question, why
+                one_line(&step.title),
+                question,
+                why
             ));
         }
         out.pop();
@@ -135,15 +143,16 @@ fn bullets(out: &mut String, heading: &str, items: &[String]) {
     }
 }
 
-/// One line, quoted when plain YAML would misread it.
+/// `text` on one line: every run of spaces and line breaks as one space.
+fn one_line(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// One line, always a double-quoted YAML string, so nothing in it (`[`,
+/// `*`, `true`, `:`) is read as anything but text.
 fn front_matter_value(text: &str) -> String {
-    let line = text.split_whitespace().collect::<Vec<_>>().join(" ");
-    let risky = text.contains('\n') || line.contains([':', '"', '#', '\\']) || line.is_empty();
-    if risky {
-        format!("\"{}\"", line.replace('\\', "\\\\").replace('"', "\\\""))
-    } else {
-        line
-    }
+    let line = one_line(text);
+    format!("\"{}\"", line.replace('\\', "\\\\").replace('"', "\\\""))
 }
 
 /// UTC `yyyy-mm-dd` of a Unix time in milliseconds.
@@ -250,6 +259,45 @@ Why: not answered\n\
 \n\
 Learned from lesson lesson-1, recorded 2026-03-20. Autonomy: observe.\n";
         assert_eq!(markdown(&fixture()), expected);
+    }
+
+    /// The description is always one double-quoted YAML string, whatever
+    /// YAML would make of it bare.
+    #[test]
+    fn the_description_is_always_quoted() {
+        let front = |description: &str| {
+            let skill = Skill {
+                description: description.into(),
+                ..fixture()
+            };
+            markdown(&skill).lines().nth(2).unwrap().to_owned()
+        };
+        assert_eq!(front("[draft] files"), "description: \"[draft] files\"");
+        assert_eq!(front("* every month"), "description: \"* every month\"");
+        assert_eq!(front("true"), "description: \"true\"");
+        assert_eq!(front("Plain words"), "description: \"Plain words\"");
+        assert_eq!(
+            front("Says \"hi\"\nto C:\\temp"),
+            "description: \"Says \\\"hi\\\" to C:\\\\temp\""
+        );
+    }
+
+    /// A multi-line detail stays inside its numbered step; a name or step
+    /// title with a line break stays on its own line.
+    #[test]
+    fn line_breaks_never_leave_their_place() {
+        let mut skill = fixture();
+        skill.name = "File the\ninvoice".into();
+        skill.steps[0].title = "Open\nthe PDF".into();
+        skill.steps[0].detail = "Double-click it.\nThen wait.\n\nIt opens in Preview.".into();
+        let md = markdown(&skill);
+        assert!(md.contains("\n# File the invoice\n"), "{md}");
+        assert!(
+            md.contains(
+                "1. **Open the PDF**\n   Double-click it.\n   Then wait.\n\n   It opens in Preview.\n2. "
+            ),
+            "{md}"
+        );
     }
 
     #[test]

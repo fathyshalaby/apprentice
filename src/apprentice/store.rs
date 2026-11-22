@@ -190,7 +190,7 @@ impl Store {
         }
         let draft = self.read_draft(id).ok_or(StoreError::NotFound)?;
         let mut skill = draft.skill;
-        let wanted = skill::slug(&skill.slug);
+        let wanted = folder_slug(&skill.slug);
         let exists = self.root.join(&wanted).join("skill.json").exists();
         skill.slug = wanted.clone();
         if exists {
@@ -267,6 +267,17 @@ impl Store {
 
 fn safe_draft_id(id: &str) -> bool {
     id != DRAFTS && safe_name(id)
+}
+
+/// `slug` as a skill's folder name: `drafts` is the drafts folder, so a
+/// skill named Drafts is stored as `drafts-skill`.
+fn folder_slug(slug: &str) -> String {
+    let slug = skill::slug(slug);
+    if slug == DRAFTS {
+        format!("{slug}-skill")
+    } else {
+        slug
+    }
 }
 
 /// Moves `path` to the Trash. Tests move it to a folder of their own
@@ -390,6 +401,24 @@ mod tests {
         assert!(store.drafts().is_empty());
         assert!(trashed(&folder), "it went to the Trash");
         assert_eq!(store.discard_draft("1-cccc"), Err(StoreError::NotFound));
+    }
+
+    /// `drafts` is the drafts folder: a skill named Drafts gets its own.
+    #[test]
+    fn a_skill_named_drafts_never_lands_in_the_drafts_folder() {
+        let t = Temp::new("reserved");
+        let store = t.store();
+        store.save_draft(&draft("1-dddd", "Drafts")).unwrap();
+        store.save_draft(&draft("2-eeee", "Other")).unwrap();
+        let approved = store.approve("1-dddd", None).unwrap();
+        assert_eq!(approved.slug, "drafts-skill");
+        assert!(t.0.join("drafts-skill/SKILL.md").is_file());
+        assert_eq!(store.skills(), vec![approved.skill]);
+        assert_eq!(store.drafts().len(), 1, "the other draft is untouched");
+        // A second one keeps both under the next free name.
+        store.save_draft(&draft("3-ffff", "Drafts")).unwrap();
+        let again = store.approve("3-ffff", Some(Clash::KeepBoth)).unwrap();
+        assert_eq!(again.slug, "drafts-skill-2");
     }
 
     #[test]
