@@ -66,3 +66,37 @@ install, and the pane are described in the plan.
 Lesson recording, evidence and drafting, the skills store, agent install, the
 Skills pane, and its events are later tasks in the plan; none of them exists
 in this change, and the lab's switch gates nothing yet beyond the Labs card.
+
+## Observed on this Mac (2026-11-22, automated checks)
+
+```ts
+Checks run
+├─ cargo test --release --bin hex      3059 passed, 5 failed (all five are the known baseline failures)
+├─ cargo test (crates/capture)         299 passed
+├─ scripts/code-shape.py --check       passed
+├─ cargo clippy                        not run: clippy is not installed for this toolchain
+├─ scripts/build-app.sh (unsigned)     built target/app/Apprentice.app; codesign valid
+└─ launch                              the process started, then stopped at startup (below)
+```
+
+Launch result: the app did not get as far as a window or the local API. On
+first launch from a copy under `~/Desktop`, macOS showed "Apprentice would like
+to access files in your Desktop folder" and the main thread waited in
+`opendir` for the answer. Nobody answered it, so no "Apprentice" window
+appeared, `local-api.json` was stale, and the bundle's `hex` CLI answered
+"Apprentice is not running". The lab toggle through
+`hex settings set labs.watch_and_learn on|off` was therefore not run. Answer
+the prompt (or launch from `/Applications`), then repeat the toggle and check
+the Skills pane and menu item appear and vanish with the switch.
+
+Open question: why startup reads the Desktop folder at all (it blocks the
+first frame until the prompt is answered).
+
+### Not verified
+
+- Recording a real lesson.
+- Drafting a skill with a real model (nothing downloaded, Ollama not contacted).
+- Installing a skill into a real agent and reading the installed `SKILL.md`.
+- The model-default trial (`gemma4:26b` against `qwen3.8:27b`), so `RECOMMENDED`
+  is unchanged.
+- The Skills pane and menu item appearing with the switch, in a running app.
