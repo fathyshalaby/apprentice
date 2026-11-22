@@ -648,6 +648,7 @@ mod tests {
                 target: crate::capture_host::TargetKind::Display,
                 worked: false,
                 clip: false,
+                lesson: false,
             }),
             finishing: Vec::new(),
             last: None,

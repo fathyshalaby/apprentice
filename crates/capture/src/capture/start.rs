@@ -18,6 +18,9 @@ pub struct Start {
     pub movie: MovieQuality,
     /// Where a screen-cast portal keeps the screen's restore token; `None` keeps none.
     pub portal_token: PortalToken,
+    /// Whether to record Accessibility names under clicks for this capture
+    /// alone; `None` follows the engine's `agentContext` setting.
+    pub agent_context: Option<bool>,
 }
 
 impl Default for Start {
@@ -31,11 +34,19 @@ impl Default for Start {
             note: None,
             movie: MovieQuality::Compact,
             portal_token: PortalToken::None,
+            agent_context: None,
         }
     }
 }
 
 impl Start {
+    /// Whether this capture records Accessibility names under clicks: its
+    /// own [`Self::agent_context`], else the engine's `agentContext`.
+    pub fn records_agent_context(&self, engine: &crate::handoff::EngineConfig) -> bool {
+        self.agent_context
+            .unwrap_or_else(|| engine.experiment(crate::handoff::AGENT_CONTEXT))
+    }
+
     pub fn screen(target: TargetInfo) -> Self {
         Self {
             window_log: target.mode == CaptureMode::Display,
@@ -60,5 +71,32 @@ impl Start {
             window_log: false,
             ..Self::default()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::handoff::{AGENT_CONTEXT, EngineConfig};
+
+    #[test]
+    fn an_explicit_agent_context_overrides_the_engine_setting() {
+        let mut off = EngineConfig::default();
+        off.experiments.insert(AGENT_CONTEXT.into(), false);
+        let mut on = EngineConfig::default();
+        on.experiments.insert(AGENT_CONTEXT.into(), true);
+        let follows = Start::default();
+        assert!(!follows.records_agent_context(&off));
+        assert!(follows.records_agent_context(&on));
+        let names = Start {
+            agent_context: Some(true),
+            ..Start::default()
+        };
+        assert!(names.records_agent_context(&off));
+        let none = Start {
+            agent_context: Some(false),
+            ..Start::default()
+        };
+        assert!(!none.records_agent_context(&on));
     }
 }

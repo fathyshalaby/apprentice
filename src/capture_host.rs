@@ -67,6 +67,7 @@ use scrawl_capture::model::WordTiming;
 use scrawl_capture::transcribe::Transcriber;
 
 pub(crate) mod annotate_read;
+mod lesson;
 // `hex annotate`'s folder commands; Windows has no control transport for
 // them yet.
 #[cfg_attr(target_os = "windows", allow(dead_code))]
@@ -93,6 +94,9 @@ use own_windows::OwnWindowIds;
 use own_windows::{OWN_WINDOWS, own_windows_of};
 pub use own_windows::{OwnWindow, exclude_window, own_windows_recorded, record_own_windows};
 
+// Read by Watch and learn's lesson list and hook (macOS).
+#[allow(unused_imports)]
+pub use lesson::{LESSON_MARK, Purpose, on_lesson_written};
 pub use library::{
     explain as explain_capture, list as list_captures, send as send_capture, show as show_capture,
 };
@@ -292,6 +296,12 @@ pub enum CaptureCommand {
     /// than the clipboard and the router.
     #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     Clip(CaptureTarget),
+    /// Labs › Watch and learn's lesson of `target` (the whole screen): names
+    /// under clicks on, never copied or routed, marked and handed to
+    /// [`on_lesson_written`] once written. Refused while the lab is off.
+    /// Sent by the Skills pane and the menu bar (macOS).
+    #[allow(dead_code)]
+    Lesson(CaptureTarget),
     /// Looks for a cabled iPhone off the listener's thread;
     /// [`CaptureSnapshot::phone`] follows. Each start also looks.
     FindPhone,
@@ -462,6 +472,7 @@ fn start_request(
     bundle: PathBuf,
     target: Target,
     movie: MovieQuality,
+    purpose: Purpose,
 ) -> Start {
     // Only a screen goes through the portal's remembered output; a window is
     // picked each time and an iPhone never asks.
@@ -484,6 +495,7 @@ fn start_request(
         note: None,
         movie,
         portal_token,
+        agent_context: purpose.agent_context(),
     }
 }
 
@@ -943,8 +955,7 @@ struct Active {
     collector: JoinHandle<()>,
     /// "While dictating", held until the capture stops.
     quiet: Option<Quiet>,
-    /// A Screenshots recording ([`CaptureCommand::Clip`]).
-    clip: bool,
+    purpose: Purpose,
     /// Where its microphone audio comes from.
     microphone: microphone::Microphone,
 }
@@ -993,6 +1004,8 @@ pub struct RecordingCapture {
     /// A Screenshots recording: once stopped, the screenshot card shows it
     /// and the capsule folds.
     pub clip: bool,
+    /// A lesson: the capsule keeps its stop button.
+    pub lesson: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -1165,8 +1178,7 @@ struct Unfinished {
     /// Dropped for another target: views never see it again, and it
     /// settles no outcome.
     discarded: bool,
-    /// A Screenshots recording ([`CaptureCommand::Clip`]).
-    clip: bool,
+    purpose: Purpose,
 }
 
 impl Default for Outcomes {
@@ -1202,10 +1214,16 @@ impl Outcomes {
 
     #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     fn started(&mut self, bundle: PathBuf, since: CaptureInstant, target: TargetKind) {
-        self.start(bundle, since, target, false);
+        self.start(bundle, since, target, Purpose::Capture);
     }
 
-    fn start(&mut self, bundle: PathBuf, since: CaptureInstant, target: TargetKind, clip: bool) {
+    fn start(
+        &mut self,
+        bundle: PathBuf,
+        since: CaptureInstant,
+        target: TargetKind,
+        purpose: Purpose,
+    ) {
         self.unfinished.push(Unfinished {
             bundle,
             since,
@@ -1214,16 +1232,21 @@ impl Outcomes {
             target,
             worked: false,
             discarded: false,
-            clip,
+            purpose,
         });
         self.publish();
     }
 
-    /// Whether `bundle` is a Screenshots recording still unsettled.
-    fn is_clip(&self, bundle: &Path) -> bool {
-        self.unfinished
+    /// What unsettled `bundle` is for, and when it started.
+    fn purpose(&self, bundle: &Path) -> (Purpose, Option<CaptureInstant>) {
+        let found = self
+            .unfinished
             .iter()
-            .any(|unfinished| unfinished.bundle == bundle && unfinished.clip)
+            .find(|unfinished| unfinished.bundle == bundle);
+        (
+            found.map_or(Purpose::Capture, |unfinished| unfinished.purpose),
+            found.map(|unfinished| unfinished.since),
+        )
     }
 
     fn stopped(&mut self, bundle: &Path, end: End) {
@@ -1361,7 +1384,8 @@ impl Outcomes {
                         screen: unfinished.screen,
                         target: unfinished.target,
                         worked: unfinished.worked,
-                        clip: unfinished.clip,
+                        clip: unfinished.purpose.folds_capsule(),
+                        lesson: unfinished.purpose == Purpose::Lesson,
                     });
                 }
                 Some((stage, cancelling)) => snapshot.finishing.push(FinishingCapture {
@@ -1718,7 +1742,7 @@ impl CaptureHost {
         self.reap(now, audio);
         let result = match action {
             ScrawlCaptureAction::Start => {
-                self.begin(now, audio, CaptureTarget::Pointer, None, false)
+                self.begin(now, audio, CaptureTarget::Pointer, None, Purpose::Capture)
             }
             ScrawlCaptureAction::Stop => self.end(now, audio, End::Finish),
             ScrawlCaptureAction::Cancel => self.end(now, audio, End::Cancel),
@@ -1726,7 +1750,7 @@ impl CaptureHost {
                 self.end(now, audio, End::Finish)
             }
             ScrawlCaptureAction::Toggle => {
-                self.begin(now, audio, CaptureTarget::Pointer, None, false)
+                self.begin(now, audio, CaptureTarget::Pointer, None, Purpose::Capture)
             }
             ScrawlCaptureAction::Status => Ok(self.report(false, None)),
             ScrawlCaptureAction::Replay => {
@@ -1754,8 +1778,9 @@ impl CaptureHost {
         let now = CaptureInstant::now();
         self.reap(now, audio);
         let result = match command {
-            CaptureCommand::Start(target) => self.begin(now, audio, target, None, false),
-            CaptureCommand::Clip(target) => self.begin(now, audio, target, None, true),
+            CaptureCommand::Start(target) => self.begin(now, audio, target, None, Purpose::Capture),
+            CaptureCommand::Clip(target) => self.begin(now, audio, target, None, Purpose::Clip),
+            CaptureCommand::Lesson(target) => self.begin(now, audio, target, None, Purpose::Lesson),
             CaptureCommand::FindPhone => {
                 self.find_phone();
                 Ok(self.report(false, None))
@@ -1872,10 +1897,13 @@ impl CaptureHost {
         let discarded = self.active.as_ref().map(|active| active.bundle.clone());
         // Output stays muted or media paused from one capture to the next.
         let quiet = self.active.as_mut().and_then(|active| active.quiet.take());
-        let clip = self.active.as_ref().is_some_and(|active| active.clip);
+        let purpose = self
+            .active
+            .as_ref()
+            .map_or(Purpose::Capture, |active| active.purpose);
         let switched = self
             .end(now, audio, End::Discard)
-            .and_then(|_| self.begin(now, audio, target, quiet, clip));
+            .and_then(|_| self.begin(now, audio, target, quiet, purpose));
         let mut outcomes = lock(&self.outcomes);
         if let (Some(bundle), true) = (discarded, self.active.is_none()) {
             let error = match &switched {
@@ -1921,16 +1949,20 @@ impl CaptureHost {
     }
 
     /// Starts a capture, holding "While dictating" with `quiet` when a
-    /// switch carries the previous capture's session over; `clip` makes it
-    /// a Screenshots recording.
+    /// switch carries the previous capture's session over, for `purpose`.
     fn begin(
         &mut self,
         now: CaptureInstant,
         audio: &impl AudioTimeline,
         target: CaptureTarget,
         quiet: Option<Quiet>,
-        clip: bool,
+        purpose: Purpose,
     ) -> Result<ControlReply> {
+        if let Some(refused) = lesson::refusal(purpose) {
+            return Ok(refused);
+        }
+        // A lesson's microphone and movie are an Annotate capture's.
+        let clip = purpose == Purpose::Clip;
         if self.active.is_some() || self.replay.is_narrating() {
             return Ok(self.report(false, None));
         }
@@ -1989,7 +2021,7 @@ impl CaptureHost {
         };
         // Unfinished from here until its collector or the finisher settles
         // it, whatever stop or cancel does meanwhile.
-        lock(&self.outcomes).start(bundle.clone(), now, target.kind(), clip);
+        lock(&self.outcomes).start(bundle.clone(), now, target.kind(), purpose);
         self.input.recording(Some(&bundle));
         let (seal, sealed) = mpsc::sync_channel(1);
         let collector = {
@@ -2002,9 +2034,9 @@ impl CaptureHost {
                 .name("capture-audio".into())
                 .spawn(move || {
                     let movie = movie_for(clip, &crate::app_settings::screenshot_settings());
-                    let start = engine
-                        .target(target)
-                        .map(|target| start_request(now, recording.clone(), target, movie));
+                    let start = engine.target(target).map(|target| {
+                        start_request(now, recording.clone(), target, movie, purpose)
+                    });
                     collect(
                         &*engine, start, &recording, chunks, sealed, &jobs, &outcomes, &input,
                         silent,
@@ -2029,7 +2061,7 @@ impl CaptureHost {
             seal,
             collector,
             quiet,
-            clip,
+            purpose,
             microphone: microphone.unwrap_or(microphone::Microphone::Timeline),
         });
         self.find_phone();
@@ -3341,12 +3373,18 @@ fn finish_captures(
         let finished = capture.finish(audio);
         let look = look.recv().ok();
         restrict_bundle(&bundle);
-        let clip = lock(outcomes).is_clip(&bundle);
+        let (purpose, since) = lock(outcomes).purpose(&bundle);
         match finished {
-            Ok(written) if clip => {
+            // A Screenshots recording goes to its card; a lesson is marked
+            // before it settles and goes to its own hook.
+            Ok(written) if !purpose.handoff() => {
                 tracing::info!(bundle = %bundle.display(), words = written.words, "recording finished");
+                let hook = match purpose {
+                    Purpose::Lesson => lesson::written(&bundle, since),
+                    _ => CLIP_WRITTEN.get(),
+                };
                 lock(outcomes).settle(bundle.clone(), Stage::Done, Some(written));
-                if let Some(written) = CLIP_WRITTEN.get() {
+                if let Some(written) = hook {
                     written(bundle);
                 }
             }
@@ -3554,8 +3592,9 @@ fn collect(
         }
     };
     let mut timeline = Timeline::new(t0, bundle.join("audio.wav"));
-    // A Screenshots recording goes to its card, never the router.
-    let routed = !lock(outcomes).is_clip(&bundle);
+    // A Screenshots recording goes to its card and a lesson to its own
+    // hook, never the router.
+    let routed = lock(outcomes).purpose(&bundle).0.handoff();
     let prepared = routed
         .then(|| capture.route_context().and_then(routing::look))
         .flatten();
@@ -3995,8 +4034,10 @@ mod tests {
             PathBuf::new(),
             Target::ActiveDisplay,
             MovieQuality::Compact,
+            Purpose::Clip,
         );
         assert_eq!(start.movie, MovieQuality::Compact);
+        assert_eq!(start.agent_context, None);
     }
 
     #[test]
@@ -5271,6 +5312,104 @@ mod tests {
         fs::remove_dir_all(dir).ok();
     }
 
+    /// A host for lessons, with Labs › Watch and learn and Annotate as
+    /// `allowed` says on this test's thread.
+    fn lesson_host(name: &str, allowed: bool) -> (PathBuf, Arc<FakeEngine>, CaptureHost) {
+        lesson::allow_in_tests(Some(allowed));
+        let dir = temp_dir(name);
+        let engine = FakeEngine::new(Arc::new(FakeTranscriber));
+        let host = CaptureHost::with(engine.clone(), Some(dir.clone())).unwrap();
+        (dir, engine, host)
+    }
+
+    const WHOLE_SCREEN: CaptureTarget = CaptureTarget::Display { at: [10.0, 10.0] };
+
+    #[test]
+    fn a_lesson_starts_the_whole_screen_with_names_under_clicks() {
+        let audio = FakeTimeline::default();
+        let (dir, engine, mut host) = lesson_host("lesson-start", true);
+        let lesson = CaptureCommand::Lesson(WHOLE_SCREEN);
+        let bundle = report(host.command(lesson, &audio)).bundle.unwrap();
+        let recording = lock(&host.outcomes).snapshot().recording.unwrap();
+        // The capsule keeps its stop button: a lesson never folds it.
+        assert!(recording.lesson && !recording.clip);
+        assert_eq!(recording.target, TargetKind::Display);
+        report(host.control(ScrawlCaptureAction::Cancel, &audio));
+        wait_for_last(&mut host, &audio, &bundle, true);
+        let start = engine.starts.lock().unwrap()[0].clone();
+        assert_eq!(start.agent_context, Some(true));
+        assert!(matches!(start.target, Target::ActiveDisplay));
+        // Its movie and audio are an Annotate capture's.
+        assert_eq!(start.movie, MovieQuality::Compact);
+        assert_eq!(start.audio, AudioIn::External);
+        host.shutdown(&audio);
+        fs::remove_dir_all(dir).ok();
+    }
+
+    #[test]
+    fn an_ordinary_capture_keeps_names_off() {
+        let audio = FakeTimeline::default();
+        let (dir, engine, mut host) = lesson_host("lesson-ordinary", true);
+        let start = CaptureCommand::Start(CaptureTarget::Pointer);
+        let bundle = report(host.command(start, &audio)).bundle.unwrap();
+        assert!(!lock(&host.outcomes).snapshot().recording.unwrap().lesson);
+        report(host.control(ScrawlCaptureAction::Cancel, &audio));
+        wait_for_last(&mut host, &audio, &bundle, true);
+        assert_eq!(engine.starts.lock().unwrap()[0].agent_context, None);
+        host.shutdown(&audio);
+        fs::remove_dir_all(dir).ok();
+    }
+
+    static LESSONS_WRITTEN: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
+
+    #[test]
+    fn a_written_lesson_is_marked_and_never_copied_or_routed() {
+        on_lesson_written(|bundle| LESSONS_WRITTEN.lock().unwrap().push(bundle));
+        let audio = FakeTimeline::default();
+        let (dir, _engine, mut host) = lesson_host("lesson-written", true);
+        let before = crate::history::now_ms();
+        let lesson = CaptureCommand::Lesson(WHOLE_SCREEN);
+        let bundle = report(host.command(lesson, &audio)).bundle.unwrap();
+        let t0 = host.active.as_ref().unwrap().t0;
+        audio.feed(8_000, t0 + Duration::from_millis(500));
+        report(host.control(ScrawlCaptureAction::Stop, &audio));
+        let last = wait_for_last(&mut host, &audio, &bundle, true);
+        assert_eq!(last.stage, "done");
+        wait_for(|| LESSONS_WRITTEN.lock().unwrap().contains(&bundle));
+
+        let mark = bundle.join(LESSON_MARK);
+        #[cfg(unix)]
+        assert_eq!(mode(&mark), 0o600);
+        let sidecar: serde_json::Value = serde_json::from_slice(&fs::read(&mark).unwrap()).unwrap();
+        assert_eq!(sidecar["version"], 1);
+        let started = sidecar["startedAtMs"].as_u64().unwrap();
+        assert!(started + 1_000 >= before && started <= crate::history::now_ms());
+        // Never Paste Last's, the clipboard's, or the router's.
+        #[cfg(target_os = "macos")]
+        assert!(!bundle.join(".hex-annotate-v1").exists());
+        let settled = lock(&host.outcomes).snapshot().last.unwrap();
+        assert_eq!((settled.route, settled.copy_error), (None, None));
+        let written = LESSONS_WRITTEN.lock().unwrap();
+        assert_eq!(written.iter().filter(|seen| **seen == bundle).count(), 1);
+        drop(written);
+        host.shutdown(&audio);
+        fs::remove_dir_all(dir).ok();
+    }
+
+    #[test]
+    fn a_lesson_refuses_to_start_with_the_lab_off() {
+        let audio = FakeTimeline::default();
+        let (dir, engine, mut host) = lesson_host("lesson-off", false);
+        let reply = host.command(CaptureCommand::Lesson(WHOLE_SCREEN), &audio);
+        assert!(matches!(reply, ControlReply::Error { ref code, .. } if code == "feature-off"));
+        assert!(host.active.is_none());
+        assert!(lock(&host.outcomes).snapshot().recording.is_none());
+        host.shutdown(&audio);
+        assert!(engine.starts.lock().unwrap().is_empty());
+        assert!(fs::read_dir(&dir).map_or(true, |mut entries| entries.next().is_none()));
+        fs::remove_dir_all(dir).ok();
+    }
+
     fn wait_until_idle_but_one(host: &CaptureHost) {
         for _ in 0..1_000 {
             if lock(&host.outcomes).unfinished.len() == 1 {
@@ -5754,6 +5893,7 @@ mod tests {
                 target: TargetKind::Pointer,
                 worked: false,
                 clip: false,
+                lesson: false,
             })
         );
         outcomes.progress(&one, Stage::Recording);

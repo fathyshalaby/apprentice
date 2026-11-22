@@ -179,6 +179,7 @@ mod tests {
                 target: TargetKind::Area,
                 worked: false,
                 clip,
+                lesson: false,
             }),
             ..CaptureSnapshot::default()
         }

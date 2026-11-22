@@ -2560,7 +2560,7 @@ impl Engine {
         existing_preview: Option<crate::phone::PhoneSession>,
     ) -> Result<Capture> {
         let engine_cfg = self.config.engine_config()?;
-        let agent_context = engine_cfg.experiment(crate::handoff::AGENT_CONTEXT);
+        let agent_context = req.records_agent_context(&engine_cfg);
         let dir = match req.bundle_dir {
             Some(dir) => {
                 std::fs::create_dir_all(&dir)
