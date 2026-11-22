@@ -1,6 +1,7 @@
 //! The Skills pane's scenes: nothing yet, a new lesson, a draft with why?
-//! questions, the model picker, and saved skills with their agents. A
-//! scene's pane records what it would do and never reads or writes.
+//! questions, the model picker, saved skills with their agents, and Labs ›
+//! Notice patterns' Noticing section. A scene's pane records what it would
+//! do and never reads or writes.
 
 use std::path::PathBuf;
 
@@ -10,6 +11,8 @@ use crate::apple_intelligence::Availability;
 use crate::apprentice::evidence::Thin;
 use crate::apprentice::install::Installed;
 use crate::apprentice::lessons::{Lesson, Media};
+use crate::apprentice::notice::state::{Known, RoutineState};
+use crate::apprentice::notice::watch::{FolderHealth, NoticeStatus};
 use crate::apprentice::ollama;
 use crate::apprentice::skill::{Autonomy, Skill, Step};
 use crate::apprentice::store::Draft;
@@ -21,6 +24,40 @@ pub(in crate::rune_ui) enum Fixture {
     Draft,
     Models,
     Skills,
+    /// Notice patterns on, nothing watched yet.
+    NoticingEmpty,
+    /// Two watched folders, one Apprentice can't read, and a routine.
+    Noticing,
+}
+
+/// A folder under the home folder, so it reads from `~`.
+fn home(relative: &str) -> PathBuf {
+    crate::app_paths::home_dir()
+        .unwrap_or_else(|| PathBuf::from("/Users/alex"))
+        .join(relative)
+}
+
+/// What the Noticing scene noticed.
+fn noticed() -> NoticeStatus {
+    let downloads = home("Downloads");
+    NoticeStatus {
+        folders: vec![
+            (downloads.clone(), FolderHealth::Ok),
+            (home("Documents/Scans"), FolderHealth::Unreadable),
+        ],
+        routines: vec![Known {
+            id: "5f2a9c".into(),
+            root: downloads,
+            steps: Vec::new(),
+            description: "Moves PDFs from Downloads into folders like Invoices 2026-11, then \
+                renames them like 2026-11 Invoice.pdf"
+                .into(),
+            days: 3,
+            last_seen_ms: crate::history::now_ms(),
+            trigger: Some("pdf".into()),
+            state: RoutineState::New,
+        }],
+    }
 }
 
 fn step(title: &str, detail: &str, question: Option<&str>, why: Option<&str>) -> Step {
@@ -105,6 +142,13 @@ impl SkillsPane {
         };
         match kind {
             Fixture::Empty => {}
+            Fixture::NoticingEmpty => {
+                pane.noticing.status = Some(NoticeStatus {
+                    folders: Vec::new(),
+                    routines: Vec::new(),
+                });
+            }
+            Fixture::Noticing => pane.noticing.status = Some(noticed()),
             Fixture::Lesson => {
                 let lesson = lesson("lesson-1", 6);
                 pane.notes.insert(

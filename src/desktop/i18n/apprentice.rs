@@ -115,6 +115,16 @@ pub(super) const TRANSLATIONS: &[(&str, [&str; 6])] = &[
     ("You usually file these ({days} days). Show me how?", ["Zwykle je porządkujesz (dni: {days}). Pokażesz mi jak?", "你通常会整理这些文件（{days} 天）。给我演示一下？", "いつもこれを整理していますね（{days} 日）。やり方を見せてくれますか？", "Du legst diese meist ab ({days} Tage). Zeigst du mir, wie?", "Sueles archivar estos ({days} días). ¿Me enseñas cómo?", "Ви зазвичай розкладаєте їх ({days} дн.). Покажете як?"]),
     ("Show me", ["Pokaż", "演示", "見せる", "Zeigen", "Mostrar", "Показати"]),
     ("Stop asking", ["Nie pytaj więcej", "不再询问", "今後は聞かない", "Nicht mehr fragen", "No volver a preguntar", "Більше не питати"]),
+    ("Noticing", ["Zauważanie", "留意", "気づき", "Beobachten", "Observación", "Помічене"]),
+    ("Watched folders", ["Obserwowane foldery", "关注的文件夹", "見守るフォルダ", "Beobachtete Ordner", "Carpetas observadas", "Відстежувані папки"]),
+    ("Add folder…", ["Dodaj folder…", "添加文件夹…", "フォルダを追加…", "Ordner hinzufügen…", "Añadir carpeta…", "Додати папку…"]),
+    ("Folder to watch", ["Folder do obserwowania", "要关注的文件夹", "見守るフォルダを選択", "Zu beobachtender Ordner", "Carpeta que observar", "Папка для відстеження"]),
+    ("Couldn't choose a folder: {}", ["Nie udało się wybrać folderu: {}", "无法选择文件夹：{}", "フォルダを選択できませんでした: {}", "Ordner konnte nicht ausgewählt werden: {}", "No se pudo elegir una carpeta: {}", "Не вдалося вибрати папку: {}"]),
+    ("Can't read this folder", ["Nie można odczytać tego folderu", "无法读取此文件夹", "このフォルダを読み取れません", "Dieser Ordner kann nicht gelesen werden", "No se puede leer esta carpeta", "Не вдається прочитати цю папку"]),
+    ("Routines", ["Rutyny", "例行操作", "いつもの作業", "Routinen", "Rutinas", "Рутини"]),
+    ("({days} days)", ["(dni: {days})", "（{days} 天）", "（{days} 日）", "({days} Tage)", "({days} días)", "({days} дн.)"]),
+    ("Forget everything", ["Zapomnij wszystko", "全部忘记", "すべて忘れる", "Alles vergessen", "Olvidar todo", "Забути все"]),
+    ("Apprentice keeps file kinds, folder names and times for 14 days, on this Mac.", ["Apprentice przechowuje rodzaje plików, nazwy folderów i godziny przez 14 dni, na tym Macu.", "Apprentice 会在这台 Mac 上保留文件类型、文件夹名称和时间，为期 14 天。", "Apprentice はファイルの種類、フォルダ名、時刻をこの Mac に 14 日間保存します。", "Apprentice speichert Dateiarten, Ordnernamen und Zeiten 14 Tage lang auf diesem Mac.", "Apprentice guarda tipos de archivo, nombres de carpetas y horas durante 14 días, en este Mac.", "Apprentice зберігає типи файлів, назви папок і час протягом 14 днів на цьому Mac."]),
 ];
 
 /// Brazilian Portuguese, for the card and the pane.
@@ -233,6 +243,16 @@ pub(super) const PORTUGUESE: &[(&str, &str)] = &[
     ("You usually file these ({days} days). Show me how?", "Você costuma arquivar estes ({days} dias). Me mostra como?"),
     ("Show me", "Mostrar"),
     ("Stop asking", "Não perguntar mais"),
+    ("Noticing", "Observação"),
+    ("Watched folders", "Pastas observadas"),
+    ("Add folder…", "Adicionar pasta…"),
+    ("Folder to watch", "Pasta para observar"),
+    ("Couldn't choose a folder: {}", "Não foi possível escolher uma pasta: {}"),
+    ("Can't read this folder", "Não é possível ler esta pasta"),
+    ("Routines", "Rotinas"),
+    ("({days} days)", "({days} dias)"),
+    ("Forget everything", "Esquecer tudo"),
+    ("Apprentice keeps file kinds, folder names and times for 14 days, on this Mac.", "O Apprentice guarda tipos de arquivo, nomes de pastas e horários por 14 dias, neste Mac."),
 ];
 
 /// French, for the card and the pane.
@@ -351,6 +371,16 @@ pub(super) const FRENCH: &[(&str, &str)] = &[
     ("You usually file these ({days} days). Show me how?", "Vous les rangez d'habitude ({days} jours). Vous me montrez ?"),
     ("Show me", "Montrer"),
     ("Stop asking", "Ne plus demander"),
+    ("Noticing", "Observation"),
+    ("Watched folders", "Dossiers observés"),
+    ("Add folder…", "Ajouter un dossier…"),
+    ("Folder to watch", "Dossier à observer"),
+    ("Couldn't choose a folder: {}", "Impossible de choisir un dossier : {}"),
+    ("Can't read this folder", "Impossible de lire ce dossier"),
+    ("Routines", "Routines"),
+    ("({days} days)", "({days} jours)"),
+    ("Forget everything", "Tout oublier"),
+    ("Apprentice keeps file kinds, folder names and times for 14 days, on this Mac.", "Apprentice conserve les types de fichiers, les noms de dossiers et les heures pendant 14 jours, sur ce Mac."),
 ];
 
 /// Russian, for the card and the pane.
@@ -469,4 +499,14 @@ pub(super) const RUSSIAN: &[(&str, &str)] = &[
     ("You usually file these ({days} days). Show me how?", "Вы обычно раскладываете их ({days} дн.). Покажете как?"),
     ("Show me", "Показать"),
     ("Stop asking", "Больше не спрашивать"),
+    ("Noticing", "Замеченное"),
+    ("Watched folders", "Отслеживаемые папки"),
+    ("Add folder…", "Добавить папку…"),
+    ("Folder to watch", "Папка для отслеживания"),
+    ("Couldn't choose a folder: {}", "Не удалось выбрать папку: {}"),
+    ("Can't read this folder", "Не удаётся прочитать эту папку"),
+    ("Routines", "Рутины"),
+    ("({days} days)", "({days} дн.)"),
+    ("Forget everything", "Забыть всё"),
+    ("Apprentice keeps file kinds, folder names and times for 14 days, on this Mac.", "Apprentice хранит типы файлов, названия папок и время 14 дней на этом Mac."),
 ];

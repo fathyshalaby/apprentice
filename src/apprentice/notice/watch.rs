@@ -53,8 +53,6 @@ pub enum FolderHealth {
     Unreadable,
 }
 
-// Its callers, the offer capsule and the Skills pane, come later.
-#[cfg_attr(not(test), allow(dead_code))]
 #[derive(Clone, Debug, PartialEq)]
 pub struct NoticeStatus {
     /// Every watched folder in settings, in order.
@@ -80,8 +78,6 @@ pub fn note_changed() {
 }
 
 /// Moves each time routines or folder health change.
-// Its reader, the Skills pane, comes later.
-#[allow(dead_code)]
 pub fn changed_generation() -> u64 {
     CHANGED.load(Ordering::Acquire)
 }
@@ -137,8 +133,6 @@ pub fn ignore(id: &str) {
 }
 
 /// Empties the event log and the routine state.
-// Its callers, the offer capsule and the Skills pane, come later.
-#[allow(dead_code)]
 pub fn forget_everything() {
     if let Some(dir) = log::noticed_dir() {
         forget_everything_in(&dir);
@@ -146,8 +140,6 @@ pub fn forget_everything() {
 }
 
 /// The watched folders with their health, and the routines listed for them.
-// Its callers, the offer capsule and the Skills pane, come later.
-#[allow(dead_code)]
 pub fn status() -> NoticeStatus {
     let saved = settings_folders()
         .or_else(|| lock(&LAST_GOOD).clone())

@@ -1390,6 +1390,7 @@ fn poll(ui: &mut Ui, clock: f64, tx: &mut Tx) -> bool {
         changed |= history::unified::poll(ui);
         let visible = ui.pane == Pane::Skills && !ui.labs_open;
         changed |= ui.skills.poll(visible, &ui.settings.apprentice);
+        changed |= skills::noticing::poll(ui, visible);
     }
     if ui.pane == Pane::Output && !ui.labs_open {
         changed |= output::poll(ui, clock, tx);

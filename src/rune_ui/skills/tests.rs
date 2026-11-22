@@ -653,3 +653,182 @@ fn without_its_folder_nothing_changes_on_screen_only() {
     assert_eq!(rt.state.skills.skills.len(), before, "nothing deleted");
     assert_eq!(rt.state.skills.error.as_deref(), Some(NO_FOLDER));
 }
+
+// ---------------------------------------------------------------------------
+// Labs › Notice patterns' Noticing section.
+
+use super::noticing::{self, Asked};
+
+/// Every node of the accessibility tree as (role, name).
+fn named(tree: &serde_json::Value, out: &mut Vec<(String, String)>) {
+    let role = tree["role"].as_str().unwrap_or_default().to_owned();
+    let name = tree["name"].as_str().unwrap_or_default().trim().to_owned();
+    out.push((role, name));
+    for child in tree["children"].as_array().into_iter().flatten() {
+        named(child, out);
+    }
+}
+
+fn button_named(rt: &Runtime<Ui>, label: &str) -> bool {
+    let mut nodes = Vec::new();
+    named(&rt.accessibility_json(), &mut nodes);
+    nodes
+        .iter()
+        .any(|(role, name)| role == "button" && name == label)
+}
+
+fn home(relative: &str) -> PathBuf {
+    crate::app_paths::home_dir()
+        .expect("a home folder")
+        .join(relative)
+}
+
+#[test]
+fn noticing_is_hidden_while_the_lab_is_off() {
+    let rt = runtime("mac-skills-empty");
+    assert!(rt.find("noticing").is_none(), "off by default");
+
+    let mut rt = runtime("mac-skills-noticing");
+    assert!(rt.find("noticing").is_some());
+    rt.state.settings.labs.notice_patterns = false;
+    refresh(&mut rt);
+    assert!(rt.find("noticing").is_none());
+    assert!(rt.find("add-folder").is_none());
+    // Watch and learn off closes it too: its Show me starts a lesson.
+    rt.state.settings.labs.notice_patterns = true;
+    rt.state.settings.labs.watch_and_learn = false;
+    assert!(
+        super::noticing::section(&rt.state, crate::rune_ui::controls::Paint::new(false, 2.0))
+            .is_none()
+    );
+}
+
+#[test]
+fn noticing_lists_folders_and_routines() {
+    let rt = runtime("mac-skills-noticing");
+    let shown = texts(&rt);
+    for copy in [
+        "Noticing",
+        "Watched folders",
+        "~/Downloads",
+        "~/Documents/Scans",
+        "Can't read this folder",
+        "Routines",
+        "Moves PDFs from Downloads into folders like Invoices 2026-11, then renames them like 2026-11 Invoice.pdf (3 days)",
+        "Apprentice keeps file kinds, folder names and times for 14 days, on this Mac.",
+    ] {
+        assert!(shown.iter().any(|t| t == copy), "no {copy:?} in {shown:?}");
+    }
+    // Only the folder Apprentice can't read says so and links to Settings.
+    assert!(rt.find("open-settings-1").is_some());
+    assert!(rt.find("open-settings-0").is_none());
+    for label in [
+        "Add folder…",
+        "Remove",
+        "Open Settings",
+        "Show me",
+        "Forget",
+        "Forget everything",
+    ] {
+        assert!(button_named(&rt, label), "no button named {label:?}");
+    }
+    let mut nodes = Vec::new();
+    named(&rt.accessibility_json(), &mut nodes);
+    assert!(
+        nodes.iter().any(|(_, name)| name == "~/Downloads"),
+        "the folder's row is named by its path: {nodes:?}"
+    );
+
+    let empty = runtime("mac-skills-noticing-empty");
+    assert!(empty.find("add-folder").is_some());
+    assert!(empty.find("routines").is_none(), "no routines, no list");
+    assert!(empty.find("skills-empty").is_some());
+    // Listed routines are something to do: the empty state gives way.
+    assert!(rt.find("skills-empty").is_none());
+}
+
+#[test]
+fn forget_everything_asks_twice() {
+    let mut rt = runtime("mac-skills-noticing");
+    tap(&mut rt, "forget-everything");
+    assert!(recorded(&rt).noticing.is_empty(), "only asks");
+    assert!(rt.find("confirm-forget-everything").is_some());
+    tap(&mut rt, "cancel-forget-everything");
+    assert!(recorded(&rt).noticing.is_empty());
+    assert!(rt.find("confirm-forget-everything").is_none());
+
+    // A double click lands on Cancel.
+    double_click(&mut rt, "forget-everything");
+    assert!(recorded(&rt).noticing.is_empty());
+
+    tap(&mut rt, "forget-everything");
+    tap(&mut rt, "confirm-forget-everything");
+    assert_eq!(recorded(&rt).noticing, [Asked::ForgetEverything]);
+    assert!(rt.find("routines").is_none(), "nothing listed any more");
+    assert!(
+        rt.state.settings.apprentice.watched_folders.len() == 2,
+        "the folders stay watched"
+    );
+}
+
+#[test]
+fn show_me_and_forget_answer_their_routine() {
+    let mut rt = runtime("mac-skills-noticing");
+    let id = rt.state.skills.noticing.status.as_ref().unwrap().routines[0]
+        .id
+        .clone();
+    tap(&mut rt, "show-me");
+    assert_eq!(recorded(&rt).noticing, [Asked::ShowMe(id.clone())]);
+    // With no model chosen, Show me still starts the lesson.
+    rt.state.settings.apprentice.model = None;
+    refresh(&mut rt);
+    tap(&mut rt, "show-me");
+    assert_eq!(recorded(&rt).noticing.len(), 2);
+    tap(&mut rt, "forget");
+    assert_eq!(recorded(&rt).noticing[2], Asked::Forget(id));
+    assert!(rt.find("routines").is_none(), "a forgotten routine leaves");
+}
+
+#[test]
+fn adding_a_folder_saves_the_setting() {
+    let mut rt = runtime("mac-skills-noticing-empty");
+    assert!(rt.state.settings.apprentice.watched_folders.is_empty());
+    tap(&mut rt, "add-folder");
+    assert_eq!(recorded(&rt).noticing, [Asked::ChooseFolder]);
+    let saved = rt.state.saved;
+
+    // The dialog's answer: cancelled changes nothing.
+    noticing::chosen(&mut rt.state, Ok(None));
+    assert!(rt.state.settings.apprentice.watched_folders.is_empty());
+    assert_eq!(rt.state.saved, saved);
+
+    let folder = home("Downloads");
+    noticing::chosen(&mut rt.state, Ok(Some(folder.clone())));
+    refresh(&mut rt);
+    assert_eq!(
+        rt.state.settings.apprentice.watched_folders,
+        std::slice::from_ref(&folder)
+    );
+    assert_eq!(rt.state.saved, saved + 1, "saved through the settings");
+    assert!(texts(&rt).iter().any(|t| t == "~/Downloads"));
+
+    // The same folder again is not watched twice.
+    noticing::chosen(&mut rt.state, Ok(Some(folder.clone())));
+    assert_eq!(rt.state.settings.apprentice.watched_folders, [folder]);
+    assert_eq!(rt.state.saved, saved + 1);
+}
+
+#[test]
+fn removing_a_folder_saves_the_setting() {
+    let mut rt = runtime("mac-skills-noticing");
+    let saved = rt.state.saved;
+    tap(&mut rt, "remove-folder-0");
+    assert_eq!(
+        rt.state.settings.apprentice.watched_folders,
+        [home("Documents/Scans")]
+    );
+    assert_eq!(rt.state.saved, saved + 1);
+    assert!(!texts(&rt).iter().any(|t| t == "~/Downloads"));
+    // Its routine goes with it.
+    assert!(rt.find("routines").is_none());
+}

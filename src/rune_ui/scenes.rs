@@ -151,6 +151,16 @@ pub(super) const SCENES: &[Scene] = &[
     ("mac-skills-list", |ui| {
         skills_scene(ui, skills::Fixture::Skills)
     }),
+    // Labs › Notice patterns' Noticing section: nothing watched yet, then
+    // two folders (one Apprentice can't read) and a routine.
+    #[cfg(all(target_os = "macos", hex_capture))]
+    ("mac-skills-noticing-empty", |ui| {
+        noticing_scene(ui, skills::Fixture::NoticingEmpty)
+    }),
+    #[cfg(all(target_os = "macos", hex_capture))]
+    ("mac-skills-noticing", |ui| {
+        noticing_scene(ui, skills::Fixture::Noticing)
+    }),
     // Labs › Paste Last picker (macOS): dictations, annotations, screenshots
     // and recordings in one History, with its type filter, its search, and
     // its empty states. The unified pane has no golden: it exists only in
@@ -1008,6 +1018,21 @@ fn skills_scene(ui: &mut Ui, kind: skills::Fixture) {
     }
     ui.skills = skills::SkillsPane::fixture(kind);
     ui.pane = Pane::Skills;
+}
+
+/// The Skills pane with Notice patterns on, watching the fixture's folders.
+#[cfg(all(target_os = "macos", hex_capture))]
+fn noticing_scene(ui: &mut Ui, kind: skills::Fixture) {
+    skills_scene(ui, kind);
+    ui.settings.labs.notice_patterns = true;
+    ui.settings.apprentice.watched_folders = ui
+        .skills
+        .noticing
+        .status
+        .iter()
+        .flat_map(|status| &status.folders)
+        .map(|(folder, _)| folder.clone())
+        .collect();
 }
 
 pub(super) fn mac_fixture() -> Ui {

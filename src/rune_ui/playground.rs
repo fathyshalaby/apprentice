@@ -238,6 +238,13 @@ const PATHS: &[(&str, &str)] = &[
     ("mac-skills-models", "Window/Skills/Choosing a model"),
     #[cfg(all(target_os = "macos", hex_capture))]
     ("mac-skills-list", "Window/Skills/Skills and their agents"),
+    #[cfg(all(target_os = "macos", hex_capture))]
+    (
+        "mac-skills-noticing-empty",
+        "Window/Skills/Noticing, nothing watched",
+    ),
+    #[cfg(all(target_os = "macos", hex_capture))]
+    ("mac-skills-noticing", "Window/Skills/Noticing a routine"),
     #[cfg(hex_capture)]
     ("captures", "Window/Captures/Captures"),
     #[cfg(hex_capture)]

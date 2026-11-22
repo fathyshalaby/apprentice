@@ -13,6 +13,7 @@ mod draft_view;
 mod fixtures;
 mod lesson_cards;
 mod model_picker;
+pub(super) mod noticing;
 pub(crate) mod routine_offer;
 #[cfg(test)]
 mod tests;
@@ -54,6 +55,8 @@ pub(super) struct Recorded {
     pub(super) drafts: Vec<(String, crate::app_settings::ModelChoice)>,
     /// Each download started.
     pub(super) pulls: Vec<String>,
+    /// Each answer the Noticing section gave.
+    pub(super) noticing: Vec<noticing::Asked>,
 }
 
 /// A lesson's evidence as the pane needs it: what it is thin on, and the
@@ -139,6 +142,7 @@ pub(super) struct SkillsPane {
     pub(super) failed: Option<(String, Failure)>,
     pub(super) editor: Option<draft_view::Editor>,
     pub(super) picker: model_picker::Picker,
+    pub(super) noticing: noticing::Noticing,
     /// The skill whose agents show.
     pub(super) expanded: Option<String>,
     pub(super) armed: Option<Armed>,
@@ -607,6 +611,9 @@ pub(super) fn pane(ui: &Ui, p: Paint) -> (Vec<El>, El) {
         );
     }
     content = content.child(model_picker::section(ui, p));
+    if let Some(noticing) = noticing::section(ui, p) {
+        content = content.child(noticing);
+    }
     if let Some(lessons) = lesson_cards::section(ui, p, &primary) {
         content = content.child(lessons);
     }
@@ -618,7 +625,10 @@ pub(super) fn pane(ui: &Ui, p: Paint) -> (Vec<El>, El) {
     }
     if let Some(skills) = agents::section(ui, p) {
         content = content.child(skills);
-    } else if pane.new_lessons().next().is_none() && pane.drafts.is_empty() && pane.editor.is_none()
+    } else if pane.new_lessons().next().is_none()
+        && pane.drafts.is_empty()
+        && pane.editor.is_none()
+        && !noticing::lists_routines(ui)
     {
         content = content.child(
             super::list_detail::empty_state(
