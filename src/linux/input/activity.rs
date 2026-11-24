@@ -422,7 +422,11 @@ mod tests {
 
         sending(key);
         settle();
-        assert_eq!(revision(), Some(before), "Apprentice's own keys ended the join");
+        assert_eq!(
+            revision(),
+            Some(before),
+            "Apprentice's own keys ended the join"
+        );
 
         key();
         settle();

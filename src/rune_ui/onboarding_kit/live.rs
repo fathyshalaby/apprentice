@@ -894,7 +894,9 @@ pub(super) fn warming_copy() -> &'static str {
 pub(super) fn hint_copy(live: &Live) -> Option<&'static str> {
     Some(match live.practice {
         Practice::TooShort => tr("Keep holding the shortcut while you talk, then let go."),
-        Practice::NothingHeard => tr("Apprentice didn't hear any words. Try again a little louder."),
+        Practice::NothingHeard => {
+            tr("Apprentice didn't hear any words. Try again a little louder.")
+        }
         Practice::Failed => tr("That didn't work. Try again."),
         Practice::Transcribing => tr("Typing what you said…"),
         _ => return None,

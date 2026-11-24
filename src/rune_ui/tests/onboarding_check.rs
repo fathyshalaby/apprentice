@@ -141,7 +141,8 @@ fn onboarding_continue_without_model() {
         "Add model file…"
     );
     assert!(
-        texts(&rt).contains(&"Apprentice can't dictate until a speech model is installed".to_owned()),
+        texts(&rt)
+            .contains(&"Apprentice can't dictate until a speech model is installed".to_owned()),
         "the status says so too"
     );
 
@@ -326,7 +327,10 @@ fn onboarding_walkthrough() {
     let mut rt = runtime_for(ui, true, PANE_SIZE);
     let step = |rt: &Runtime<Ui>| rt.state.tour.as_ref().map(|tour| tour.flow.step());
     let shown = texts(&rt);
-    assert!(shown.contains(&"Setting up Apprentice".to_owned()), "{shown:?}");
+    assert!(
+        shown.contains(&"Setting up Apprentice".to_owned()),
+        "{shown:?}"
+    );
     assert!(
         !shown.contains(&"Choose a speech model".to_owned()),
         "nothing found, so no model step"
@@ -374,7 +378,10 @@ fn onboarding_walkthrough() {
     tap(&mut rt, "done");
     assert!(texts(&rt).contains(&"Apprentice is ready".to_owned()));
     tap(&mut rt, "start-using-hex");
-    assert!(rt.state.tour.is_none(), "Start using Apprentice closes onboarding");
+    assert!(
+        rt.state.tour.is_none(),
+        "Start using Apprentice closes onboarding"
+    );
     assert!(rt.state.first_run.is_none());
     println!(
         "onboarding walkthrough: Setting up Apprentice -> {} downloaded ({} bytes) -> Your turn -> Apprentice is ready",
@@ -451,7 +458,9 @@ fn a_shortcut_that_did_not_start_shows_only_reopen() {
         "one Reopen Apprentice"
     );
     assert!(
-        shown.iter().any(|t| t == "Apprentice's shortcut didn't start."),
+        shown
+            .iter()
+            .any(|t| t == "Apprentice's shortcut didn't start."),
         "{shown:?}"
     );
 }

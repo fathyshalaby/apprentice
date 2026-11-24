@@ -1994,7 +1994,9 @@ mod tests {
         let output = DictationOutput::from_settings(&AppSettings::default(), None);
         let mut last_dictation = Some("an older dictation".to_string());
         let mut paste = |_: &str, _: bool, _: bool| -> Result<()> {
-            Err(eyre!("clipboard changed while Apprentice was preserving it"))
+            Err(eyre!(
+                "clipboard changed while Apprentice was preserving it"
+            ))
         };
 
         let result = output.deliver(

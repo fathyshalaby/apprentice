@@ -215,7 +215,10 @@ mod tray {
                     .as_ref()
                     .map(|label| TrayItem::action("update", label.clone())),
             );
-            menu.push(TrayItem::action("toggle", tr("Enable / Disable Apprentice")));
+            menu.push(TrayItem::action(
+                "toggle",
+                tr("Enable / Disable Apprentice"),
+            ));
             menu.push(TrayItem::action("quit", tr("Quit Apprentice")));
             menu
         }

@@ -802,7 +802,8 @@ fn check(
                 .and_then(|console| platform::stage(&file, console.as_deref(), &version));
             #[cfg(not(target_os = "windows"))]
             let staged = platform::stage(&file, &version);
-            let staged = staged.wrap_err_with(|| format!("could not stage Apprentice {version}"))?;
+            let staged =
+                staged.wrap_err_with(|| format!("could not stage Apprentice {version}"))?;
             // A quit installs the staged update itself (`install_on_quit`) and
             // holds both locks, so take them in the same order and look again
             // under them: a release that lands after that must not replace the

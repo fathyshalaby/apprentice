@@ -1443,7 +1443,9 @@ impl Backend {
                         dispatcher.keys.released_all();
                         dispatcher.input(Input::Lost);
                         let _ = dispatcher.flush();
-                        return Err(eyre!("the desktop closed Apprentice's shortcuts portal session"));
+                        return Err(eyre!(
+                            "the desktop closed Apprentice's shortcuts portal session"
+                        ));
                     }
                 };
                 dispatcher.input(input);

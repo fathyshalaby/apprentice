@@ -719,7 +719,9 @@ fn explorer_selects_the_meeting_file_with_the_switch_outside_the_quotes() {
             r"C:\Users\dax\Documents\Apprentice Meetings\Design sync.md"
         ))
         .as_os_str(),
-        std::ffi::OsStr::new(r#"/select,"C:\Users\dax\Documents\Apprentice Meetings\Design sync.md""#)
+        std::ffi::OsStr::new(
+            r#"/select,"C:\Users\dax\Documents\Apprentice Meetings\Design sync.md""#
+        )
     );
     assert_eq!(
         explorer_select(Path::new(

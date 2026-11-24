@@ -862,8 +862,14 @@ fn settings_window(p: Paint, e: f64, reduced: bool) -> El {
         );
         if landed {
             list = list.child(
-                settings_app_row(p, "hex-landed", "Apprentice", hex_app_icon(p), e >= SWITCH_ON)
-                    .transition(Transition::opacity()),
+                settings_app_row(
+                    p,
+                    "hex-landed",
+                    "Apprentice",
+                    hex_app_icon(p),
+                    e >= SWITCH_ON,
+                )
+                .transition(Transition::opacity()),
             );
         } else {
             // Subtle drop-target highlight waiting to catch the dragged Hex row.

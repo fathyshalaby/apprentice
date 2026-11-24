@@ -269,7 +269,8 @@ fn ours(entry: &str) -> bool {
 /// The executable the entry starts: a managed install's `current/hex`,
 /// which outlives the version directory this process runs from.
 pub(crate) fn launcher() -> Result<PathBuf> {
-    let executable = std::env::current_exe().wrap_err("could not locate the Apprentice executable")?;
+    let executable =
+        std::env::current_exe().wrap_err("could not locate the Apprentice executable")?;
     // Linux names a running binary that was removed or replaced "… (deleted)".
     let executable = match executable
         .to_str()

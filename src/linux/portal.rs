@@ -268,7 +268,9 @@ impl PortalBus {
                         "Apprentice wrote {}; restart xdg-desktop-portal (systemctl --user restart xdg-desktop-portal) so it reads it",
                         entry.display()
                     ),
-                    None => "run Apprentice without setuid or setgid wrappers such as newgrp".into(),
+                    None => {
+                        "run Apprentice without setuid or setgid wrappers such as newgrp".into()
+                    }
                 };
                 return Err(eyre!(
                     "the desktop portal could not identify Apprentice ({error}); {fix}"
@@ -899,9 +901,15 @@ impl Portal {
                     "unregister",
                     &(component, action),
                 )
-                .wrap_err_with(|| format!("could not remove Apprentice's old KDE shortcut {action}"))?;
+                .wrap_err_with(|| {
+                    format!("could not remove Apprentice's old KDE shortcut {action}")
+                })?;
             if removed {
-                tracing::info!(component, action, "removed an old Apprentice shortcut from KDE");
+                tracing::info!(
+                    component,
+                    action,
+                    "removed an old Apprentice shortcut from KDE"
+                );
             }
         }
         // Shortcuts a bind left unapproved, which KDE keeps with no key: gone,
@@ -1108,7 +1116,9 @@ impl PortalProbe {
         {
             match self.running.take().map(std::thread::JoinHandle::join) {
                 Some(Ok(Ok(Some(portal)))) => {
-                    tracing::info!("the GlobalShortcuts portal appeared; binding Apprentice's shortcuts");
+                    tracing::info!(
+                        "the GlobalShortcuts portal appeared; binding Apprentice's shortcuts"
+                    );
                     return Ok(Some(portal));
                 }
                 Some(Ok(Err(error))) if !self.warned => {

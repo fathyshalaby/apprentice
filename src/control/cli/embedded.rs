@@ -47,8 +47,8 @@ fn lock() -> std::sync::MutexGuard<'static, Option<Owned>> {
 }
 
 fn start() -> Result<Endpoint, String> {
-    let executable =
-        std::env::current_exe().map_err(|error| format!("couldn't find Apprentice itself: {error}"))?;
+    let executable = std::env::current_exe()
+        .map_err(|error| format!("couldn't find Apprentice itself: {error}"))?;
     let mut command = crate::desktop::background_process::command(executable);
     command
         .args(["service", "--embedded"])

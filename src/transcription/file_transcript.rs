@@ -958,7 +958,9 @@ mod tests {
             PieceError::UnsupportedCodec("AC-3".into()),
         );
         assert!(
-            codec.to_string().contains("codec Apprentice cannot decode (AC-3)"),
+            codec
+                .to_string()
+                .contains("codec Apprentice cannot decode (AC-3)"),
             "{codec}"
         );
         assert!(

@@ -74,9 +74,15 @@ fn show() {
         return;
     }
     let attempts: [(&str, &[&str]); 3] = [
-        ("zenity", &["--error", "--title=Apprentice", "--text", MESSAGE]),
+        (
+            "zenity",
+            &["--error", "--title=Apprentice", "--text", MESSAGE],
+        ),
         ("kdialog", &["--title", "Apprentice", "--error", MESSAGE]),
-        ("notify-send", &["--urgency=critical", "Apprentice", MESSAGE]),
+        (
+            "notify-send",
+            &["--urgency=critical", "Apprentice", MESSAGE],
+        ),
     ];
     for (program, arguments) in attempts {
         let shown = Command::new(program)

@@ -1224,7 +1224,11 @@ mod tests {
         }
         for path in chosen {
             assert_eq!(add_in_place(&path, &AtomicBool::new(false)).unwrap(), id);
-            assert!(copy.is_file(), "{} deleted Apprentice's copy", path.display());
+            assert!(
+                copy.is_file(),
+                "{} deleted Apprentice's copy",
+                path.display()
+            );
             invalidate();
             assert_eq!(status(id), Status::Ready);
             let model = definition(id);
@@ -1253,7 +1257,10 @@ mod tests {
         std::os::unix::fs::symlink(&shared, &linked).unwrap();
         let chosen = linked.join("primeline.gguf");
         assert_eq!(add_in_place(&chosen, &AtomicBool::new(false)).unwrap(), id);
-        assert!(!copy.exists(), "the independent file replaces Apprentice's copy");
+        assert!(
+            !copy.exists(),
+            "the independent file replaces Apprentice's copy"
+        );
         assert!(original.is_file() && shared.join("primeline.gguf").is_file());
         invalidate();
         assert_eq!(status(id), Status::Ready);
@@ -1557,7 +1564,10 @@ mod tests {
             &[("a", 0, 4)],
         );
         let refused = reason(no_languages, TensorTypes::STANDARD);
-        assert!(refused.contains("no language Apprentice knows"), "{refused}");
+        assert!(
+            refused.contains("no language Apprentice knows"),
+            "{refused}"
+        );
     }
 
     /// A K-quant file: refused everywhere until Labs › Smaller model files

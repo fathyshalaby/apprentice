@@ -1064,7 +1064,10 @@ mod tests {
             all.contains("· 0:04 OpenCode window closed “The whole window closes.”"),
             "{all}"
         );
-        assert!(!all.contains("Secret") && !all.contains("Apprentice"), "{all}");
+        assert!(
+            !all.contains("Secret") && !all.contains("Apprentice"),
+            "{all}"
+        );
     }
 
     #[test]

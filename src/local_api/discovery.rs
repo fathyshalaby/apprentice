@@ -83,7 +83,8 @@ pub fn call_control(
         let code = error_code(status, &body);
         bail!(match code.as_str() {
             "control-unavailable" => {
-                "the running Apprentice doesn't accept control commands; update Apprentice".to_string()
+                "the running Apprentice doesn't accept control commands; update Apprentice"
+                    .to_string()
             }
             "control-busy" => "Apprentice is busy with other control commands; try again".into(),
             "control-timeout" => "Apprentice didn't answer in time; check `hex status`".into(),
@@ -113,8 +114,8 @@ pub(super) fn live_discovery() -> Result<DiscoveryDocument> {
             return Err(error).wrap_err_with(|| format!("could not read {}", path.display()));
         }
     };
-    let document: DiscoveryDocument =
-        serde_json::from_slice(&bytes).wrap_err("Apprentice's local API discovery file is invalid")?;
+    let document: DiscoveryDocument = serde_json::from_slice(&bytes)
+        .wrap_err("Apprentice's local API discovery file is invalid")?;
     if !valid_discovery(&document) || !discovery_is_live(&document) {
         bail!("Apprentice is not running");
     }
@@ -173,8 +174,8 @@ pub(crate) fn discover() -> Result<Discovered> {
             return Err(error).wrap_err_with(|| format!("couldn't read {}", path.display()));
         }
     };
-    let document: DiscoveryDocument =
-        serde_json::from_slice(&bytes).wrap_err("Apprentice's local API discovery file is invalid")?;
+    let document: DiscoveryDocument = serde_json::from_slice(&bytes)
+        .wrap_err("Apprentice's local API discovery file is invalid")?;
     classify(&document, discovery_is_live(&document))
 }
 

@@ -225,7 +225,10 @@ fn models_page(p: Paint, s: &Onboard, live: &Live) -> El {
             s,
             "models-head",
             tr("Choose a speech model"),
-            lead(p, tr("Apprentice found speech models already on this computer.")),
+            lead(
+                p,
+                tr("Apprentice found speech models already on this computer."),
+            ),
         ))
         .child(s.motion.staggered(list, 1.0, 8.0))
         .child(action(continue_model_button(p)))
@@ -454,7 +457,10 @@ fn download_page(p: Paint, s: &Onboard, waiting: bool) -> El {
             s,
             "waiting-head",
             tr("Almost ready"),
-            lead(p, tr("Finishing the speech model so Apprentice can hear you.")),
+            lead(
+                p,
+                tr("Finishing the speech model so Apprentice can hear you."),
+            ),
         )
     } else {
         let subtitle = row()

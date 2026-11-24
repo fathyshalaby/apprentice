@@ -214,7 +214,8 @@ fn an_unconfirmed_portal_shortcut_is_not_called_refused() {
     assert!(
         shown
             .iter()
-            .any(|text| text == "Your desktop assigns this key itself, so Apprentice can't confirm it")
+            .any(|text| text
+                == "Your desktop assigns this key itself, so Apprentice can't confirm it")
     );
     assert!(
         !shown
@@ -253,7 +254,11 @@ fn an_asked_update_check_says_how_it_went() {
             .any(|text| text == "Checking for updates…")
     );
     status(&mut rt, DesktopUpdateStatus::Current);
-    assert!(texts(&rt).iter().any(|text| text == "Apprentice is up to date"));
+    assert!(
+        texts(&rt)
+            .iter()
+            .any(|text| text == "Apprentice is up to date")
+    );
     status(&mut rt, DesktopUpdateStatus::Failed);
     assert!(
         texts(&rt)
@@ -3326,7 +3331,10 @@ fn onboarding_downloads_the_model_through_the_service() {
     // The practice can be left with Done; Start using Hex closes onboarding.
     tap(&mut rt, "done");
     tap(&mut rt, "start-using-hex");
-    assert!(rt.state.tour.is_none(), "Start using Apprentice closes setup");
+    assert!(
+        rt.state.tour.is_none(),
+        "Start using Apprentice closes setup"
+    );
     assert!(rt.state.first_run.is_none());
 }
 
@@ -3348,7 +3356,10 @@ fn a_found_model_moves_on_without_a_download_and_back_returns_to_it() {
         shown.contains(&"Choose a speech model".to_owned()),
         "{shown:?}"
     );
-    assert!(!shown.contains(&"Setting up Apprentice".to_owned()), "{shown:?}");
+    assert!(
+        !shown.contains(&"Setting up Apprentice".to_owned()),
+        "{shown:?}"
+    );
     assert!(
         shown.contains(&"Parakeet Unified English".to_owned()),
         "the rows stay"

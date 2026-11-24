@@ -21,7 +21,9 @@ impl MouseCapture {
         let mut ancestor = window;
         loop {
             if ancestor == root || ancestor <= 1 {
-                return Err(eyre!("Apprentice must be focused to record a mouse shortcut"));
+                return Err(eyre!(
+                    "Apprentice must be focused to record a mouse shortcut"
+                ));
             }
             let property = connection
                 .get_property(
@@ -35,7 +37,9 @@ impl MouseCapture {
                 .reply()?;
             if let Some(pid) = property.value32().and_then(|mut values| values.next()) {
                 if pid != std::process::id() {
-                    return Err(eyre!("Apprentice must be focused to record a mouse shortcut"));
+                    return Err(eyre!(
+                        "Apprentice must be focused to record a mouse shortcut"
+                    ));
                 }
                 break;
             }

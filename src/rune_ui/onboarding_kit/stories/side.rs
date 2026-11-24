@@ -332,5 +332,10 @@ fn scene_controls(p: Paint, s: &Onboard) -> El {
             },
         ));
     }
-    side_section(p, "scene-sec", "Without Apprentice timing (seconds)", vec![out])
+    side_section(
+        p,
+        "scene-sec",
+        "Without Apprentice timing (seconds)",
+        vec![out],
+    )
 }

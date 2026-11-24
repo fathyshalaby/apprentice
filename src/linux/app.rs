@@ -845,7 +845,10 @@ impl LinuxDesktopHost {
             crate::linux::gnome_shortcuts::remove()
         };
         match result {
-            Ok(()) => tracing::info!(written = wanted, "updated Apprentice's GNOME keyboard shortcuts"),
+            Ok(()) => tracing::info!(
+                written = wanted,
+                "updated Apprentice's GNOME keyboard shortcuts"
+            ),
             Err(error) => {
                 self.error = Some(format!(
                     "Could not update GNOME keyboard shortcuts: {error:#}"

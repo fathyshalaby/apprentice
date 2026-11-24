@@ -189,7 +189,10 @@ pub(crate) fn first_usable(entries: &[SystemEntry]) -> Option<String> {
             SystemEntry::Http(None) => {}
             SystemEntry::Other(kind) if kind == "kCFProxyTypeNone" => return None,
             SystemEntry::Other(kind) => {
-                tracing::info!(kind, "passing over a system proxy entry Apprentice can't use");
+                tracing::info!(
+                    kind,
+                    "passing over a system proxy entry Apprentice can't use"
+                );
             }
         }
     }

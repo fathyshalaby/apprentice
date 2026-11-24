@@ -1739,7 +1739,11 @@ mod tests {
                     recording: None,
                 })),
             },
-            &mut |_, _| Err(eyre!("clipboard changed while Apprentice was preserving it")),
+            &mut |_, _| {
+                Err(eyre!(
+                    "clipboard changed while Apprentice was preserving it"
+                ))
+            },
             &mut last_transcript,
             None,
         );

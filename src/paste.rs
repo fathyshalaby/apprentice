@@ -424,7 +424,9 @@ impl Paster {
                 return Err(eyre!("paste target changed"));
             }
             if self.clipboard.changeCount() != previous_change_count {
-                return Err(eyre!("clipboard changed while Apprentice was preserving it"));
+                return Err(eyre!(
+                    "clipboard changed while Apprentice was preserving it"
+                ));
             }
             // Standalone text starts its own sentence, once the clipboard is
             // safely preserved; a failure before this leaves the continuation
