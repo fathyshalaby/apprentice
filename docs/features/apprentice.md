@@ -61,14 +61,19 @@ Record a lesson                          // apprentice.lesson
 
 Read a lesson                            // apprentice.evidence
 ├── evidence::build(lesson, limits): time-ordered lines (said:, window: app —
-│   title, clicked role "label" in app), cut into segments at narration gaps
-│   and app changes, each under limits.max_segment_chars
-├── Secure-field and missing labels are left out; video and audio never
-│   leave the bundle
+│   title, clicked role "label" in app, dragged named thing down and right let
+│   go over app — window, drew: circled "label", scrolled down, pressed ⌘T ×3),
+│   cut into segments at narration gaps and app changes, each under
+│   limits.max_segment_chars
+├── Word timings are best; narration without them reads transcript segments.
+│   Unnamed drags under 0.15 of the screen say nothing; quick repeats of one
+│   key or scroll fold into one line; Secure-field and missing labels are left
+│   out. Video and audio never leave the bundle
 ├── Key frames only for a model that sees images: downscaled to 1024 px wide,
-│   at most 4 per call and 12 per draft
+│   at most 4 per call and 12 per draft, named with their times in the prompt
 └── The pane reads each lesson's text once (no frames decoded) to flag a thin
-    one: "Little to learn from: no narration, no click names"
+    one: "Little to learn from: no narration, no click names"; a named drag or
+    drawing counts as a name
 // apprentice::evidence::tests::*
 
 Choose a model                           // apprentice.model

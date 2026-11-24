@@ -5,14 +5,20 @@
 use std::io::Cursor;
 use std::path::{Component, Path};
 
+use scrawl_capture::agent_context::mark_text;
 use scrawl_capture::model::{InteractionEvent, ScrawlBundle};
 use scrawl_capture::render::{decode_png, downscale, encode_png};
+use scrawl_capture::sketch::direction;
 
 use super::lessons::Lesson;
 use crate::capture_host::load_capture;
 
 /// Words further apart than this start a new `said:` line.
 const NARRATION_GAP_MS: u64 = 2_000;
+/// An unnamed drag shorter than this says nothing the pictures don't.
+const MIN_DRAG: f32 = 0.15;
+/// Repeats of one action closer together than this read as one line.
+const REPEAT_MS: u64 = 3_000;
 /// Context for a model whose size is unknown.
 const UNKNOWN_CONTEXT_TOKENS: usize = 4_000;
 
@@ -35,8 +41,7 @@ pub struct Segment {
 /// A downscaled key frame as PNG bytes.
 #[derive(Debug)]
 pub struct Frame {
-    /// When it was taken; tests check it, nothing sends it yet.
-    #[allow(dead_code)]
+    /// When it was taken, so the draft's prompt can place it in the lesson.
     pub t_ms: u64,
     pub png: Vec<u8>,
 }
@@ -115,6 +120,202 @@ fn clean(text: &str) -> String {
     text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+/// A label that already quotes its own parts isn't wrapped again.
+fn quote(label: &str) -> String {
+    let label = clean(label);
+    if label.contains('“') || label.starts_with('<') {
+        label
+    } else {
+        format!("\"{label}\"")
+    }
+}
+
+/// The frontmost window under a normalized point at `t`, from the last snapshot before it.
+fn window_at(bundle: &ScrawlBundle, t: u64, x: f32, y: f32) -> Option<String> {
+    let snapshot = bundle
+        .windows
+        .iter()
+        .filter(|snapshot| snapshot.t <= t)
+        .max_by_key(|snapshot| snapshot.t)?;
+    let (px, py) = (
+        x * bundle.target.frame.width as f32,
+        y * bundle.target.frame.height as f32,
+    );
+    let window = snapshot
+        .windows
+        .iter()
+        .filter(|window| {
+            let [x0, y0, width, height] = window.bounds;
+            px >= x0 as f32
+                && px < (x0 + width) as f32
+                && py >= y0 as f32
+                && py < (y0 + height) as f32
+        })
+        // The frontmost window wins; otherwise the smaller one is likely the panel on top.
+        .min_by_key(|window| {
+            (
+                !window.frontmost,
+                window.bounds[2].saturating_mul(window.bounds[3]),
+            )
+        })?;
+    let app = clean(&window.app);
+    let title = clean(&window.title);
+    Some(if title.is_empty() {
+        app
+    } else {
+        format!("{app} — {title}")
+    })
+}
+
+fn app_at(timeline: &[(u64, String, String)], t: u64) -> Option<&str> {
+    timeline
+        .partition_point(|entry| entry.0 <= t)
+        .checked_sub(1)
+        .map(|i| timeline[i].1.as_str())
+        .filter(|app| !app.is_empty())
+}
+
+/// Interaction lines, with quick repeats of one action folded into one.
+/// The flag says whether a line names something worth learning from.
+fn event_lines(
+    bundle: &ScrawlBundle,
+    timeline: &[(u64, String, String)],
+) -> Vec<(u64, String, bool)> {
+    let mut events: Vec<&InteractionEvent> = bundle.events.iter().collect();
+    events.sort_by_key(|event| event.timestamp_ms());
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < events.len() {
+        match events[i] {
+            InteractionEvent::Key { t, shortcut } => {
+                let mut count = 1usize;
+                while let Some(InteractionEvent::Key {
+                    t: next,
+                    shortcut: other,
+                    ..
+                }) = events.get(i + 1).copied()
+                {
+                    if other == shortcut && next.saturating_sub(*t) <= REPEAT_MS {
+                        count += 1;
+                        i += 1;
+                    } else {
+                        break;
+                    }
+                }
+                let shortcut = clean(shortcut);
+                let line = if count > 1 {
+                    format!("{} pressed {shortcut} ×{count}", stamp(*t))
+                } else {
+                    format!("{} pressed {shortcut}", stamp(*t))
+                };
+                out.push((*t, line, false));
+            }
+            InteractionEvent::Scroll {
+                t, dx, dy, label, ..
+            } => {
+                let (mut sum_x, mut sum_y) = (*dx, *dy);
+                let mut end = *t;
+                while let Some(InteractionEvent::Scroll {
+                    t: next,
+                    dx,
+                    dy,
+                    label: other,
+                    ..
+                }) = events.get(i + 1).copied()
+                {
+                    if other == label && next.saturating_sub(end) <= REPEAT_MS {
+                        sum_x += dx;
+                        sum_y += dy;
+                        end = *next;
+                        i += 1;
+                    } else {
+                        break;
+                    }
+                }
+                let mut line = format!("{} scrolled", stamp(*t));
+                let named = label.as_deref().is_some_and(|l| !clean(l).is_empty());
+                if let Some(label) = label.as_deref()
+                    && named
+                {
+                    line.push_str(&format!(" {}", quote(label)));
+                }
+                line.push_str(&format!(" {}", direction(sum_x, sum_y, 0.0)));
+                out.push((*t, line, named));
+            }
+            InteractionEvent::Click {
+                t,
+                x,
+                y,
+                label,
+                role,
+                ..
+            } => {
+                let app = app_at(timeline, *t);
+                let label = label.as_deref().map(clean).filter(|l| !l.is_empty());
+                let mut line = format!("{} clicked", stamp(*t));
+                match &label {
+                    Some(label) => match role.as_deref().map(clean).filter(|r| !r.is_empty()) {
+                        Some(role) => line.push_str(&format!(" {role} {}", quote(label))),
+                        None => line.push_str(&format!(" {}", quote(label))),
+                    },
+                    None => line.push_str(&format!(" at {x:.2},{y:.2}")),
+                }
+                if let Some(app) = app {
+                    line.push_str(&format!(" in {app}"));
+                }
+                out.push((*t, line, label.is_some()));
+            }
+            InteractionEvent::Drag {
+                t,
+                x0,
+                y0,
+                x1,
+                y1,
+                label,
+                button,
+                ..
+            } => {
+                let name = label
+                    .as_deref()
+                    .map(clean)
+                    .filter(|name| !name.is_empty() && !name.starts_with("long press"));
+                let (dx, dy) = (x1 - x0, y1 - y0);
+                if name.is_none() && dx.hypot(dy) < MIN_DRAG {
+                    i += 1;
+                    continue;
+                }
+                let scrub = name.as_deref().is_some_and(|name| {
+                    ["slider", "scroll bar", "scrubber", "timeline", "progress"]
+                        .iter()
+                        .any(|word| name.to_lowercase().contains(word))
+                });
+                let verb = if button.as_deref() == Some("touch") {
+                    "swiped"
+                } else if scrub {
+                    "scrubbed"
+                } else {
+                    "dragged"
+                };
+                let mut line = format!("{} {verb}", stamp(*t));
+                if let Some(name) = &name {
+                    line.push_str(&format!(" {}", quote(name)));
+                }
+                let way = direction(dx, dy, 0.04);
+                if verb != "scrubbed" && way != "a little" {
+                    line.push_str(&format!(" {way}"));
+                }
+                if let Some(window) = window_at(bundle, *t, *x1, *y1) {
+                    line.push_str(&format!(", let go over {window}"));
+                }
+                out.push((*t, line, name.is_some()));
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    out
+}
+
 /// The frontmost app and window over time, one entry per change.
 fn timeline(bundle: &ScrawlBundle) -> Vec<(u64, String, String)> {
     let mut raw: Vec<(u64, String, String)> = Vec::new();
@@ -171,23 +372,37 @@ fn items(bundle: &ScrawlBundle) -> (Vec<Item>, Thin) {
         ));
     }
 
-    let mut phrase: Option<(u64, u64, Vec<&str>)> = None;
-    let mut phrases: Vec<(u64, Vec<&str>)> = Vec::new();
-    for word in &bundle.transcript.words {
-        let text = word.text.trim();
-        if text.is_empty() {
-            continue;
-        }
+    // Word timings are best; a transcript that only kept segments still reads as narration.
+    let speech: Vec<(u64, u64, String)> = if bundle.transcript.words.is_empty() {
+        bundle
+            .transcript
+            .segments
+            .iter()
+            .map(|segment| (segment.t0, segment.t1, clean(&segment.text)))
+            .filter(|(_, _, text)| !text.is_empty())
+            .collect()
+    } else {
+        bundle
+            .transcript
+            .words
+            .iter()
+            .map(|word| (word.t0, word.t1, word.text.trim().to_owned()))
+            .filter(|(_, _, text)| !text.is_empty())
+            .collect()
+    };
+    let mut phrase: Option<(u64, u64, Vec<String>)> = None;
+    let mut phrases: Vec<(u64, Vec<String>)> = Vec::new();
+    for (t0, t1, text) in speech {
         match &mut phrase {
-            Some((_, end, words)) if word.t0.saturating_sub(*end) <= NARRATION_GAP_MS => {
-                *end = (*end).max(word.t1);
+            Some((_, end, words)) if t0.saturating_sub(*end) <= NARRATION_GAP_MS => {
+                *end = (*end).max(t1);
                 words.push(text);
             }
             _ => {
                 if let Some((start, _, words)) = phrase.take() {
                     phrases.push((start, words));
                 }
-                phrase = Some((word.t0, word.t1, vec![text]));
+                phrase = Some((t0, t1, vec![text]));
             }
         }
     }
@@ -208,45 +423,30 @@ fn items(bundle: &ScrawlBundle) -> (Vec<Item>, Thin) {
         ));
     }
 
-    let mut named_click = false;
-    for event in &bundle.events {
-        let InteractionEvent::Click {
-            t,
-            x,
-            y,
-            label,
-            role,
-            ..
-        } = event
-        else {
-            continue;
-        };
-        let app = timeline
-            .partition_point(|entry| entry.0 <= *t)
-            .checked_sub(1)
-            .map(|i| timeline[i].1.as_str())
-            .filter(|app| !app.is_empty());
-        let label = label.as_deref().map(clean).filter(|l| !l.is_empty());
-        let mut line = format!("{} clicked", stamp(*t));
-        match label {
-            Some(label) => {
-                named_click = true;
-                match role.as_deref().map(clean).filter(|r| !r.is_empty()) {
-                    Some(role) => line.push_str(&format!(" {role} \"{label}\"")),
-                    None => line.push_str(&format!(" \"{label}\"")),
-                }
-            }
-            None => line.push_str(&format!(" at {x:.2},{y:.2}")),
-        }
-        if let Some(app) = app {
-            line.push_str(&format!(" in {app}"));
-        }
+    let mut named = false;
+    for (t, line, has_name) in event_lines(bundle, &timeline) {
+        named |= has_name;
         all.push((
-            *t,
+            t,
             2,
             Item {
-                t: *t,
+                t,
                 line,
+                app_change: false,
+                after_gap: false,
+            },
+        ));
+    }
+
+    for mark in &bundle.marks {
+        let t = mark.t0;
+        named |= mark.on.as_deref().is_some_and(|on| !clean(on).is_empty());
+        all.push((
+            t,
+            3,
+            Item {
+                t,
+                line: format!("{} drew: {}", stamp(t), mark_text(mark)),
                 app_change: false,
                 after_gap: false,
             },
@@ -256,7 +456,7 @@ fn items(bundle: &ScrawlBundle) -> (Vec<Item>, Thin) {
     all.sort_by_key(|(t, order, _)| (*t, *order));
     let thin = Thin {
         no_narration,
-        no_click_names: !named_click,
+        no_click_names: !named,
     };
     (all.into_iter().map(|(_, _, item)| item).collect(), thin)
 }
@@ -638,6 +838,152 @@ pub(super) mod tests {
         let evidence = build(&lesson, &Limits::for_vision()).unwrap();
         assert_eq!(evidence.segments[0].text, "[00:01] clicked at 0.50,0.25");
         assert!(!evidence.segments[0].text.contains('"'));
+    }
+
+    /// Rewrites the lesson's `scrawl.json` through `change`.
+    fn patch(lesson: &Lesson, change: impl FnOnce(&mut Value)) {
+        let path = lesson.bundle.join("scrawl.json");
+        let mut manifest: Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        change(&mut manifest);
+        std::fs::write(path, manifest.to_string()).unwrap();
+    }
+
+    fn drag(t: u64, from: [f32; 2], to: [f32; 2], label: Option<&str>) -> Value {
+        let mut event = json!({"kind": "drag", "t": t, "t1": t + 500,
+            "x0": from[0], "y0": from[1], "x1": to[0], "y1": to[1]});
+        if let Some(label) = label {
+            event["label"] = json!(label);
+        }
+        event
+    }
+
+    fn text(lesson: &Lesson) -> String {
+        let evidence = build(lesson, &Limits::for_vision()).unwrap();
+        evidence
+            .segments
+            .iter()
+            .map(|s| s.text.as_str())
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    #[test]
+    fn a_drag_names_what_moved_and_the_window_it_was_let_go_over() {
+        let (_fixture, lesson) = lesson(
+            "drag",
+            &[],
+            vec![drag(
+                3000,
+                [0.1, 0.1],
+                [0.8, 0.6],
+                Some("cell “Rechnung.pdf”"),
+            )],
+            &[],
+            &[],
+        );
+        patch(&lesson, |manifest| {
+            manifest["target"]["frame"] =
+                json!({"x": 0, "y": 0, "width": 100, "height": 100, "scale": 2});
+            manifest["windows"] = json!([{"t": 0, "windows": [
+                {"id": 1, "app": "Finder", "title": "Downloads",
+                 "bounds": [0, 0, 50, 100], "layer": 0, "frontmost": true},
+                {"id": 2, "app": "Finder", "title": "Invoices 2026-11",
+                 "bounds": [50, 0, 50, 100], "layer": 0}
+            ]}]);
+        });
+        assert_eq!(
+            text(&lesson),
+            "[00:00] window: Finder — Downloads\n\
+             [00:03] dragged cell “Rechnung.pdf” down and right, let go over Finder — Invoices 2026-11"
+        );
+    }
+
+    #[test]
+    fn a_short_drag_nothing_names_is_left_out() {
+        let (_fixture, lesson) = lesson(
+            "short-drag",
+            &[],
+            vec![
+                drag(1000, [0.5, 0.5], [0.55, 0.5], None),
+                drag(5000, [0.1, 0.5], [0.9, 0.5], None),
+            ],
+            &[],
+            &[],
+        );
+        assert_eq!(text(&lesson), "[00:05] dragged right");
+    }
+
+    #[test]
+    fn a_drawing_reads_as_its_shape_and_what_it_is_on() {
+        let (_fixture, lesson) = lesson("mark", &[], vec![], &[], &[]);
+        patch(&lesson, |manifest| {
+            manifest["strokes"] =
+                json!([{"t0": 4000, "t1": 4500, "fw": 100, "fh": 100, "pts": []}]);
+            manifest["marks"] = json!([{"id": "m1", "strokes": [0], "t0": 4000, "t1": 4500,
+                "boxNorm": [0.1, 0.1, 0.2, 0.2], "shape": "circle",
+                "on": "button “Save”", "description": "circled region"}]);
+        });
+        assert_eq!(text(&lesson), "[00:04] drew: circled button “Save”");
+    }
+
+    #[test]
+    fn scrolls_and_shortcuts_are_lines_and_repeats_fold() {
+        let key = |t: u64| json!({"kind": "key", "t": t, "shortcut": "⌘T"});
+        let scroll = |t: u64, dy: f32| json!({"kind": "scroll", "t": t, "x": 0.5, "y": 0.5, "dx": 0.0, "dy": dy});
+        let (_fixture, lesson) = lesson(
+            "keys",
+            &[],
+            vec![
+                key(1000),
+                key(1500),
+                key(2000),
+                scroll(5000, 0.2),
+                scroll(5400, 0.3),
+            ],
+            &[],
+            &[],
+        );
+        assert_eq!(
+            text(&lesson),
+            "[00:01] pressed ⌘T ×3\n[00:05] scrolled down"
+        );
+    }
+
+    #[test]
+    fn a_label_that_quotes_itself_is_not_quoted_again() {
+        let (_fixture, lesson) = lesson(
+            "quoted",
+            &[],
+            vec![click(1000, Some("“Save” #save"), Some("button"))],
+            &[],
+            &[],
+        );
+        assert_eq!(text(&lesson), "[00:01] clicked button “Save” #save");
+    }
+
+    #[test]
+    fn narration_without_word_times_reads_its_segments() {
+        let (_fixture, lesson) = lesson("segments", &[], vec![], &[], &[]);
+        patch(&lesson, |manifest| {
+            manifest["transcript"]["segments"] =
+                json!([{"t0": 1000, "t1": 2000, "text": "open  settings"}]);
+        });
+        let evidence = build(&lesson, &Limits::for_vision()).unwrap();
+        assert_eq!(evidence.segments[0].text, "[00:01] said: open settings");
+        assert!(!evidence.thin.no_narration);
+    }
+
+    #[test]
+    fn a_named_drag_is_a_name_to_learn_from() {
+        let (_fixture, lesson) = lesson(
+            "named-drag",
+            &[],
+            vec![drag(1000, [0.1, 0.1], [0.8, 0.6], Some("cell “a.pdf”"))],
+            &[],
+            &[],
+        );
+        let evidence = build(&lesson, &Limits::for_vision()).unwrap();
+        assert!(!evidence.thin.no_click_names);
     }
 
     #[test]
