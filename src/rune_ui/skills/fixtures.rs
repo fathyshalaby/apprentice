@@ -1,15 +1,14 @@
 //! The Skills pane's scenes: nothing yet, a new lesson, a draft with why?
-//! questions, the model picker, saved skills with their agents, and Labs ›
-//! Notice patterns' Noticing section. A scene's pane records what it would
-//! do and never reads or writes.
+//! questions, the model picker, saved skills with their recorded plans, and
+//! Labs › Notice patterns' Noticing section. A scene's pane records what it
+//! would do and never reads or writes.
 
 use std::path::PathBuf;
 
-use super::{AgentRow, Notes, Recorded, SkillsPane};
-use crate::agent_install::Agent;
+use super::{Notes, Recorded, SkillsPane};
 use crate::apple_intelligence::Availability;
 use crate::apprentice::evidence::Thin;
-use crate::apprentice::install::Installed;
+use crate::apprentice::execution::{PlanFrame, PlanStep, RunPlan};
 use crate::apprentice::lessons::{Lesson, Media};
 use crate::apprentice::notice::state::{Known, RoutineState};
 use crate::apprentice::notice::watch::{FolderHealth, NoticeStatus};
@@ -69,6 +68,24 @@ fn step(title: &str, detail: &str, question: Option<&str>, why: Option<&str>) ->
     }
 }
 
+fn plan() -> RunPlan {
+    RunPlan {
+        frame: PlanFrame {
+            x: 0.0,
+            y: 0.0,
+            width: 1512.0,
+            height: 982.0,
+        },
+        steps: vec![
+            PlanStep::Activate { app: "Mail".into() },
+            PlanStep::Click { x: 0.25, y: 0.5 },
+            PlanStep::Key {
+                shortcut: "⌘S".into(),
+            },
+        ],
+    }
+}
+
 fn skill(name: &str, lesson: &str, steps: Vec<Step>) -> Skill {
     let now = crate::history::now_ms();
     Skill {
@@ -78,6 +95,7 @@ fn skill(name: &str, lesson: &str, steps: Vec<Step>) -> Skill {
         when_to_use: "At the start of each month, once the invoice email arrives.".into(),
         inputs: vec!["The month".into()],
         steps,
+        run_plan: Some(plan()),
         verification: vec!["The PDF is in Accounts/Invoices under this month's name".into()],
         edge_cases: vec!["The email can arrive a day late".into()],
         autonomy: Autonomy::Observe,
@@ -210,34 +228,6 @@ impl SkillsPane {
                     )],
                 );
                 weekly.description = "Exports the dashboard and emails it to the team.".into();
-                let rows = |states: [(Agent, Installed, bool); 4]| {
-                    states
-                        .into_iter()
-                        .map(|(agent, state, found)| AgentRow {
-                            agent,
-                            state,
-                            found,
-                        })
-                        .collect::<Vec<_>>()
-                };
-                pane.agents.insert(
-                    invoice.slug.clone(),
-                    rows([
-                        (Agent::ClaudeCode, Installed::Current, true),
-                        (Agent::Codex, Installed::Older, true),
-                        (Agent::OpenCode, Installed::Missing, true),
-                        (Agent::Pi, Installed::Foreign, true),
-                    ]),
-                );
-                pane.agents.insert(
-                    weekly.slug.clone(),
-                    rows([
-                        (Agent::ClaudeCode, Installed::Missing, true),
-                        (Agent::Codex, Installed::Missing, true),
-                        (Agent::OpenCode, Installed::Linked, true),
-                        (Agent::Pi, Installed::Missing, false),
-                    ]),
-                );
                 pane.expanded = Some(invoice.slug.clone());
                 pane.skills = vec![invoice, weekly];
             }

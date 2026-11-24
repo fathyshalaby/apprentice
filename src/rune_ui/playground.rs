@@ -237,7 +237,10 @@ const PATHS: &[(&str, &str)] = &[
     #[cfg(all(target_os = "macos", hex_capture))]
     ("mac-skills-models", "Window/Skills/Choosing a model"),
     #[cfg(all(target_os = "macos", hex_capture))]
-    ("mac-skills-list", "Window/Skills/Skills and their agents"),
+    (
+        "mac-skills-list",
+        "Window/Skills/Saved skills and run plans",
+    ),
     #[cfg(all(target_os = "macos", hex_capture))]
     (
         "mac-skills-noticing-empty",

@@ -45,13 +45,13 @@ struct DraftStep {
 
 /// The system prompt for every drafting call.
 pub fn instructions() -> &'static str {
-    "You turn a recorded lesson into a skill that an AI coding agent can follow later.\n\
+    "You turn a recorded lesson into a skill Apprentice can run on this Mac later.\n\
 The evidence is a time-ordered list of lines. `[mm:ss] said:` is what the person said aloud. \
 `[mm:ss] window:` is the app and window in front. `[mm:ss] clicked ...` is a click, with the \
 name of the element when it is known. `[mm:ss] dragged ...` is a drag to or from a named thing, \
 `[mm:ss] drew: ...` is ink on the screen, `[mm:ss] scrolled ...` is scrolling, and \
 `[mm:ss] pressed ...` is a shortcut. Screenshots of key moments may be attached.\n\
-Write the steps an AI coding agent could follow to do the same task: short titles, concrete \
+Write the steps Apprentice could follow to do the same task: short titles, concrete \
 details, in order. Use only what the evidence supports and never invent steps. \
 Also give a one-sentence description, when to use the skill, the inputs it needs, how to \
 verify it worked, and edge cases the person mentioned. Use an empty list where there are none.\n\
@@ -173,6 +173,7 @@ pub fn parse(raw: &str, lesson_id: &str, now_ms: u64) -> Result<Skill, ParseErro
         when_to_use: draft.when_to_use,
         inputs: draft.inputs,
         steps,
+        run_plan: None,
         verification: draft.verification,
         edge_cases: draft.edge_cases,
         autonomy: Autonomy::Observe,

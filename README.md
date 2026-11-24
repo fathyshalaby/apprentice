@@ -2,7 +2,7 @@
 
 Apprentice is local voice dictation for Mac, Windows and Linux. Hold a key,
 speak, and it pastes. It can also learn a task from a narrated demonstration
-and write a skill file your coding agent can follow.
+and run the approved steps on this Mac.
 
 ## How it works
 
@@ -30,8 +30,8 @@ and write a skill file your coding agent can follow.
   transcribe with the same model, for your own tools
 - Meetings is a macOS lab that records a call and writes the transcript
 - Watch and learn is a macOS lab that turns a screen-and-voice lesson into a
-  skill for your coding agent; Notice patterns offers to record the next one
-  when it sees you repeat a task
+  skill you can review and run here; Notice patterns offers to record the
+  next one when it sees you repeat a task
 
 Output and History:
 

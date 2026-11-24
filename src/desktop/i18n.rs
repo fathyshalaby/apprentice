@@ -573,9 +573,9 @@ mod tests {
     const SOURCES: &[&str] = &[
         include_str!("activity.rs"),
         include_str!("opencode_catalog.rs"),
-        include_str!("../apprentice/install.rs"),
+        include_str!("../apprentice/execution.rs"),
         include_str!("../rune_ui/skills.rs"),
-        include_str!("../rune_ui/skills/agents.rs"),
+        include_str!("../rune_ui/skills/runs.rs"),
         include_str!("../rune_ui/skills/approval.rs"),
         include_str!("../rune_ui/skills/draft_view.rs"),
         include_str!("../rune_ui/skills/lesson_cards.rs"),

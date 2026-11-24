@@ -2,6 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::execution::RunPlan;
+
 /// How much a skill may do on its own. A new skill only observes.
 // The later levels come with replay; nothing sets them yet.
 #[allow(dead_code)]
@@ -38,6 +40,10 @@ pub struct Skill {
     pub when_to_use: String,
     pub inputs: Vec<String>,
     pub steps: Vec<Step>,
+    /// The bounded actions Apprentice can replay in the app, read only from
+    /// `skill.json`. The saved `SKILL.md` is never replayed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub run_plan: Option<RunPlan>,
     pub verification: Vec<String>,
     pub edge_cases: Vec<String>,
     pub autonomy: Autonomy,
@@ -72,7 +78,7 @@ pub fn slug(name: &str) -> String {
     if out.is_empty() { "skill".into() } else { out }
 }
 
-/// The `SKILL.md` an agent reads.
+/// The saved skill text for people reading the folder; replay uses `skill.json`.
 pub fn markdown(skill: &Skill) -> String {
     let mut out = format!(
         "---\nname: {}\ndescription: {}\n---\n\n# {}\n",
@@ -210,6 +216,7 @@ mod tests {
                     why: None,
                 },
             ],
+            run_plan: None,
             verification: vec!["The file is in the folder.".into()],
             edge_cases: vec![],
             autonomy: Autonomy::Observe,

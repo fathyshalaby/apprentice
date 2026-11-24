@@ -109,13 +109,6 @@ pub(super) fn approve(ui: &mut Ui, clash: Option<Clash>) {
             pane.skills.retain(|s| s.slug != approved.slug);
             pane.skills.push(approved.skill.clone());
             pane.skills.sort_by_key(|skill| skill.name.to_lowercase());
-            pane.agents.insert(
-                approved.slug.clone(),
-                super::agents::rows(
-                    crate::agent_install::Paths::current().as_ref(),
-                    &approved.skill,
-                ),
-            );
             pane.expanded = Some(approved.slug);
             pane.editor = None;
             pane.changed();
@@ -154,13 +147,6 @@ pub(super) fn save_edit(ui: &mut Ui) {
         Ok(saved) => {
             if let Some(shown) = pane.skills.iter_mut().find(|s| s.slug == saved.slug) {
                 *shown = saved.clone();
-            }
-            if pane.fixture.is_none() {
-                let paths = crate::agent_install::Paths::current();
-                pane.agents.insert(
-                    saved.slug.clone(),
-                    super::agents::rows(paths.as_ref(), &saved),
-                );
             }
             pane.editor = None;
             pane.changed();

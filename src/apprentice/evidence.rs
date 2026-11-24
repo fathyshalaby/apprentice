@@ -10,6 +10,7 @@ use scrawl_capture::model::{InteractionEvent, ScrawlBundle};
 use scrawl_capture::render::{decode_png, downscale, encode_png};
 use scrawl_capture::sketch::direction;
 
+use super::execution::{self, RunPlan};
 use super::lessons::Lesson;
 use crate::capture_host::load_capture;
 
@@ -27,6 +28,8 @@ const UNKNOWN_CONTEXT_TOKENS: usize = 4_000;
 pub struct Evidence {
     pub segments: Vec<Segment>,
     pub thin: Thin,
+    /// Bounded actions for in-app replay, derived from structured events.
+    pub plan: Option<RunPlan>,
 }
 
 /// A stretch of the lesson: its lines and the key frames inside it.
@@ -108,7 +111,12 @@ pub fn build(lesson: &Lesson, limits: &Limits) -> Result<Evidence, String> {
     let (items, thin) = items(&bundle);
     let mut segments = segments(&items, limits.max_segment_chars, bundle.duration_ms);
     pick_frames(&mut segments, &bundle, &lesson.bundle, limits);
-    Ok(Evidence { segments, thin })
+    let plan = execution::plan_from_bundle(&bundle);
+    Ok(Evidence {
+        segments,
+        thin,
+        plan,
+    })
 }
 
 fn stamp(t_ms: u64) -> String {

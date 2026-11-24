@@ -23,9 +23,21 @@ const SHIFT_MODIFIER_STATE: u32 = 2;
 const HID_EVENT_TAP: u32 = 0;
 const COMMAND_KEY_CODE: u16 = 55;
 const COMMAND_FLAG: u64 = 1 << 20;
+const OPTION_KEY_CODE: u16 = 58;
+const OPTION_FLAG: u64 = 1 << 19;
+const CONTROL_KEY_CODE: u16 = 59;
+const CONTROL_FLAG: u64 = 1 << 18;
 const SHIFT_KEY_CODE: u16 = 56;
 const SHIFT_FLAG: u64 = 1 << 17;
-const RETURN_KEY_CODE: u16 = 36;
+pub const RETURN_KEY_CODE: u16 = 36;
+pub const TAB_KEY_CODE: u16 = 48;
+pub const SPACE_KEY_CODE: u16 = 49;
+pub const DELETE_KEY_CODE: u16 = 51;
+pub const ESCAPE_KEY_CODE: u16 = 53;
+pub const LEFT_KEY_CODE: u16 = 123;
+pub const RIGHT_KEY_CODE: u16 = 124;
+pub const DOWN_KEY_CODE: u16 = 125;
+pub const UP_KEY_CODE: u16 = 126;
 /// Right ⌘ through Fn: keys a real keyboard reports as flags-changed events.
 const MODIFIER_KEY_CODES: std::ops::RangeInclusive<u16> = 54..=63;
 const FLAGS_CHANGED_EVENT: u32 = 12;
@@ -608,6 +620,32 @@ fn post_key_code(key_code: u16, modifiers: &[(u64, u16)], count: u8) -> Result<(
         event.post();
     }
     Ok(())
+}
+
+/// Posts one key press with the four standard modifiers held, through the
+/// macOS keyboard seam. Used by Apprentice to replay a recorded shortcut.
+#[cfg_attr(test, allow(dead_code))]
+pub fn post_shortcut_key(
+    key_code: u16,
+    control: bool,
+    option: bool,
+    shift: bool,
+    command: bool,
+) -> Result<()> {
+    let mut modifiers = Vec::with_capacity(4);
+    if control {
+        modifiers.push((CONTROL_FLAG, CONTROL_KEY_CODE));
+    }
+    if option {
+        modifiers.push((OPTION_FLAG, OPTION_KEY_CODE));
+    }
+    if shift {
+        modifiers.push((SHIFT_FLAG, SHIFT_KEY_CODE));
+    }
+    if command {
+        modifiers.push((COMMAND_FLAG, COMMAND_KEY_CODE));
+    }
+    post_key_code(key_code, &modifiers, 1)
 }
 
 fn shortcut_event_specs(

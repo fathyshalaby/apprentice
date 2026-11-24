@@ -246,29 +246,6 @@ pub(crate) fn install(paths: &Paths, agent: Agent, skill: &SkillFile) -> Result<
     Ok(path)
 }
 
-/// Deletes the agent's SKILL.md for `folder`, then the folder if nothing else
-/// is in it. A symlinked file or folder is managed elsewhere and refused; a
-/// missing skill is already removed. Callers that own extra files (a mark)
-/// check ownership first.
-// Only Watch and learn removes skills (macOS).
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-pub(crate) fn remove(paths: &Paths, agent: Agent, folder: &str) -> Result<(), String> {
-    let path = paths.skill_path(agent, folder);
-    if linked(&path) {
-        return Err(format!("{} is a link", path.display()));
-    }
-    match std::fs::remove_file(&path) {
-        Ok(()) => {}
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-        Err(error) => return Err(format!("{}: {}", path.display(), error)),
-    }
-    if let Some(parent) = path.parent() {
-        // Fails while anything else is inside; that is the point.
-        let _ = std::fs::remove_dir(parent);
-    }
-    Ok(())
-}
-
 /// Putting Hex's hex on PATH for agents: /opt/homebrew/bin, /usr/local/bin,
 /// else ~/.local/bin. A hex that isn't Hex's own link is never replaced.
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
