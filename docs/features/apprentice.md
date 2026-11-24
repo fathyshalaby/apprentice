@@ -1,10 +1,11 @@
 # Watch and learn (macOS, Labs)
 
-Watch and learn lets a person show Apprentice a task once and get a skill
-file a coding agent can follow. They record a narrated demonstration (a
-lesson), a local model they chose drafts a `SKILL.md` from it, they answer up
-to five "why?" questions, approve the skill, and install it into their coding
-agents. Design: [the spec](../superpowers/specs/2026-11-22-watch-and-learn-design.md);
+Watch and learn lets a person show Apprentice a task once, then review and run
+the steps on this Mac. They record a narrated demonstration (a lesson), a
+local model they chose drafts a skill from it, they answer up to five "why?"
+questions, and approve it. Approval saves a bounded run plan in `skill.json`;
+Apprentice performs it only after the person reads the plan and confirms.
+Design: [the spec](../superpowers/specs/2026-11-22-watch-and-learn-design.md);
 plan: [the implementation plan](../superpowers/plans/2026-11-22-watch-and-learn.md).
 
 Everything below is built. Behavior IDs are stable; each tree names its source
@@ -19,7 +20,8 @@ Turn it on                               // apprentice.gate
 │   managed (policy::Lock::Annotate); the saved switch is never rewritten
 ├── Read where work starts, not only in the pane: a lesson start
 │   (capture_host/lesson.rs refusal -> "feature-off"), a draft (run::draft),
-│   an install (rune_ui/skills/agents.rs put), and the menu bar's Watch This…
+│   a run (rune_ui/skills/runs.rs -> apprentice::execution), and the menu
+│   bar's Watch This…
 ├── Compiled only into macOS builds with captures: src/apprentice,
 │   rune_ui/skills, Destination::Skills, and Pane::Skills are
 │   cfg(all(target_os = "macos", hex_capture)); StatusItemAction::OpenSkills
@@ -169,25 +171,39 @@ Review and approve                       // apprentice.approve
 // inputs_are_edited_in_the_draft_view, review_over_unsaved_typing_asks_first,
 // without_its_folder_nothing_changes_on_screen_only
 
-Install into agents                      // apprentice.install
-├── A skill's card opens to the coding agents on this Mac (Claude Code, Codex,
-│   OpenCode, Pi): Install, Update ("Older version installed"), or Remove,
-│   each its own click; the card says an agent may send the skill's text to
-│   its own model, which can be a cloud model
-├── Written to <agent>/skills/apprentice-<slug>/SKILL.md with a
-│   .apprentice-skill mark; Codex reads ~/.agents, and Pi does when a copy
-│   is there
-├── A SKILL.md without the mark (Not Apprentice's) or behind a symlink
-│   (Linked elsewhere) is shown and never replaced or removed
-└── Delete skill… then Delete skill (after Cancel in its place) removes
-    Apprentice's own copies from every agent, then the skill
-// apprentice::install::tests::*, agent_install::tests::*
+Run a learned skill                      // apprentice.run-plan
+├── Approval derives a run plan from structured interaction events only: app
+│   changes, clicks, keys, scrolls, and drags. Narration, window titles, page
+│   addresses, and SKILL.md never become steps (apprentice/execution.rs)
+├── The saved skill's card shows every planned step — "Open Mail", "Click",
+│   "Press ⌘S" — from `skill.json`; the saved `SKILL.md` is never read back
+├── Bounded: at most 40 steps, identical keys within 3 s folded to one, unnamed
+│   drags under 0.15 of the screen skipped, and one step every 180 ms
+├── Run skill is two clicks: the first shows the count and asks "Run these 3
+│   steps?", the second starts. Dry run checks the same bounds without acting,
+│   Not now leaves it alone, and Stop refuses the next step
+├── Execution is macOS only: clicks and keys use the capture engine's and
+│   keyboard's synthetic-input seams, scrolls and drags use CoreGraphics, and
+│   an app is opened with `open -a` only when it is already running. Elsewhere
+│   the card answers "Running learned skills is available on macOS only"
+├── Progress reads "Step n of {of}"; typed outcomes are Dry, Done, Failed, and
+│   Cancelled. A failed or empty plan is refused before any step runs
+└── Run events carry skill_run_started, skill_run_step, skill_run_finished,
+    skill_run_failed, and skill_run_cancelled with a slug/id and count only:
+    never step text, coordinates, app names, narration, or paths
+// apprentice::execution::tests::*, rune_ui::skills::tests::a_saved_skill_shows_its_recorded_plan,
+// a_run_needs_a_second_click, a_dry_run_checks_without_acting,
+// stopping_a_run_ends_it_before_the_next_step, a_failed_plan_never_runs,
+// and_progress_and_typed_outcomes_are_shown,
+// apprentice::events::tests::emitting_writes_only_the_action_id_and_count,
+// desktop::events::tests::run_actions_name_only_their_kind
 
 Events                                   // apprentice.events
 ├── live.ndjson gets {"kind":"apprentice","action":…,"id":…,"count"?}:
 │   lesson_written, draft_started, draft_finished (count = steps),
 │   draft_failed, skill_approved, skill_edited (count = version),
-│   skill_installed, skill_removed, model_downloaded
+│   skill_run_started, skill_run_step, skill_run_finished,
+│   skill_run_failed, skill_run_cancelled, model_downloaded
 └── Only IDs, slugs, model names, and counts: never narration, step text,
     answers, paths, or addresses
 // apprentice::events::tests::emitting_writes_only_the_action_id_and_count,
@@ -449,8 +465,7 @@ through its accessibility tree, Apple M6, 32 GB, Ollama 0.40.17
 │  └─ listed as "Neue Lektion · 1:02", reads narration, clicks, titles,
 │     screenshots; Draft is "Wähle zuerst ein Modell" until a model is set
 ├─ Apple Intelligence   draft in 6 s, 5 questions, approved, saved
-│  owner-only, installed into OpenCode (apprentice-<slug>, mark file,
-│  same SKILL.md); text only, so one step invented a drag
+│  owner-only; text only, so one step invented a drag
 ├─ gemma4:12b (vision)  the reads line adds screenshots; the draft failed
 │  at the 180 s call limit: Ollama thinks by default and generated ~9,500
 │  tokens without finishing (a replay ran 15 min)
@@ -492,7 +507,10 @@ the fixed build, installed, same lesson, gemma4:12b with screenshots
   its own after a lesson were not run.
 - A skill approved with questions left unanswered lists each as "Why: not
   answered" in `SKILL.md` (seen with the Apple Intelligence draft); whether
-  agents are better off without those lines is open.
+  a person is better off without those lines is open.
+- Running a learned skill has had no live end-to-end run on a real Mac: the
+  plan, confirmation, bounds, cancellation, and typed outcomes were checked
+  in tests and fixture scenes only, never by replaying a recorded lesson.
 - The model-default trial: qwen3.8:27b wrote the most complete skill on one
   lesson; `RECOMMENDED` is unchanged on that alone.
 - Linux and Windows builds: no Linux or Windows target is installed here, so

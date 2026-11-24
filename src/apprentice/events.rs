@@ -53,7 +53,7 @@ mod tests {
         let log = EventLog::create(&path).unwrap();
         set_log(log.clone());
         emit(ApprenticeAction::SkillEdited, "send-invoice", Some(3));
-        emit(ApprenticeAction::SkillRemoved, "send-invoice", None);
+        emit(ApprenticeAction::SkillRunStarted, "send-invoice", None);
         log.flush().unwrap();
         let written = std::fs::read_to_string(&path).unwrap();
         let lines: Vec<&str> = written.lines().collect();

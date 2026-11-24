@@ -398,7 +398,8 @@ fn a_finished_draft_is_saved_with_its_text_and_opens() {
     refresh(&mut rt);
     assert!(shows(&rt, "Putting it together…"));
 
-    send.send(Progress::Done(drafted_skill(&lesson))).unwrap();
+    send.send(Progress::Done(Box::new(drafted_skill(&lesson))))
+        .unwrap();
     refresh(&mut rt);
     assert!(rt.state.skills.drafting.is_none());
     let saved = Store::at(root.clone()).drafts();
@@ -494,7 +495,7 @@ fn a_draft_finishing_under_an_open_editor_leaves_it_alone() {
     rt.state.skills.editor.as_mut().unwrap().name = TextEdit::new("Typed, not saved");
     let open_id = rt.state.skills.drafts[0].id.clone();
     let send = running(&mut rt, &root);
-    send.send(Progress::Done(drafted_skill("lesson-9")))
+    send.send(Progress::Done(Box::new(drafted_skill("lesson-9"))))
         .unwrap();
     refresh(&mut rt);
 
@@ -652,6 +653,173 @@ fn without_its_folder_nothing_changes_on_screen_only() {
     tap(&mut rt, "confirm-delete-skill");
     assert_eq!(rt.state.skills.skills.len(), before, "nothing deleted");
     assert_eq!(rt.state.skills.error.as_deref(), Some(NO_FOLDER));
+}
+
+// ---------------------------------------------------------------------------
+// A saved skill's run plan: what a person sees, confirms, and can stop.
+
+use super::{RunCommand, RunOutcome, RunStage, Running};
+use crate::apprentice::execution::{self, PlanStep, Progress as RunProgress};
+
+fn planned_slug(rt: &Runtime<Ui>) -> String {
+    rt.state.skills.skills[0].slug.clone()
+}
+
+/// Starts a hand-fed run of the scene's first skill, so progress can be
+/// delivered without opening a real device or running the real driver.
+fn running_skill(rt: &mut Runtime<Ui>, slug: &str) -> Sender<RunProgress> {
+    let (send, rx) = mpsc::channel();
+    rt.state.skills.running = Some(Running {
+        slug: slug.to_owned(),
+        stage: RunStage::Starting,
+        rx: Some(rx),
+        cancel: Arc::new(AtomicBool::new(false)),
+    });
+    send
+}
+
+#[test]
+fn a_saved_skill_shows_its_recorded_plan() {
+    let rt = runtime("mac-skills-list");
+    assert!(shows(&rt, "Only these steps will run."));
+    for key in ["plan-step-0", "plan-step-1", "plan-step-2"] {
+        assert!(rt.find(key).is_some(), "no plan row {key}");
+    }
+    let shown = texts(&rt);
+    for expected in ["Open Mail", "Click", "Press ⌘S"] {
+        assert!(
+            shown.iter().any(|text| text == expected),
+            "no {expected:?} in {shown:?}"
+        );
+    }
+    assert!(rt.find("run-skill").is_some());
+    assert!(recorded(&rt).runs.is_empty());
+}
+
+#[test]
+fn a_run_needs_a_second_click() {
+    let mut rt = runtime("mac-skills-list");
+    tap(&mut rt, "run-skill");
+    assert!(rt.find("run-confirmation").is_some());
+    assert!(rt.find("confirm-run-skill").is_some());
+    assert!(rt.find("dry-run-skill").is_some());
+    assert!(shows(&rt, "Run these 3 steps?"), "{:?}", texts(&rt));
+    assert!(rt.state.skills.running.is_none());
+    assert!(
+        recorded(&rt).runs.is_empty(),
+        "the first click acts on nothing"
+    );
+
+    tap(&mut rt, "cancel-run-skill");
+    assert!(rt.find("run-confirmation").is_none());
+    assert!(recorded(&rt).runs.is_empty());
+    assert!(rt.state.skills.outcomes.is_empty());
+}
+
+#[test]
+fn a_dry_run_checks_without_acting() {
+    let mut rt = runtime("mac-skills-list");
+    let slug = planned_slug(&rt);
+    tap(&mut rt, "run-skill");
+    tap(&mut rt, "dry-run-skill");
+    assert_eq!(recorded(&rt).runs, [RunCommand::Dry(slug.clone())]);
+    assert_eq!(
+        rt.state.skills.outcomes.get(&slug),
+        Some(&RunOutcome::Dry { of: 3 })
+    );
+    assert!(shows(&rt, "Dry run checked 3 steps"), "{:?}", texts(&rt));
+    assert!(rt.state.skills.running.is_none());
+}
+
+#[test]
+fn stopping_a_run_ends_it_before_the_next_step() {
+    let mut rt = runtime("mac-skills-list");
+    let slug = planned_slug(&rt);
+    tap(&mut rt, "run-skill");
+    tap(&mut rt, "confirm-run-skill");
+    assert_eq!(recorded(&rt).runs, [RunCommand::Run(slug.clone())]);
+    assert_eq!(
+        rt.state.skills.running.as_ref().unwrap().stage,
+        RunStage::Starting
+    );
+    assert!(shows(&rt, "Starting…"), "{:?}", texts(&rt));
+
+    tap(&mut rt, "stop-run-skill");
+    assert_eq!(
+        recorded(&rt).runs,
+        [
+            RunCommand::Run(slug.clone()),
+            RunCommand::Stop(slug.clone())
+        ]
+    );
+    assert_eq!(
+        rt.state.skills.outcomes.get(&slug),
+        Some(&RunOutcome::Cancelled)
+    );
+    assert!(shows(&rt, "Stopped"), "{:?}", texts(&rt));
+}
+
+#[test]
+fn a_failed_plan_never_runs() {
+    let mut rt = runtime("mac-skills-list");
+    let slug = planned_slug(&rt);
+    rt.state.skills.skills[0].run_plan.as_mut().unwrap().steps =
+        vec![PlanStep::Click { x: 0.5, y: 0.5 }; execution::MAX_STEPS + 1];
+    refresh(&mut rt);
+    tap(&mut rt, "run-skill");
+    tap(&mut rt, "confirm-run-skill");
+
+    assert!(
+        recorded(&rt).runs.is_empty(),
+        "an overlarge plan never starts"
+    );
+    let reason = crate::desktop::i18n::tr("This skill has too many steps to run safely");
+    assert_eq!(
+        rt.state.skills.outcomes.get(&slug),
+        Some(&RunOutcome::Failed(reason.to_owned()))
+    );
+    assert!(
+        shows(
+            &rt,
+            "Couldn't run: This skill has too many steps to run safely"
+        ),
+        "{:?}",
+        texts(&rt)
+    );
+}
+
+#[test]
+fn progress_and_typed_outcomes_are_shown() {
+    let mut rt = runtime("mac-skills-list");
+    let slug = planned_slug(&rt);
+    let send = running_skill(&mut rt, &slug);
+    send.send(RunProgress::Step { n: 2, of: 3 }).unwrap();
+    refresh(&mut rt);
+    assert_eq!(
+        rt.state.skills.running.as_ref().unwrap().stage,
+        RunStage::Step { n: 2, of: 3 }
+    );
+    assert!(shows(&rt, "Step 2 of 3"), "{:?}", texts(&rt));
+
+    send.send(RunProgress::Done).unwrap();
+    refresh(&mut rt);
+    assert!(rt.state.skills.running.is_none());
+    assert_eq!(rt.state.skills.outcomes.get(&slug), Some(&RunOutcome::Done));
+    assert!(shows(&rt, "Finished"), "{:?}", texts(&rt));
+
+    let send = running_skill(&mut rt, &slug);
+    send.send(RunProgress::Failed("can't press it".into()))
+        .unwrap();
+    refresh(&mut rt);
+    assert_eq!(
+        rt.state.skills.outcomes.get(&slug),
+        Some(&RunOutcome::Failed("can't press it".into()))
+    );
+    assert!(
+        shows(&rt, "Couldn't run: can't press it"),
+        "{:?}",
+        texts(&rt)
+    );
 }
 
 // ---------------------------------------------------------------------------

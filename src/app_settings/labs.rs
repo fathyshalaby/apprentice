@@ -222,8 +222,8 @@ pub struct LabsSettings {
     /// coding agents' own folders and, on macOS, links `hex` onto PATH
     /// (Labs › Install agent skill from Annotate).
     pub annotate_agent_install: bool,
-    /// The Skills pane: record a narrated lesson and draft a SKILL.md from it
-    /// with a local model (macOS, Labs › Watch and learn).
+    /// The Skills pane: record a narrated lesson, draft it with a local
+    /// model, and run the approved steps on this Mac (Labs › Watch and learn).
     pub watch_and_learn: bool,
     /// Noticing in the Skills pane: watch the folders you add for filing you
     /// repeat and offer to learn it (macOS, Labs › Notice patterns; needs

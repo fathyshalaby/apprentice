@@ -354,6 +354,7 @@ mod tests {
                 question: None,
                 why: None,
             }],
+            run_plan: None,
             verification: vec![],
             edge_cases: vec![],
             autonomy: Autonomy::Observe,

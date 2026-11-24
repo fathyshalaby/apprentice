@@ -317,7 +317,7 @@ impl Feature {
                 "Adds an Agents section to the Annotate pane that writes the hex-annotate skill into Claude Code, Codex, OpenCode, or Pi, and on macOS links hex onto PATH"
             }
             Self::WatchAndLearn => {
-                "Show Apprentice a task once and it writes a skill your coding agents can follow"
+                "Show Apprentice a task once, then review and run a skill on this Mac"
             }
             Self::NoticePatterns => {
                 "Watches folders you pick for filing you repeat, and offers to learn it with a lesson. Needs Watch and learn."

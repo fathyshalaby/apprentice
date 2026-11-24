@@ -1886,8 +1886,10 @@ mod tests {
         assert!(!Feature::NoticePatterns.title().is_empty());
         assert!(!Feature::NoticePatterns.summary().is_empty());
         assert!(!Feature::NoticePatterns.description().is_empty());
-        let mut labs = LabsSettings::default();
-        labs.notice_patterns = true;
+        let labs = LabsSettings {
+            notice_patterns: true,
+            ..Default::default()
+        };
         assert!(notice_patterns_enabled(&labs));
     }
 

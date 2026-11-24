@@ -90,8 +90,11 @@ pub enum ApprenticeAction {
     DraftFailed,
     SkillApproved,
     SkillEdited,
-    SkillInstalled,
-    SkillRemoved,
+    SkillRunStarted,
+    SkillRunStep,
+    SkillRunFinished,
+    SkillRunFailed,
+    SkillRunCancelled,
     ModelDownloaded,
     /// Notice patterns found a routine; `id` is the routine's hash.
     RoutineNoticed,
@@ -897,6 +900,36 @@ mod tests {
         let line = serde_json::to_string(&bare).unwrap();
         assert!(!line.contains("count"), "{line}");
         assert_eq!(serde_json::from_str::<VoiceEvent>(&line).unwrap(), bare);
+    }
+
+    #[test]
+    fn run_actions_name_only_their_kind() {
+        for (action, name) in [
+            (ApprenticeAction::SkillRunStarted, "skill_run_started"),
+            (ApprenticeAction::SkillRunStep, "skill_run_step"),
+            (ApprenticeAction::SkillRunFinished, "skill_run_finished"),
+            (ApprenticeAction::SkillRunFailed, "skill_run_failed"),
+            (ApprenticeAction::SkillRunCancelled, "skill_run_cancelled"),
+        ] {
+            let line = serde_json::to_string(&VoiceEvent::Apprentice {
+                timestamp_ms: 9,
+                action,
+                id: "file-invoice".into(),
+                count: Some(3),
+            })
+            .unwrap();
+            assert_eq!(
+                line,
+                format!(
+                    r#"{{"kind":"apprentice","timestamp_ms":9,"action":"{name}","id":"file-invoice","count":3}}"#
+                )
+            );
+            // No step text, coordinates, app name, narration, or path follows
+            // the action: the event carries only a slug and a count.
+            assert!(!line.contains("Mail"), "{line}");
+            assert!(!line.contains("Open"), "{line}");
+            assert!(!line.contains('/'), "{line}");
+        }
     }
 
     #[test]

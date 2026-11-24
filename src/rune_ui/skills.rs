@@ -1,13 +1,12 @@
 //! The Skills pane (Labs › Watch and learn, macOS): Watch this records a
 //! lesson, Draft skill turns one into a draft with the model the person
-//! chose, the draft is read, answered, and approved, and approved skills go
-//! into coding agents. Every model run, download, approval, saved edit,
-//! install, and removal is its own click; nothing runs before it. The pane
-//! reads the captures folder and the skills store only while it shows, off
-//! the window's thread, and runs drafts and downloads on threads of their
-//! own.
+//! chose, the draft is read, answered, and approved, and an approved skill's
+//! saved plan can be run in the app. Every model run, download, approval,
+//! saved edit, run, dry run, and stop is its own click; nothing runs before
+//! it. The pane reads the captures folder and the skills store only while it
+//! shows, off the window's thread, and runs drafts and skills on threads of
+//! their own.
 
-mod agents;
 mod approval;
 mod draft_view;
 mod fixtures;
@@ -15,6 +14,7 @@ mod lesson_cards;
 mod model_picker;
 pub(super) mod noticing;
 pub(crate) mod routine_offer;
+mod runs;
 #[cfg(test)]
 mod tests;
 
@@ -30,6 +30,7 @@ use rune::{El, Icon, TextEdit, row, text};
 use super::Ui;
 use super::controls::{ButtonKind, DESCRIPTION, METRICS, Paint, button_enabled, page};
 use crate::apprentice::evidence::{self, Limits, Thin};
+use crate::apprentice::execution::Progress as RunProgress;
 use crate::apprentice::lessons::{self, Lesson, Media};
 use crate::apprentice::run::{self, Progress};
 use crate::apprentice::skill::Skill;
@@ -57,6 +58,8 @@ pub(super) struct Recorded {
     pub(super) pulls: Vec<String>,
     /// Each answer the Noticing section gave.
     pub(super) noticing: Vec<noticing::Asked>,
+    /// Each run, dry run, or stop a scene's skill card asked for.
+    pub(super) runs: Vec<RunCommand>,
 }
 
 /// A lesson's evidence as the pane needs it: what it is thin on, and the
@@ -67,13 +70,38 @@ pub(super) struct Notes {
     pub(super) text: String,
 }
 
-/// One agent's copy of a skill.
-#[derive(Clone, Debug)]
-pub(super) struct AgentRow {
-    pub(super) agent: crate::agent_install::Agent,
-    pub(super) state: crate::apprentice::install::Installed,
-    /// The agent is on this Mac.
-    pub(super) found: bool,
+/// What a scene's skill card did instead of acting on the Mac.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(super) enum RunCommand {
+    Run(String),
+    Dry(String),
+    Stop(String),
+}
+
+/// The stage of one skill run.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(super) enum RunStage {
+    Starting,
+    Step { n: usize, of: usize },
+    Stopping,
+}
+
+/// A skill run following its progress on a thread of its own. `None` in a
+/// scene, which records the click instead.
+pub(super) struct Running {
+    pub(super) slug: String,
+    pub(super) stage: RunStage,
+    rx: Option<Receiver<RunProgress>>,
+    cancel: Arc<AtomicBool>,
+}
+
+/// A typed run outcome, shown on the skill's card until the next run.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(super) enum RunOutcome {
+    Dry { of: usize },
+    Done,
+    Failed(String),
+    Cancelled,
 }
 
 /// A draft running for a lesson.
@@ -118,7 +146,6 @@ struct Snapshot {
     lessons: Vec<Lesson>,
     drafts: Vec<Draft>,
     skills: Vec<Skill>,
-    agents: HashMap<String, Vec<AgentRow>>,
     notes: Vec<(String, Option<Notes>)>,
 }
 
@@ -133,8 +160,12 @@ pub(super) struct SkillsPane {
     pub(super) notes: HashMap<String, Option<Notes>>,
     pub(super) drafts: Vec<Draft>,
     pub(super) skills: Vec<Skill>,
-    /// Each skill's agents, by slug.
-    pub(super) agents: HashMap<String, Vec<AgentRow>>,
+    /// One skill running in the app, followed until it ends.
+    pub(super) running: Option<Running>,
+    /// The last typed outcome of each skill, by slug.
+    pub(super) outcomes: HashMap<String, RunOutcome>,
+    /// The skill whose Run click is waiting for confirmation.
+    pub(super) run_confirm: Option<String>,
     /// A capture records now, so Watch this waits.
     pub(super) recording: bool,
     pub(super) drafting: Option<Drafting>,
@@ -143,7 +174,7 @@ pub(super) struct SkillsPane {
     pub(super) editor: Option<draft_view::Editor>,
     pub(super) picker: model_picker::Picker,
     pub(super) noticing: noticing::Noticing,
-    /// The skill whose agents show.
+    /// The skill whose plan and controls show.
     pub(super) expanded: Option<String>,
     pub(super) armed: Option<Armed>,
     /// The last thing the pane couldn't do, for the person.
@@ -170,6 +201,7 @@ impl SkillsPane {
         settings: &crate::app_settings::ApprenticeSettings,
     ) -> bool {
         let mut changed = self.poll_drafting();
+        changed |= self.poll_running();
         changed |= self.picker.poll();
         if !visible || self.fixture.is_some() {
             return changed;
@@ -229,7 +261,6 @@ impl SkillsPane {
         self.lessons = snapshot.lessons;
         self.drafts = snapshot.drafts;
         self.skills = snapshot.skills;
-        self.agents = snapshot.agents;
         self.notes.extend(snapshot.notes);
     }
 
@@ -288,7 +319,7 @@ impl SkillsPane {
                     }
                     changed = true;
                 }
-                Ok(Progress::Done(skill)) => break Ok(skill),
+                Ok(Progress::Done(skill)) => break Ok(*skill),
                 Ok(Progress::Failed(message)) => break Err(Failure::Message(message)),
                 Ok(Progress::Unparsed(error)) => {
                     tracing::info!(reason = %error.reason, "a draft's answer couldn't be read");
@@ -312,6 +343,41 @@ impl SkillsPane {
             Err(_) if cancelled => {}
             Err(failure) => self.failed = Some((lesson, failure)),
         }
+        true
+    }
+
+    /// Follows a skill run to its typed last word. Like a draft, a run is
+    /// followed even while the pane is hidden: stopping it must still work.
+    fn poll_running(&mut self) -> bool {
+        let Some(running) = &mut self.running else {
+            return false;
+        };
+        let Some(rx) = &running.rx else {
+            return false;
+        };
+        let mut changed = false;
+        let outcome = loop {
+            match rx.try_recv() {
+                Ok(RunProgress::Step { n, of }) => {
+                    if running.stage != RunStage::Stopping {
+                        running.stage = RunStage::Step { n, of };
+                    }
+                    changed = true;
+                }
+                Ok(RunProgress::Done) => break RunOutcome::Done,
+                Ok(RunProgress::Failed(message)) => break RunOutcome::Failed(message),
+                Ok(RunProgress::Cancelled) => break RunOutcome::Cancelled,
+                Err(TryRecvError::Empty) => return changed,
+                // The run thread ended without a last word.
+                Err(TryRecvError::Disconnected) => {
+                    break RunOutcome::Failed(tr("Running stopped unexpectedly").to_owned());
+                }
+            }
+        };
+        let slug = running.slug.clone();
+        self.running = None;
+        self.run_confirm = None;
+        self.outcomes.insert(slug, outcome);
         true
     }
 
@@ -372,18 +438,12 @@ impl SkillsPane {
     }
 }
 
-/// One read of the captures folder, the store, and the agents' folders, on
-/// the reading thread.
+/// One read of the captures folder and the store, on the reading thread.
 fn read(captures: PathBuf, known: HashSet<String>, generation: u64) -> Snapshot {
     let lessons = lessons::list(&captures);
     let store = Store::open().ok();
     let drafts = store.as_ref().map(Store::drafts).unwrap_or_default();
     let skills = store.as_ref().map(Store::skills).unwrap_or_default();
-    let paths = crate::agent_install::Paths::current();
-    let agents = skills
-        .iter()
-        .map(|skill| (skill.slug.clone(), agents::rows(paths.as_ref(), skill)))
-        .collect();
     let notes = lessons
         .iter()
         .filter(|lesson| lesson.media != Media::Expired && !known.contains(&lesson.id))
@@ -394,7 +454,6 @@ fn read(captures: PathBuf, known: HashSet<String>, generation: u64) -> Snapshot 
         lessons,
         drafts,
         skills,
-        agents,
         notes,
     }
 }
@@ -623,7 +682,7 @@ pub(super) fn pane(ui: &Ui, p: Paint) -> (Vec<El>, El) {
     if let Some(drafts) = draft_view::other_drafts(ui, p) {
         content = content.child(drafts);
     }
-    if let Some(skills) = agents::section(ui, p) {
+    if let Some(skills) = runs::section(ui, p) {
         content = content.child(skills);
     } else if pane.new_lessons().next().is_none()
         && pane.drafts.is_empty()

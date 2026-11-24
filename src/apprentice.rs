@@ -1,7 +1,7 @@
 pub(crate) mod draft;
 pub(crate) mod events;
 pub(crate) mod evidence;
-pub(crate) mod install;
+pub(crate) mod execution;
 pub(crate) mod lessons;
 pub(crate) mod models;
 pub(crate) mod notice;

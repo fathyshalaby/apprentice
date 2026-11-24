@@ -382,7 +382,7 @@ pub(super) const KEYS: &[Key] = &[
     key(
         "labs.watch_and_learn",
         Kind::Bool,
-        "Labs: Watch and learn (macOS): record your whole screen and voice for a lesson, then draft a skill from it with a local model you choose",
+        "Labs: Watch and learn (macOS): record your whole screen and voice for a lesson, draft a skill with a local model you choose, and run the approved plan on this Mac",
     ),
     key(
         "labs.notice_patterns",

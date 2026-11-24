@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 
 use super::draft::{ParseError, instructions, merge_prompt, parse, schema, segment_prompt};
 use super::events::{self, ApprenticeAction};
-use super::evidence::{self, Limits, Segment};
+use super::evidence::{self, Evidence, Limits, Segment};
 use super::lessons::Lesson;
 use super::ollama::{self, ModelError};
 use super::skill::Skill;
@@ -38,7 +38,7 @@ pub enum Progress {
     },
     /// Joining the parts into one skill.
     Merging,
-    Done(Skill),
+    Done(Box<Skill>),
     /// Why it stopped, for the person.
     Failed(String),
     /// The model answered, but not with a usable draft.
@@ -113,7 +113,7 @@ fn job(
     };
     match evidence::build(lesson, &limits) {
         Ok(evidence) => drive(
-            evidence.segments,
+            evidence,
             model.as_ref(),
             limits.frames_per_segment,
             &lesson.id,
@@ -164,7 +164,7 @@ fn prepare(choice: ModelChoice, url: &str) -> Result<(Box<dyn Model>, Limits), M
 /// Asks about each part (at most [`MAX_PARTS`]), then merges several parts'
 /// answers in one more call, and reads the last answer into a skill.
 fn drive(
-    segments: Vec<Segment>,
+    evidence: Evidence,
     model: &dyn Model,
     frames_per_call: usize,
     lesson_id: &str,
@@ -176,7 +176,7 @@ fn drive(
         events::emit(ApprenticeAction::DraftFailed, lesson_id, None);
         let _ = events.send(Progress::Failed(message.to_owned()));
     };
-    let segments = fit(segments, MAX_PARTS, frames_per_call);
+    let segments = fit(evidence.segments, MAX_PARTS, frames_per_call);
     if segments.is_empty() {
         fail(tr("This lesson has nothing to learn from"));
         return;
@@ -238,10 +238,11 @@ fn drive(
         }
     };
     let finished = match parse(&raw, lesson_id, crate::history::now_ms()) {
-        Ok(skill) => {
+        Ok(mut skill) => {
+            skill.run_plan = evidence.plan;
             let steps = u32::try_from(skill.steps.len()).unwrap_or(u32::MAX);
             events::emit(ApprenticeAction::DraftFinished, lesson_id, Some(steps));
-            Progress::Done(skill)
+            Progress::Done(Box::new(skill))
         }
         Err(error) => {
             events::emit(ApprenticeAction::DraftFailed, lesson_id, None);
@@ -423,10 +424,21 @@ mod tests {
         }
     }
 
+    fn evidence(segments: Vec<Segment>) -> Evidence {
+        Evidence {
+            segments,
+            thin: super::evidence::Thin {
+                no_narration: false,
+                no_click_names: false,
+            },
+            plan: None,
+        }
+    }
+
     fn run(segments: Vec<Segment>, model: &Fake, deadline: Instant) -> Vec<Progress> {
         let (events, received) = mpsc::channel();
         drive(
-            segments,
+            evidence(segments),
             model,
             4,
             "lesson-1",
@@ -579,7 +591,7 @@ mod tests {
         model.cancel_after = Some((1, cancel.clone()));
         let (events, received) = mpsc::channel();
         drive(
-            vec![segment("one", 0), segment("two", 0)],
+            evidence(vec![segment("one", 0), segment("two", 0)]),
             &model,
             4,
             "lesson-1",
