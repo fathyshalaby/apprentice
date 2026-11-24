@@ -48,7 +48,9 @@ pub fn instructions() -> &'static str {
     "You turn a recorded lesson into a skill that an AI coding agent can follow later.\n\
 The evidence is a time-ordered list of lines. `[mm:ss] said:` is what the person said aloud. \
 `[mm:ss] window:` is the app and window in front. `[mm:ss] clicked ...` is a click, with the \
-name of the element when it is known. Screenshots of key moments may be attached.\n\
+name of the element when it is known. `[mm:ss] dragged ...` is a drag to or from a named thing, \
+`[mm:ss] drew: ...` is ink on the screen, `[mm:ss] scrolled ...` is scrolling, and \
+`[mm:ss] pressed ...` is a shortcut. Screenshots of key moments may be attached.\n\
 Write the steps an AI coding agent could follow to do the same task: short titles, concrete \
 details, in order. Use only what the evidence supports and never invent steps. \
 Also give a one-sentence description, when to use the skill, the inputs it needs, how to \
@@ -95,8 +97,22 @@ pub fn schema() -> Value {
 
 /// The user prompt for one part of a long lesson.
 pub fn segment_prompt(seg: &Segment, n: usize, of: usize) -> String {
+    let screenshots = if seg.frames.is_empty() {
+        String::new()
+    } else {
+        let times = seg
+            .frames
+            .iter()
+            .map(|frame| {
+                let secs = frame.t_ms / 1000;
+                format!("[{:02}:{:02}]", secs / 60, secs % 60)
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("Screenshots attached, in order: {times}\n\n")
+    };
     format!(
-        "Part {n} of {of} of the lesson. List the steps shown in this part, in the schema.\n\n{}",
+        "Part {n} of {of} of the lesson. List the steps shown in this part, in the schema.\n\n{screenshots}{}",
         seg.text
     )
 }
@@ -261,6 +277,35 @@ mod tests {
         assert!(p.contains("Part 2 of 3") && p.contains("said: hi"));
         assert!(merge_prompt(&["a".into(), "b".into()]).contains("Part 2:\nb"));
         assert!(schema()["properties"]["steps"].is_object());
+    }
+
+    #[test]
+    fn a_part_says_when_each_screenshot_was_taken() {
+        use crate::apprentice::evidence::Frame;
+        let frame = |t_ms| Frame {
+            t_ms,
+            png: Vec::new(),
+        };
+        let mut seg = Segment {
+            start_ms: 0,
+            end_ms: 70_000,
+            text: "[00:01] said: hi".into(),
+            frames: vec![frame(5_000), frame(65_000)],
+        };
+        assert!(
+            segment_prompt(&seg, 1, 1).contains("Screenshots attached, in order: [00:05], [01:05]")
+        );
+        seg.frames.clear();
+        assert!(!segment_prompt(&seg, 1, 1).contains("Screenshots"));
+    }
+
+    #[test]
+    fn the_instructions_explain_every_kind_of_line() {
+        for kind in [
+            "said:", "window:", "clicked", "dragged", "drew:", "scrolled", "pressed",
+        ] {
+            assert!(instructions().contains(kind), "{kind}");
+        }
     }
 
     /// Ollama writes to the schema token by token and lets a model skip

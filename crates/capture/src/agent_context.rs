@@ -522,7 +522,7 @@ fn event_text(event: &InteractionEvent) -> Option<String> {
 
 /// What a mark is: its shape, what it was drawn on when something names that, and its stroke
 /// count when more than one.
-fn mark_text(mark: &Mark) -> String {
+pub fn mark_text(mark: &Mark) -> String {
     let mut text = match mark.shape {
         Shape::Circle => "circled".to_owned(),
         Shape::Underline => "underlined".to_owned(),

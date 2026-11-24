@@ -553,7 +553,9 @@ pub fn settled_events(events: &[InteractionEvent]) -> Vec<InteractionEvent> {
     out
 }
 
-pub(crate) fn direction(dx: f32, dy: f32, threshold: f32) -> String {
+/// Which way a move of `(dx, dy)` went, in words (`down and right`), or `a little` under
+/// `threshold`.
+pub fn direction(dx: f32, dy: f32, threshold: f32) -> String {
     let h = if dx.abs() > threshold {
         if dx > 0.0 { "right" } else { "left" }
     } else {
