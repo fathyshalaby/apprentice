@@ -371,7 +371,11 @@ pub fn menu_state(
         .collect();
     let ready = chosen.is_some();
     MenuState {
-        hex_title: if ready { "Apprentice" } else { "Apprentice (no model ready)" },
+        hex_title: if ready {
+            "Apprentice"
+        } else {
+            "Apprentice (no model ready)"
+        },
         hex_enabled: ready,
         hex_checked: ready && preferred == Engine::Hex,
         models,

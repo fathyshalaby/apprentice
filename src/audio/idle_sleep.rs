@@ -186,7 +186,10 @@ mod platform {
 
     impl PreventSleep {
         pub(super) fn start() -> std::io::Result<Self> {
-            let mut reason: Vec<u16> = "Apprentice is recording".encode_utf16().chain([0]).collect();
+            let mut reason: Vec<u16> = "Apprentice is recording"
+                .encode_utf16()
+                .chain([0])
+                .collect();
             let context = REASON_CONTEXT {
                 Version: POWER_REQUEST_CONTEXT_VERSION,
                 Flags: POWER_REQUEST_CONTEXT_SIMPLE_STRING,

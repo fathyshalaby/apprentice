@@ -728,7 +728,9 @@ pub(super) fn listener_card(ui: &Ui, p: Paint) -> (String, El) {
     };
     let no_model = super::general::missing_model(ui).is_some();
     let hint = match (running, ui.settings.shortcut_mode) {
-        _ if no_model => tr("Apprentice can't dictate until a speech model is installed").to_string(),
+        _ if no_model => {
+            tr("Apprentice can't dictate until a speech model is installed").to_string()
+        }
         _ if !ui.records_shortcuts() => {
             tr("Ready anywhere · Use your desktop's shortcuts to dictate").to_string()
         }
@@ -737,7 +739,10 @@ pub(super) fn listener_card(ui: &Ui, p: Paint) -> (String, El) {
             &shortcut,
         ),
         (true, ShortcutMode::Hold) => tr_fill("Ready anywhere · Hold {} to dictate", &shortcut),
-        (false, _) => tr_fill("Enable Apprentice to dictate into any app with {}", &shortcut),
+        (false, _) => tr_fill(
+            "Enable Apprentice to dictate into any app with {}",
+            &shortcut,
+        ),
     };
     let search = format!("{status} {hint} {} {}", tr("Enable"), tr("Disable"));
     let failure = ui

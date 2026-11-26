@@ -12,7 +12,8 @@ const START_GRACE: std::time::Duration = std::time::Duration::from_secs(2);
 
 /// What `hex start` says when Hex runs but hasn't answered yet.
 #[cfg(not(target_os = "macos"))]
-const STILL_STARTING: &str = "Started Apprentice; it isn't answering yet (it may be loading its model)";
+const STILL_STARTING: &str =
+    "Started Apprentice; it isn't answering yet (it may be loading its model)";
 
 /// `hex start` on macOS: `open`s the Hex.app this `hex` belongs to, then
 /// waits until it answers.

@@ -472,7 +472,10 @@ fn hint(ui: &Ui, p: Paint) -> Option<El> {
             Some(formats().to_owned()),
         )
     } else {
-        (tr_fill("Apprentice can transcribe {} files", formats()), None)
+        (
+            tr_fill("Apprentice can transcribe {} files", formats()),
+            None,
+        )
     };
     let ink = if accepted { p.accent() } else { p.danger() };
     let mut card = col()

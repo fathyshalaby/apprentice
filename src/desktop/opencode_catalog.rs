@@ -53,7 +53,9 @@ pub(crate) fn opencode_unavailable_copy(
             description: if meeting {
                 tr("Summary models show once Apprentice connects to OpenCode.")
             } else {
-                tr("OpenCode transformation will be available after Apprentice connects to OpenCode.")
+                tr(
+                    "OpenCode transformation will be available after Apprentice connects to OpenCode.",
+                )
             },
             error: None,
             can_retry: false,

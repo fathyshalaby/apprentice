@@ -322,7 +322,9 @@ fn recordings_row(ui: &Ui, p: Paint) -> El {
         p,
         "capture-show-in-recordings",
         tr("Show in screen recordings"),
-        tr("Lets recordings, annotations included, show Apprentice's capsule, ink, and HUD, for demos"),
+        tr(
+            "Lets recordings, annotations included, show Apprentice's capsule, ink, and HUD, for demos",
+        ),
         ui.settings.capture.show_overlays_in_recordings,
         |ui: &mut Ui| {
             ui.update(|settings| {
@@ -514,7 +516,9 @@ impl Agents {
             if !self.selected.get(index).copied().unwrap_or(false) || status.linked {
                 continue;
             }
-            if let Err(error) = agent_install::install(&paths, status.agent, &agent_install::ANNOTATE) {
+            if let Err(error) =
+                agent_install::install(&paths, status.agent, &agent_install::ANNOTATE)
+            {
                 failure.get_or_insert(error);
             }
         }

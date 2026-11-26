@@ -57,8 +57,9 @@ pub(super) fn reregister<M>(
         }
         Err(error) => error,
     };
-    let refused =
-        format!("could not register the new shortcuts, so Apprentice kept the previous ones: {error:#}");
+    let refused = format!(
+        "could not register the new shortcuts, so Apprentice kept the previous ones: {error:#}"
+    );
     let monitor = start(running.clone())
         .map_err(|restore| eyre!("{refused}; restoring them failed too: {restore:#}"))?;
     tracing::warn!("{refused}");

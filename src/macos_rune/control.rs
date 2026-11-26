@@ -301,10 +301,15 @@ impl Pump {
                     ControlReply::error("unsupported", "updates are managed by your organization")
                 }
                 DesktopUpdateStatus::Unavailable | DesktopUpdateStatus::SourceBuild => {
-                    ControlReply::error("unavailable", "this Apprentice build doesn't update itself")
+                    ControlReply::error(
+                        "unavailable",
+                        "this Apprentice build doesn't update itself",
+                    )
                 }
                 _ => match crate::macos_rune::update_action(&DesktopAction::CheckForUpdates) {
-                    Ok(()) => ControlReply::done("Checking for updates; Apprentice shows what it finds"),
+                    Ok(()) => {
+                        ControlReply::done("Checking for updates; Apprentice shows what it finds")
+                    }
                     Err(error) => ControlReply::error("unavailable", format!("{error:#}")),
                 },
             }),

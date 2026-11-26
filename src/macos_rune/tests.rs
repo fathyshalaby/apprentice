@@ -334,13 +334,20 @@ fn hex_model_use_with_the_current_model_and_language_loads_nothing() {
 
 #[test]
 fn input_source_choices_use_installed_only_preparation_and_manual_choices_supersede_them() {
-    let settings = mapped_settings(TranscriptionModelId::ParakeetV3);
-    let expected = settings.transcription_for_model(TranscriptionModelId::ParakeetV3);
+    let mut settings = mapped_settings_in(TranscriptionModelId::ParakeetV3, "es");
+    settings.transcription = TranscriptionSelection {
+        model: TranscriptionModelId::ParakeetUnifiedEnglish,
+        language: "en".into(),
+    };
+    let expected = TranscriptionSelection {
+        model: TranscriptionModelId::ParakeetV3,
+        language: "es".into(),
+    };
     let mut fixture = Fixture::new(settings);
     fixture.source("ABC");
     fixture.source("Spanish");
     fixture.due();
-    assert_eq!(fixture.started(), (expected, true));
+    assert_eq!(fixture.started(), (expected.clone(), true));
     let manual = TranscriptionSelection {
         model: TranscriptionModelId::WhisperLargeV3Turbo,
         language: "de".into(),

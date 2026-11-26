@@ -213,7 +213,9 @@ impl Script {
                 return Ok(Err(timed_out(limit)));
             }
             if stop.load(Ordering::Acquire) {
-                return Ok(Err("Apprentice stopped before the transformation finished".into()));
+                return Ok(Err(
+                    "Apprentice stopped before the transformation finished".into()
+                ));
             }
             let wake = self.io.borrow_mut().wait(deadline);
             match wake {

@@ -129,9 +129,10 @@ pub(super) fn prepare(
                     "model-unavailable",
                     format!("{name} doesn't support `{}`", selection.language),
                 ),
-                _ => {
-                    ControlReply::error("failed", format!("Apprentice refused to prepare {name} ({code})"))
-                }
+                _ => ControlReply::error(
+                    "failed",
+                    format!("Apprentice refused to prepare {name} ({code})"),
+                ),
             })
         }
         Err(error) => Err(ControlReply::error("transport", format!("{error:#}"))),

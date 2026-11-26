@@ -60,7 +60,9 @@ pub(crate) fn start(
     };
     // Before the tray exists: Plasma reads the name when the item registers.
     let symbolic = crate::linux::icons::install_tray_symbolic(light)
-        .inspect_err(|error| tracing::warn!(%error, "could not install Apprentice's symbolic tray icon"))
+        .inspect_err(
+            |error| tracing::warn!(%error, "could not install Apprentice's symbolic tray icon"),
+        )
         .unwrap_or_default();
     if symbolic.wrote
         && let (Some(runtime), Some(bus)) = (runtime.as_ref(), bus)
