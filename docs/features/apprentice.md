@@ -502,6 +502,12 @@ the fixed build, installed, same lesson, gemma4:12b with screenshots
 └─ mac-skills-models       a headless accessibility tree, not a live click:
                            choose-model, use-llama3-2-3b, download-qwen3-vl-8b,
                            use-apple-intelligence, save-ollama-url
+
+2026-11-26, after reinstalling the merged picker build
+├─ hex window show skills  answered "Opened the window"; status reported
+│                          window.pane skills
+└─ permissions             reset to needs-request / needs-settings by the new
+                           ad-hoc build; a live lesson needs fresh grants
 ```
 
 ### Not verified
@@ -516,7 +522,8 @@ the fixed build, installed, same lesson, gemma4:12b with screenshots
   as is the 5 s poll's cost on a large folder.
 
 - Recording a real lesson: Screen Recording, Microphone, and Accessibility
-  are now granted to 3.4.0 (`permissions.ready: true`), but no lesson was
+  were granted to the earlier ad-hoc build (`permissions.ready: true`), but
+  reinstalling the merged picker build reset those grants. No lesson was
   recorded in this pass, so Watch this and the capsule, a lesson's real
   transcript and click names, and the Skills pane opening on its own after a
   lesson were not run.
