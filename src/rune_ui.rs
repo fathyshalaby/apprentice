@@ -455,6 +455,8 @@ pub(crate) fn show(ui: &mut Ui, destination: Destination, tx: &mut Tx) {
         }
         Destination::History => Pane::History,
         #[cfg(all(target_os = "macos", hex_capture))]
+        Destination::Skills if !skills::allowed(ui) => return,
+        #[cfg(all(target_os = "macos", hex_capture))]
         Destination::Skills => Pane::Skills,
     };
     ui.close_dialogs();

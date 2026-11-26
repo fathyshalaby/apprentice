@@ -162,13 +162,17 @@ pub(super) fn open(ui: &mut Ui) {
 }
 
 fn retry(ui: &mut Ui) {
-    if ui.skills.fixture.is_none() {
-        ui.skills.picker.list();
+    if !super::allowed(ui) || ui.skills.fixture.is_some() {
+        return;
     }
+    ui.skills.picker.list();
 }
 
 /// Picking a row saves it as the model drafts use; nothing else runs.
 fn choose(ui: &mut Ui, choice: &ModelChoice) {
+    if !super::allowed(ui) {
+        return;
+    }
     let model = ApprenticeSettings::model_string(choice);
     if ui.update(|settings| settings.apprentice.model = Some(model)) {
         ui.skills.picker.open = false;
@@ -177,6 +181,9 @@ fn choose(ui: &mut Ui, choice: &ModelChoice) {
 
 /// Clearing the choice returns to no model: Draft skill then asks for one.
 fn choose_none(ui: &mut Ui) {
+    if !super::allowed(ui) {
+        return;
+    }
     if ui.update(|settings| settings.apprentice.model = None) {
         ui.skills.picker.open = false;
     }
@@ -243,6 +250,9 @@ fn cancel_download(ui: &mut Ui) {
 
 /// Saves Ollama's address once it is checked to be on this computer.
 fn save_url(ui: &mut Ui) {
+    if !super::allowed(ui) {
+        return;
+    }
     let url = ui.skills.picker.url.text.trim().to_owned();
     if !is_loopback_http_url(&url) {
         ui.skills.picker.url_error =

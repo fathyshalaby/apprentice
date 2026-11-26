@@ -491,6 +491,13 @@ impl Pump {
             // While Meetings is off the pane shows its opt-in.
             Some(Pane::Meetings) => Destination::Meetings(None),
             #[cfg(all(target_os = "macos", hex_capture))]
+            Some(Pane::Skills) if !crate::labs::watch_and_learn() => {
+                return Err(ControlError::new(
+                    "unsupported",
+                    "Watch and learn is off in Labs",
+                ));
+            }
+            #[cfg(all(target_os = "macos", hex_capture))]
             Some(Pane::Skills) => Destination::Skills,
         };
         show(&self.window, destination);

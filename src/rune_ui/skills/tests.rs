@@ -89,6 +89,7 @@ fn the_skills_pane_shows_only_with_its_lab() {
         "hidden while the lab is off"
     );
     rt.state.settings.labs.watch_and_learn = true;
+    rt.state.skills = super::SkillsPane::fixture(super::Fixture::Empty);
     refresh(&mut rt);
     tap(&mut rt, "nav-skills");
     assert_eq!(rt.state.pane, Pane::Skills);
@@ -186,6 +187,35 @@ fn approve_saves_the_draft() {
             .any(|s| s.slug == skills[0].slug)
     );
     let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn a_locked_pane_cannot_approve_a_draft() {
+    let root = temp("locked-approve");
+    let mut rt = runtime("mac-skills-draft");
+    let store = Store::at(root.clone());
+    store.save_draft(&rt.state.skills.drafts[0]).unwrap();
+    rt.state.skills.store = Some(store);
+    rt.state.settings.labs.watch_and_learn = false;
+    refresh(&mut rt);
+
+    tap(&mut rt, "approve-skill");
+    assert_eq!(Store::at(root.clone()).drafts().len(), 1);
+    assert!(Store::at(root.clone()).skills().is_empty());
+    assert!(rt.state.skills.editor.is_some());
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn a_locked_pane_cannot_arm_a_skill_delete() {
+    let mut rt = runtime("mac-skills-list");
+    let before = rt.state.skills.skills.len();
+    rt.state.settings.labs.watch_and_learn = false;
+    refresh(&mut rt);
+
+    tap(&mut rt, "delete-skill");
+    assert_eq!(rt.state.skills.skills.len(), before);
+    assert!(rt.state.skills.armed.is_none(), "no delete was armed");
 }
 
 #[test]
@@ -347,6 +377,22 @@ fn none_clears_the_saved_choice_without_running_a_model() {
     refresh(&mut rt);
     assert!(rt.find("in-use").is_some(), "{:?}", texts(&rt));
     assert!(rt.find("use-none").is_none());
+}
+
+#[test]
+fn a_locked_pane_refuses_model_and_address_writes() {
+    let mut rt = runtime("mac-skills-models");
+    let model = rt.state.settings.apprentice.model.clone();
+    let url = rt.state.settings.apprentice.ollama_url.clone();
+    rt.state.settings.labs.watch_and_learn = false;
+    rt.state.skills.picker.url = TextEdit::new("http://localhost:11500");
+    refresh(&mut rt);
+
+    tap(&mut rt, "use-none");
+    tap(&mut rt, "save-ollama-url");
+    assert_eq!(rt.state.settings.apprentice.model, model);
+    assert_eq!(rt.state.settings.apprentice.ollama_url, url);
+    assert!(rt.state.skills.picker.url_error.is_none());
 }
 
 #[test]
@@ -601,9 +647,20 @@ fn review_over_unsaved_typing_asks_first() {
 fn the_skills_destination_opens_the_pane_while_the_lab_is_on() {
     let mut rt = runtime("mac-settings");
     rt.state.settings.labs.watch_and_learn = true;
+    rt.state.skills = super::SkillsPane::fixture(super::Fixture::Empty);
     refresh(&mut rt);
     rt.update(|ui, tx| crate::rune_ui::show(ui, crate::rune_ui::Destination::Skills, tx));
     assert_eq!(rt.state.pane, Pane::Skills);
+}
+
+#[test]
+fn the_skills_destination_does_nothing_while_the_lab_is_off() {
+    let mut rt = runtime("mac-skills-empty");
+    rt.state.settings.labs.watch_and_learn = false;
+    rt.state.pane = Pane::General;
+    refresh(&mut rt);
+    rt.update(|ui, tx| crate::rune_ui::show(ui, crate::rune_ui::Destination::Skills, tx));
+    assert_eq!(rt.state.pane, Pane::General);
 }
 
 /// Sets the chosen Ollama model and what the picker knows of it.
