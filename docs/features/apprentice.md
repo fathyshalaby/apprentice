@@ -27,6 +27,8 @@ Turn it on                               // apprentice.gate
 │   write; a locked pane never leaves an enabled control that silently no-ops
 ├── hex window show skills answers unsupported while the lab is off, instead
 │   of claiming it opened a pane it never selected
+├── hex status --json reports watch_and_learn and skills from that same gate,
+│   plus the saved apprentice_model (null until a person chooses one)
 ├── Compiled only into macOS builds with captures: src/apprentice,
 │   rune_ui/skills, Destination::Skills, and Pane::Skills are
 │   cfg(all(target_os = "macos", hex_capture)); StatusItemAction::OpenSkills
@@ -41,7 +43,8 @@ Turn it on                               // apprentice.gate
 // the_skills_destination_does_nothing_while_the_lab_is_off,
 // a_locked_pane_refuses_model_and_address_writes,
 // a_locked_pane_cannot_approve_a_draft, a_locked_pane_cannot_arm_a_skill_delete,
-// macos_rune::status_item::tests::watch_this_is_hidden_with_the_lab_off
+// macos_rune::status_item::tests::watch_this_is_hidden_with_the_lab_off,
+// control::cli::tests::status_reports_watch_and_learn_and_reads_older_replies_without_it
 
 Record a lesson                          // apprentice.lesson
 ├── Watch this (the Skills pane's header, note "Records your whole screen and
@@ -430,6 +433,8 @@ Notice patterns                          // apprentice.notice
   `mac-skills-draft`, `mac-skills-models`, `mac-skills-list`.
 - The menu bar's Watch This… (`macos_rune/status_item.rs`), and
   `hex window show skills` (the running app's `window-show` control).
+- `hex status --json` (`features.watch_and_learn`, `features.skills`,
+  `features.apprentice_model`).
 - Notice patterns: Settings › Labs › Annotate group, its card (row key
   `lab-notice-patterns`, needs Watch and learn); the Skills pane's Noticing
   section (`rune_ui/skills/noticing.rs`, scenes `mac-skills-noticing-empty`,
@@ -524,6 +529,12 @@ the fixed build, installed, same lesson, gemma4:12b with screenshots
 │                          reported window.pane skills
 └─ permissions             still needs-request / needs-settings after the
                            reinstall; fresh grants are needed before a lesson
+
+2026-11-26, status fields (tests only; the installed app was not rebuilt yet)
+├─ scripts/check control:: 87 passed, including the status fields and the
+│                          older-reply default test
+├─ scripts/check labs::tests::watch_and_learn  1 passed
+└─ scripts/check rune_ui::skills              57 passed
 ```
 
 ### Not verified

@@ -751,6 +751,16 @@ pub struct FeatureReport {
     pub meetings: bool,
     pub release_microphone_while_idle: bool,
     pub history_retention: String,
+    /// Watch and learn's effective gate: saved switch, build, lock, and OS.
+    #[serde(default)]
+    pub watch_and_learn: bool,
+    /// Whether the Skills pane can be shown here (the same gate today).
+    #[serde(default)]
+    pub skills: bool,
+    /// The explicit saved choice: `apple-intelligence`, `ollama:<name>`, or
+    /// null when none was chosen. Status never picks or switches one.
+    #[serde(default)]
+    pub apprentice_model: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]

@@ -595,6 +595,9 @@ fn status(host: &dyn Host) -> Result<ControlReply, ControlError> {
                 .ok()
                 .and_then(|value| value.as_str().map(str::to_owned))
                 .unwrap_or_default(),
+            watch_and_learn: crate::labs::watch_and_learn_available(&settings.labs),
+            skills: crate::labs::watch_and_learn_available(&settings.labs),
+            apprentice_model: settings.apprentice.model.clone(),
         },
         // Linux and Windows gate dictation on no privacy permission.
         permissions: PermissionReport {

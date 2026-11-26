@@ -790,6 +790,12 @@ pub(crate) fn watch_and_learn_enabled(settings: &LabsSettings) -> bool {
         && Feature::WatchAndLearn.managed().is_none()
 }
 
+/// Whether Watch and learn can run here: its saved switch, build, lock, and OS
+/// list. The pane, the window destination, and CLI status read this same answer.
+pub(crate) fn watch_and_learn_available(settings: &LabsSettings) -> bool {
+    watch_and_learn_enabled(settings) && Feature::WatchAndLearn.on_this_os()
+}
+
 /// Whether `settings` turn on Labs › Notice patterns in this build, before
 /// its managed lock and before Watch and learn's own switch (the gate,
 /// [`notice_patterns`], also needs that).
@@ -1852,6 +1858,7 @@ mod tests {
             Feature::WatchAndLearn.on_this_os(),
             cfg!(target_os = "macos")
         );
+        assert_eq!(watch_and_learn_available(&labs), cfg!(target_os = "macos"));
         assert_eq!(Feature::WatchAndLearn.added(), 20261122);
         assert_eq!(Feature::WatchAndLearn.audience(), Audience::Everyone);
         assert_eq!(Feature::WatchAndLearn.group(), Group::Annotate);

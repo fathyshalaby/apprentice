@@ -498,8 +498,7 @@ pub(super) fn small(
 pub(super) fn allowed(ui: &Ui) -> bool {
     ui.settings.labs.watch_and_learn
         && (ui.skills.fixture.is_some()
-            || (crate::labs::watch_and_learn_enabled(&ui.settings.labs)
-                && crate::labs::Feature::WatchAndLearn.on_this_os()))
+            || crate::labs::watch_and_learn_available(&ui.settings.labs))
 }
 
 /// What the screen's one primary button is: Watch this, unless a draft is
