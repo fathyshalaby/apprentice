@@ -73,6 +73,9 @@ pub enum Pane {
     Modes,
     History,
     Meetings,
+    /// The Watch and learn Skills pane (macOS with Annotate).
+    #[cfg(all(target_os = "macos", hex_capture))]
+    Skills,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -1270,6 +1273,18 @@ mod tests {
             serde_json::from_str::<ControlRequest>(&json).unwrap(),
             request
         );
+    }
+
+    #[cfg(all(target_os = "macos", hex_capture))]
+    #[test]
+    fn skills_is_a_window_pane_name() {
+        assert_eq!(
+            <Pane as clap::ValueEnum>::from_str("skills", true).unwrap(),
+            Pane::Skills
+        );
+        round_trip_request(ControlCommand::WindowShow {
+            pane: Some(Pane::Skills),
+        });
     }
 
     #[test]

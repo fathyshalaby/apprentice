@@ -417,6 +417,9 @@ scrawl-capture-list {limit?} | scrawl-capture-show {capture}
 scrawl-capture-send {capture, to?, always?} | scrawl-capture-route {capture, ask_jev}
 ```
 
+`window show` takes `settings`, `models`, `modes`, `history`, or `meetings`;
+on macOS with Annotate it also takes `skills`, the Watch and learn pane.
+
 Optional fields may be left out. `hex start` and `hex logs` are local and have
 no wire form. `history-clear` has no confirmation field: the CLI asks for
 `--yes` before it sends it. `hex transcribe` also has no `/control` wire form:
