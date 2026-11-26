@@ -530,11 +530,15 @@ the fixed build, installed, same lesson, gemma4:12b with screenshots
 └─ permissions             still needs-request / needs-settings after the
                            reinstall; fresh grants are needed before a lesson
 
-2026-11-26, status fields (tests only; the installed app was not rebuilt yet)
+2026-11-26, status fields after rebuilding the installed app
 ├─ scripts/check control:: 87 passed, including the status fields and the
 │                          older-reply default test
 ├─ scripts/check labs::tests::watch_and_learn  1 passed
-└─ scripts/check rune_ui::skills              57 passed
+├─ scripts/check rune_ui::skills              57 passed
+└─ live `hex status`        JSON: watch_and_learn true, skills true,
+                           apprentice_model "ollama:gemma4:12b"; the human
+                           line says "Watch and learn on, Skills model
+                           ollama:gemma4:12b"
 ```
 
 ### Not verified
