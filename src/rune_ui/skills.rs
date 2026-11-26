@@ -491,11 +491,15 @@ pub(super) fn small(
         .key(key)
 }
 
-/// Whether the pane may start work: the lab is on (and, outside scenes, its
-/// managed lock allows it).
-fn allowed(ui: &Ui) -> bool {
+/// Whether the pane may be shown or changed: the saved lab is on, this build
+/// has it, and no managed lock holds it off. Scenes keep their fixture visible
+/// without depending on the process-wide gate. The sidebar, window
+/// destination, and every mutating handler share this one predicate.
+pub(super) fn allowed(ui: &Ui) -> bool {
     ui.settings.labs.watch_and_learn
-        && (ui.skills.fixture.is_some() || crate::labs::watch_and_learn())
+        && (ui.skills.fixture.is_some()
+            || (crate::labs::watch_and_learn_enabled(&ui.settings.labs)
+                && crate::labs::Feature::WatchAndLearn.on_this_os()))
 }
 
 /// What the screen's one primary button is: Watch this, unless a draft is

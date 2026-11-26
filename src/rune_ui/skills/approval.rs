@@ -82,6 +82,9 @@ fn no_store(ui: &mut Ui, message: String) {
 /// Approve skill: the draft as edited becomes a skill. A taken name asks
 /// first; `clash` is the answer.
 pub(super) fn approve(ui: &mut Ui, clash: Option<Clash>) {
+    if !super::allowed(ui) {
+        return;
+    }
     let pane = &mut ui.skills;
     let Some(draft) = pane.editor.as_ref().and_then(Editor::draft) else {
         return;
@@ -128,6 +131,9 @@ pub(super) fn approve(ui: &mut Ui, clash: Option<Clash>) {
 
 /// Save changes on a saved skill: its own approval, with a new version.
 pub(super) fn save_edit(ui: &mut Ui) {
+    if !super::allowed(ui) {
+        return;
+    }
     let pane = &mut ui.skills;
     let Some(editor) = &pane.editor else {
         return;
@@ -162,6 +168,9 @@ pub(super) fn save_edit(ui: &mut Ui) {
 /// Discard on a draft: the first click asks, the second moves it to the
 /// Trash.
 pub(super) fn discard(ui: &mut Ui) {
+    if !super::allowed(ui) {
+        return;
+    }
     let pane = &mut ui.skills;
     let opened = pane.ready_store();
     let Some(editor) = &mut pane.editor else {

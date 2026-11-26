@@ -784,7 +784,7 @@ fn annotate_agent_tools_enabled(settings: &LabsSettings) -> bool {
 
 /// Whether `settings` turn on Labs › Watch and learn in this build, before
 /// its managed lock; the state word has no bit for it.
-fn watch_and_learn_enabled(settings: &LabsSettings) -> bool {
+pub(crate) fn watch_and_learn_enabled(settings: &LabsSettings) -> bool {
     settings.watch_and_learn
         && Feature::WatchAndLearn.shipped()
         && Feature::WatchAndLearn.managed().is_none()

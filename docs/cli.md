@@ -418,7 +418,8 @@ scrawl-capture-send {capture, to?, always?} | scrawl-capture-route {capture, ask
 ```
 
 `window show` takes `settings`, `models`, `modes`, `history`, or `meetings`;
-on macOS with Annotate it also takes `skills`, the Watch and learn pane.
+on macOS with Annotate it also takes `skills`, the Watch and learn pane. `skills`
+answers `unsupported` while Labs › Watch and learn is off.
 
 Optional fields may be left out. `hex start` and `hex logs` are local and have
 no wire form. `history-clear` has no confirmation field: the CLI asks for

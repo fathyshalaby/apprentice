@@ -22,6 +22,11 @@ Turn it on                               // apprentice.gate
 │   (capture_host/lesson.rs refusal -> "feature-off"), a draft (run::draft),
 │   a run (rune_ui/skills/runs.rs -> apprentice::execution), and the menu
 │   bar's Watch This…
+├── One pane predicate (rune_ui::skills::allowed) hides the sidebar row,
+│   refuses the window destination, and gates every model/URL/draft/skill
+│   write; a locked pane never leaves an enabled control that silently no-ops
+├── hex window show skills answers unsupported while the lab is off, instead
+│   of claiming it opened a pane it never selected
 ├── Compiled only into macOS builds with captures: src/apprentice,
 │   rune_ui/skills, Destination::Skills, and Pane::Skills are
 │   cfg(all(target_os = "macos", hex_capture)); StatusItemAction::OpenSkills
@@ -33,6 +38,9 @@ Turn it on                               // apprentice.gate
 // capture_host::lesson::tests::only_a_lesson_is_gated,
 // apprentice::run::tests::drafting_refuses_with_the_lab_off,
 // rune_ui::skills::tests::the_skills_pane_shows_only_with_its_lab,
+// the_skills_destination_does_nothing_while_the_lab_is_off,
+// a_locked_pane_refuses_model_and_address_writes,
+// a_locked_pane_cannot_approve_a_draft, a_locked_pane_cannot_arm_a_skill_delete,
 // macos_rune::status_item::tests::watch_this_is_hidden_with_the_lab_off
 
 Record a lesson                          // apprentice.lesson

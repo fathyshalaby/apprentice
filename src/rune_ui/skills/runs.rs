@@ -19,6 +19,9 @@ use crate::desktop::i18n::{tr, tr_fill, tr_named};
 
 /// Delete skill: the first click asks; the second removes the skill.
 fn delete(ui: &mut Ui, slug: &str) {
+    if !super::allowed(ui) {
+        return;
+    }
     let pane = &mut ui.skills;
     if pane.armed.as_ref() != Some(&Armed::Skill(slug.to_owned())) {
         pane.armed = Some(Armed::Skill(slug.to_owned()));

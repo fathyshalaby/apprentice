@@ -123,7 +123,7 @@ impl Pane {
             #[cfg(hex_capture)]
             Pane::Captures => ui.settings.labs.screenshots,
             #[cfg(all(target_os = "macos", hex_capture))]
-            Pane::Skills => ui.settings.labs.watch_and_learn,
+            Pane::Skills => super::skills::allowed(ui),
             _ => true,
         }
     }
