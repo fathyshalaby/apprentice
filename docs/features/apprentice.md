@@ -516,6 +516,14 @@ the fixed build, installed, same lesson, gemma4:12b with screenshots
 │                          window.pane skills
 └─ permissions             reset to needs-request / needs-settings by the new
                            ad-hoc build; a live lesson needs fresh grants
+
+2026-11-26, after reinstalling the gate build
+├─ settings off            labs.watch_and_learn false -> `window show skills`
+│                          answered unsupported, "Watch and learn is off in Labs"
+├─ settings on             the same command opened the pane again; status
+│                          reported window.pane skills
+└─ permissions             still needs-request / needs-settings after the
+                           reinstall; fresh grants are needed before a lesson
 ```
 
 ### Not verified
