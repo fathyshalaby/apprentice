@@ -62,7 +62,9 @@ fn reads(choice: Option<&ModelChoice>, vision: Option<bool>) -> String {
             format!("{text} · {model} · {}", tr("text only"))
         }
         (Some(ModelChoice::Ollama { model }), None) => format!("{text} · {model}"),
-        (None, _) => screen.to_owned(),
+        // With no model, nothing reads the lesson: say so instead of listing
+        // what a later choice might read.
+        (None, _) => tr("None chosen").to_owned(),
     }
 }
 

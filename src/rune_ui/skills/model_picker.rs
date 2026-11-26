@@ -175,6 +175,13 @@ fn choose(ui: &mut Ui, choice: &ModelChoice) {
     }
 }
 
+/// Clearing the choice returns to no model: Draft skill then asks for one.
+fn choose_none(ui: &mut Ui) {
+    if ui.update(|settings| settings.apprentice.model = None) {
+        ui.skills.picker.open = false;
+    }
+}
+
 /// Download: the approval for this one pull. One at a time.
 fn download(ui: &mut Ui, model: &str) {
     if !allowed(ui) || ui.skills.picker.pull.is_some() {
@@ -298,6 +305,30 @@ pub(super) fn section(ui: &Ui, p: Paint) -> El {
     controls::section(p, "model", tr("Model"), rows)
 }
 
+/// The explicit no-model row: In use when nothing drafts, else Use to clear
+/// the saved choice without changing anything else.
+fn none_row(p: Paint, chosen: Option<&ModelChoice>) -> El {
+    let control = if chosen.is_none() {
+        super::super::lists::tone_tag(
+            p,
+            "in-use",
+            tr("In use"),
+            super::super::lists::Tone::Success,
+        )
+    } else {
+        small(p, "use-none", tr("Use"), true, |ui: &mut Ui, _| {
+            choose_none(ui)
+        })
+    };
+    setting_row(
+        p,
+        "model-none",
+        tr("None"),
+        Some(tr("None chosen")),
+        control,
+    )
+}
+
 /// A model row's control: In use, or Use.
 fn use_control(p: Paint, key: String, chosen: bool, enabled: bool, choice: ModelChoice) -> El {
     if chosen {
@@ -315,7 +346,7 @@ fn use_control(p: Paint, key: String, chosen: bool, enabled: bool, choice: Model
 
 fn picker_rows(ui: &Ui, p: Paint, chosen: Option<&ModelChoice>) -> Vec<El> {
     let picker = &ui.skills.picker;
-    let mut rows = Vec::new();
+    let mut rows = vec![none_row(p, chosen)];
     let installed: &[Installed] = match &picker.installed {
         None => {
             rows.push(note(

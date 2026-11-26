@@ -81,10 +81,10 @@ Read a lesson                            // apprentice.evidence
 Choose a model                           // apprentice.model
 ├── Skills pane › Model, or hex settings set apprentice.model
 │   apple-intelligence | ollama:<name> | none -> ApprenticeSettings::choice()
-├── The picker lists Ollama's models on this computer (each checked with
-│   /api/show for vision), the recommended ones not downloaded with Download
-│   (/api/pull; the click is the approval, progress shown, Cancel), and
-│   Apple Intelligence (text only)
+├── The picker lists None (Use clears the saved choice), Ollama's models on
+│   this computer (each checked with /api/show for vision), the recommended
+│   ones not downloaded with Download (/api/pull; the click is the approval,
+│   progress shown, Cancel), and Apple Intelligence (text only)
 ├── Ollama's cloud models are never offered: a -cloud or :cloud tag, or a
 │   remote_host or remote_model in /api/tags or /api/show, leaves one out
 ├── Recommended (models::RECOMMENDED): gemma4:26b, qwen3.8:27b, gemma4:12b,
@@ -101,11 +101,13 @@ Choose a model                           // apprentice.model
 // a_cancelled_pull_reads_cancelled,
 // apprentice::models::tests::recommended_models_are_the_four_from_the_spec,
 // app_settings::apprentice::tests::*,
-// rune_ui::skills::tests::a_download_is_its_own_click, a_remote_ollama_address_is_refused
+// rune_ui::skills::tests::a_download_is_its_own_click, a_remote_ollama_address_is_refused,
+// the_picker_saves_each_explicit_model_choice, none_clears_the_saved_choice_without_running_a_model
 
 Draft a skill                            // apprentice.draft
 ├── Draft skill on a lesson card is the approval for one run; with no model
-│   chosen the button reads Choose a model first and opens the picker
+│   chosen the button reads Choose a model first and opens the picker; with
+│   no choice the card says None chosen
 ├── The card says what is read and by which model: "screenshots" only for an
 │   Ollama model the picker knows sees images (the shown pane lists Ollama's
 │   models once); "text only" for Apple Intelligence and text-only models
@@ -129,7 +131,8 @@ Draft a skill                            // apprentice.draft
 // apprentice::ollama::tests::chat_sends_images_and_the_schema,
 // details_read_vision_and_the_cloud,
 // rune_ui::skills::tests::draft_skill_is_the_only_way_a_model_runs,
-// without_a_model_the_lesson_asks_for_one_first, a_text_only_model_never_reads_screenshots,
+// without_a_model_the_lesson_asks_for_one_first, a_lesson_without_a_model_says_none_is_chosen,
+// a_text_only_model_never_reads_screenshots,
 // a_finished_draft_is_saved_with_its_text_and_opens,
 // a_failed_draft_says_why_and_offers_try_again,
 // an_unreadable_answer_shows_the_raw_text_and_offers_try_again,
@@ -417,7 +420,8 @@ Notice patterns                          // apprentice.notice
 - The Skills pane in the sidebar while the lab is on (`rune_ui/skills.rs`,
   `rune_ui/skills/`); scenes `mac-skills-empty`, `mac-skills-lesson`,
   `mac-skills-draft`, `mac-skills-models`, `mac-skills-list`.
-- The menu bar's Watch This… (`macos_rune/status_item.rs`).
+- The menu bar's Watch This… (`macos_rune/status_item.rs`), and
+  `hex window show skills` (the running app's `window-show` control).
 - Notice patterns: Settings › Labs › Annotate group, its card (row key
   `lab-notice-patterns`, needs Watch and learn); the Skills pane's Noticing
   section (`rune_ui/skills/noticing.rs`, scenes `mac-skills-noticing-empty`,
@@ -488,6 +492,16 @@ the fixed build, installed, same lesson, gemma4:12b with screenshots
 ├─ draft in 19 s: 5 steps, inputs, checks, one edge case, 1 question
 ├─ the question answered in the pane → "1 von 1 Warum-Fragen beantwortet"
 └─ approved: SKILL.md (owner-only) carries the answer under Decisions
+
+2026-11-26, installed 3.4.0 after the permission grants
+├─ hex status --json       permissions.ready true, microphone and Accessibility
+│                          ready, transcription_model true, capture.state idle
+├─ hex settings get        apprentice.model ollama:gemma4:12b; URL
+│                          http://127.0.0.1:11434
+├─ Ollama /api/tags        qwen3.8:27b, gemma4:26b, gemma4:12b, each vision
+└─ mac-skills-models       a headless accessibility tree, not a live click:
+                           choose-model, use-llama3-2-3b, download-qwen3-vl-8b,
+                           use-apple-intelligence, save-ollama-url
 ```
 
 ### Not verified
@@ -502,9 +516,10 @@ the fixed build, installed, same lesson, gemma4:12b with screenshots
   as is the 5 s poll's cost on a large folder.
 
 - Recording a real lesson: Screen Recording, Microphone, and Accessibility
-  were not granted to the new build, so Watch this and the capsule, a
-  lesson's real transcript and click names, and the Skills pane opening on
-  its own after a lesson were not run.
+  are now granted to 3.4.0 (`permissions.ready: true`), but no lesson was
+  recorded in this pass, so Watch this and the capsule, a lesson's real
+  transcript and click names, and the Skills pane opening on its own after a
+  lesson were not run.
 - A skill approved with questions left unanswered lists each as "Why: not
   answered" in `SKILL.md` (seen with the Apple Intelligence draft); whether
   a person is better off without those lines is open.

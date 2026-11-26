@@ -314,6 +314,52 @@ fn an_expired_lesson_cannot_be_drafted() {
 }
 
 #[test]
+fn the_picker_saves_each_explicit_model_choice() {
+    let mut rt = runtime("mac-skills-models");
+    tap(&mut rt, "use-llama3-2-3b");
+    assert_eq!(
+        rt.state.settings.apprentice.model.as_deref(),
+        Some("ollama:llama3.2:3b")
+    );
+    assert!(!rt.state.skills.picker.open, "choosing closes the picker");
+    assert!(recorded(&rt).drafts.is_empty(), "no model runs on a choice");
+
+    tap(&mut rt, "choose-model");
+    tap(&mut rt, "use-apple-intelligence");
+    assert_eq!(
+        rt.state.settings.apprentice.model.as_deref(),
+        Some("apple-intelligence")
+    );
+    assert!(recorded(&rt).drafts.is_empty());
+}
+
+#[test]
+fn none_clears_the_saved_choice_without_running_a_model() {
+    let mut rt = runtime("mac-skills-models");
+    tap(&mut rt, "use-none");
+    assert_eq!(rt.state.settings.apprentice.model, None);
+    assert!(!rt.state.skills.picker.open);
+    assert!(recorded(&rt).drafts.is_empty());
+    assert!(recorded(&rt).pulls.is_empty());
+
+    // With no choice, the explicit None row is the one in use.
+    tap(&mut rt, "choose-model");
+    refresh(&mut rt);
+    assert!(rt.find("in-use").is_some(), "{:?}", texts(&rt));
+    assert!(rt.find("use-none").is_none());
+}
+
+#[test]
+fn a_lesson_without_a_model_says_none_is_chosen() {
+    let mut rt = runtime("mac-skills-lesson");
+    rt.state.settings.apprentice.model = None;
+    refresh(&mut rt);
+    assert!(shows(&rt, "None chosen"), "{:?}", texts(&rt));
+    assert!(rt.find("choose-model-first").is_some());
+    assert!(recorded(&rt).drafts.is_empty());
+}
+
+#[test]
 fn a_download_is_its_own_click() {
     let mut rt = runtime("mac-skills-models");
     assert!(recorded(&rt).pulls.is_empty());
