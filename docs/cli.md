@@ -470,7 +470,8 @@ recording", "The window isn't open"). Setting `kind` is one of `bool`,
   "model": {"id": "parakeet_v3", "name": "…", "language": "en", "installed": true,
             "preparing": null, "downloaded_bytes": 0, "error": null, "fallback": null},
   "features": {"meetings": true, "release_microphone_while_idle": false,
-               "history_retention": "week"},
+               "history_retention": "week", "watch_and_learn": true,
+               "skills": true, "apprentice_model": "ollama:gemma4:12b"},
   "permissions": {"ready": true, "microphone": "ready", "accessibility": "ready",
                   "transcription_model": true},
   "window": {"open": false, "pane": null},
@@ -489,6 +490,9 @@ meeting.state       idle | starting | recording | transcribing
 model               the saved selection; installed is about that model
 model.fallback      {"id", "name", "language", "reason": "missing" | "changed" | "labs-off"}, the
                     model Hex runs while the saved one can't, or null
+features.watch_and_learn  Watch and learn's effective gate (switch, build, lock, and OS)
+features.skills     whether the Skills pane can be shown here
+features.apprentice_model  the explicit saved choice, or null when none is chosen
 permissions.*       ready | needs-request | needs-settings | needs-restart
 window.pane         settings | modes | history | meetings | …
 update              current | checking | available | unavailable
@@ -498,6 +502,8 @@ update              current | checking | available | unavailable
 `permissions.transcription_model` is about the model Hex runs, the fallback
 included, so a missing import with a downloaded fallback is ready.
 `labs` lists the [Labs](features/labs.md) features turned on; older Hex omits it.
+Older Hex also omits the three Watch and learn fields under `features`. Status
+reports the saved `apprentice_model`; it never chooses or switches one.
 
 ### Error codes
 

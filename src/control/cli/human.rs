@@ -370,13 +370,15 @@ pub(super) fn human_status(report: &StatusReport) -> String {
         (None, true) => "open".into(),
         _ => "closed".into(),
     };
+    let apprentice_model = features.apprentice_model.as_deref().unwrap_or("none");
     format!(
         "Apprentice {} (pid {}{memory})\n\
          Listener     {}\n\
          Capture      {capture}{pending}\n\
          Meeting      {meeting}\n\
          Model        {model_line}\n\
-         Features     meetings {}, release mic while idle {}, history {}\n\
+         Features     meetings {}, release mic while idle {}, history {}, \
+                      Watch and learn {}, Skills model {}\n\
          Permissions  {permission_line}\n\
          Window       {window}\n\
          Update       {}\n\
@@ -391,6 +393,8 @@ pub(super) fn human_status(report: &StatusReport) -> String {
         on(features.meetings),
         on(features.release_microphone_while_idle),
         features.history_retention,
+        on(features.watch_and_learn),
+        apprentice_model,
         report.update,
         match report.labs.as_slice() {
             [] => "none".to_string(),

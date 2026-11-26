@@ -1452,9 +1452,13 @@ mod tests {
         report.meeting.title = Some("Design sync".into());
         report.meeting.elapsed_seconds = Some(3723);
         report.features.meetings = true;
+        report.features.watch_and_learn = true;
+        report.features.skills = true;
+        report.features.apprentice_model = Some("ollama:gemma4:12b".into());
         let text = human_status(&report);
         assert!(text.starts_with("Apprentice 2.3.1 (pid 42, 412 MB)\n"));
         assert!(text.contains("Meeting      recording “Design sync” for 1:02:03\n"));
+        assert!(text.contains("Watch and learn on, Skills model ollama:gemma4:12b\n"));
         assert!(text.ends_with("Labs         none\n"));
         report.labs = vec!["live-text".into(), "meetings".into()];
         assert!(human_status(&report).ends_with("Labs         live-text, meetings\n"));
@@ -1471,5 +1475,29 @@ mod tests {
         json.as_object_mut().unwrap().remove("labs");
         let older: StatusReport = serde_json::from_value(json).unwrap();
         assert!(older.labs.is_empty());
+    }
+
+    #[test]
+    fn status_reports_watch_and_learn_and_reads_older_replies_without_it() {
+        let report = StatusReport {
+            features: crate::control::FeatureReport {
+                watch_and_learn: true,
+                skills: true,
+                apprentice_model: Some("apple-intelligence".into()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let mut json = serde_json::to_value(&report).unwrap();
+        assert_eq!(json["features"]["watch_and_learn"], true);
+        assert_eq!(json["features"]["skills"], true);
+        assert_eq!(json["features"]["apprentice_model"], "apple-intelligence");
+        for key in ["watch_and_learn", "skills", "apprentice_model"] {
+            json["features"].as_object_mut().unwrap().remove(key);
+        }
+        let older: StatusReport = serde_json::from_value(json).unwrap();
+        assert!(!older.features.watch_and_learn);
+        assert!(!older.features.skills);
+        assert_eq!(older.features.apprentice_model, None);
     }
 }
