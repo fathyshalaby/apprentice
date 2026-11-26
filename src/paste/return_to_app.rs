@@ -111,7 +111,11 @@ mod tests {
     fn only_a_different_recorded_app_needs_a_switch() {
         assert_eq!(decision(None, Some(7), 1), Decision::Paste);
         assert_eq!(decision(Some(7), Some(7), 1), Decision::Paste);
-        assert_eq!(decision(Some(1), Some(2), 1), Decision::Paste, "Apprentice itself");
+        assert_eq!(
+            decision(Some(1), Some(2), 1),
+            Decision::Paste,
+            "Apprentice itself"
+        );
         assert_eq!(decision(Some(0), Some(2), 1), Decision::Paste, "no pid");
         assert_eq!(decision(Some(7), Some(9), 1), Decision::ReturnTo(7));
         assert_eq!(decision(Some(7), None, 1), Decision::ReturnTo(7));

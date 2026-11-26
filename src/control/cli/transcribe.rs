@@ -269,24 +269,34 @@ fn refusal(status: u16, code: &str, model: &str) -> ControlReply {
             "model-unavailable",
             format!("Apprentice can't use `{model}`; run `hex model list` to see what it has"),
         ),
-        "invalid-request" => ControlReply::error("failed", "Apprentice refused the request; update Apprentice"),
+        "invalid-request" => ControlReply::error(
+            "failed",
+            "Apprentice refused the request; update Apprentice",
+        ),
         "unsupported-audio" | "invalid-audio" => ControlReply::error(
             "failed",
             "Apprentice couldn't read the audio it was sent; update Apprentice",
         ),
-        "length-required" => ControlReply::error("failed", "Apprentice refused the upload; update Apprentice"),
+        "length-required" => {
+            ControlReply::error("failed", "Apprentice refused the upload; update Apprentice")
+        }
         "resource-exhausted" => ControlReply::error(
             "resource-exhausted",
             "Apprentice says the audio is too large or too long to transcribe",
         ),
         "model-not-ready" => ControlReply::error("model-unavailable", not_ready(model)),
-        "queue-full" => {
-            ControlReply::error("busy", "Apprentice is busy with another transcription; try again")
-        }
-        "upload-timeout" => {
-            ControlReply::error("failed", "Apprentice timed out reading the audio; try again")
-        }
-        "cancelled" => ControlReply::error("failed", "Apprentice cancelled the transcription; try again"),
+        "queue-full" => ControlReply::error(
+            "busy",
+            "Apprentice is busy with another transcription; try again",
+        ),
+        "upload-timeout" => ControlReply::error(
+            "failed",
+            "Apprentice timed out reading the audio; try again",
+        ),
+        "cancelled" => ControlReply::error(
+            "failed",
+            "Apprentice cancelled the transcription; try again",
+        ),
         "service-gone" => ControlReply::error(
             "unavailable",
             "Apprentice's transcription service stopped; try again",
@@ -299,18 +309,30 @@ fn refusal(status: u16, code: &str, model: &str) -> ControlReply {
             ControlReply::error("failed", "Apprentice couldn't transcribe it; try again")
         }
         _ => match status {
-            401 => ControlReply::error("failed", "Apprentice rejected the request; restart Apprentice"),
-            408 => ControlReply::error("failed", "Apprentice timed out reading the audio; try again"),
+            401 => ControlReply::error(
+                "failed",
+                "Apprentice rejected the request; restart Apprentice",
+            ),
+            408 => ControlReply::error(
+                "failed",
+                "Apprentice timed out reading the audio; try again",
+            ),
             409 => ControlReply::error("model-unavailable", not_ready(model)),
             413 => ControlReply::error(
                 "resource-exhausted",
                 "Apprentice says the audio is too large to transcribe",
             ),
-            429 => ControlReply::error("busy", "Apprentice is busy with another transcription; try again"),
+            429 => ControlReply::error(
+                "busy",
+                "Apprentice is busy with another transcription; try again",
+            ),
             _ if code.is_empty() || code.starts_with("http-") => {
                 ControlReply::error("failed", format!("Apprentice answered HTTP {status}"))
             }
-            _ => ControlReply::error("failed", format!("Apprentice answered HTTP {status} ({code})")),
+            _ => ControlReply::error(
+                "failed",
+                format!("Apprentice answered HTTP {status} ({code})"),
+            ),
         },
     }
 }

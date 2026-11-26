@@ -115,8 +115,8 @@ fn request(
     timeouts: Timeouts,
 ) -> Result<Response> {
     let address = SocketAddr::from((Ipv4Addr::LOCALHOST, endpoint.port));
-    let mut stream =
-        TcpStream::connect_timeout(&address, CONNECT_TIMEOUT).context("Could not reach Apprentice")?;
+    let mut stream = TcpStream::connect_timeout(&address, CONNECT_TIMEOUT)
+        .context("Could not reach Apprentice")?;
     stream.set_write_timeout(Some(UPLOAD_TIMEOUT))?;
     stream.set_read_timeout(Some(timeouts.read))?;
     write!(
@@ -335,7 +335,9 @@ impl Client {
         match response.status {
             200 => serde_json::from_slice::<Transcription>(&response.body)
                 .map(|transcription| transcription.transcript)
-                .map_err(|_| Failure::Unavailable("Invalid Apprentice transcription response".into())),
+                .map_err(|_| {
+                    Failure::Unavailable("Invalid Apprentice transcription response".into())
+                }),
             429 => Err(Failure::Busy),
             status @ (400 | 408 | 411 | 413 | 415) => Err(Failure::Rejected {
                 status,

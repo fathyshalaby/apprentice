@@ -1893,7 +1893,9 @@ mod tests {
     #[test]
     fn an_always_record_reminder_says_so_and_never_offers_record() {
         let (mut rt, commands, _) = runtime(reminder(true, true), false, true, REMINDER);
-        assert!(texts(&rt).contains(&"Starts in 1 min · Apprentice records automatically".to_string()));
+        assert!(
+            texts(&rt).contains(&"Starts in 1 min · Apprentice records automatically".to_string())
+        );
         assert!(rt.find("record").is_none());
         assert!(rt.find("join-record").is_none());
         tap(&mut rt, "join");
@@ -2569,10 +2571,9 @@ mod tests {
             auto_stop: true,
         };
         let (mut rt, commands, _) = runtime(auto, false, true, CALL_ENDED);
-        assert!(
-            texts(&rt)
-                .contains(&"Apprentice stops recording in 30 s unless you keep recording.".to_string())
-        );
+        assert!(texts(&rt).contains(
+            &"Apprentice stops recording in 30 s unless you keep recording.".to_string()
+        ));
         tap(&mut rt, "keep-recording");
         assert!(matches!(
             commands.try_recv(),

@@ -2900,6 +2900,10 @@ mod tests {
             language: "fr".into(),
         };
         let mut settings = AppSettings {
+            transcription: TranscriptionSelection {
+                model: TranscriptionModelId::ParakeetUnifiedEnglish,
+                language: "en".into(),
+            },
             show_dock_icon: false,
             microphone: Some("Test microphone".into()),
             ..Default::default()
@@ -2990,6 +2994,10 @@ mod tests {
     #[test]
     fn invalid_remembered_languages_are_not_offered_by_model_switching() {
         let mut settings = AppSettings {
+            transcription: TranscriptionSelection {
+                model: TranscriptionModelId::ParakeetUnifiedEnglish,
+                language: "en".into(),
+            },
             transcription_recents: vec![
                 TranscriptionSelection {
                     model: TranscriptionModelId::ParakeetV2,

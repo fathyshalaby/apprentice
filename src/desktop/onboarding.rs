@@ -2224,7 +2224,10 @@ mod tests {
         );
         assert_eq!(default_mac_bundle_id(None), "ai.apprentice.native");
         assert_eq!(default_mac_bundle_id(Some("0")), "ai.apprentice.native");
-        assert_eq!(default_mac_bundle_id(Some("1")), "ai.apprentice.native.test");
+        assert_eq!(
+            default_mac_bundle_id(Some("1")),
+            "ai.apprentice.native.test"
+        );
 
         assert_eq!(
             own_tcc_services(PermissionKind::Accessibility),

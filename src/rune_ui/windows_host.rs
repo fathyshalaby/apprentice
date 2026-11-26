@@ -69,7 +69,9 @@ impl Backend {
             }
             request => match &self.runtime {
                 Some(runtime) => runtime.send(request),
-                None => Err(color_eyre::eyre::eyre!("Apprentice's runtime is not running")),
+                None => Err(color_eyre::eyre::eyre!(
+                    "Apprentice's runtime is not running"
+                )),
             },
         }
     }

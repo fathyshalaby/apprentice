@@ -365,8 +365,9 @@ pub(crate) fn route_shortcut(
     route: Option<&ShortcutRoute>,
     command: ShortcutCommand,
 ) -> Result<()> {
-    let route = route
-        .ok_or_else(|| eyre!("Apprentice is not listening; enable it in Settings or run `hex start`"))?;
+    let route = route.ok_or_else(|| {
+        eyre!("Apprentice is not listening; enable it in Settings or run `hex start`")
+    })?;
     route
         .commands
         .try_send(command.into())
@@ -553,9 +554,9 @@ pub(crate) fn capture(action: crate::control::ScrawlCaptureAction) -> crate::con
     }
     if action == ScrawlCaptureAction::Status {
         return match exchange(Request::CaptureStatus, SEND_WAIT) {
-            Ok(reply) => reply
-                .control
-                .unwrap_or_else(|| ControlReply::error("failed", "Apprentice did not say how it went")),
+            Ok(reply) => reply.control.unwrap_or_else(|| {
+                ControlReply::error("failed", "Apprentice did not say how it went")
+            }),
             Err(RequestError::NotRunning) => crate::control::cli::not_running(),
             Err(error) => ControlReply::error("failed", format!("{error}")),
         };
@@ -1043,7 +1044,9 @@ pub(crate) fn launch(activation: &Activation, show: bool) -> Result<Launch> {
             restart()?;
         }
         Ok(_) => {
-            bail!("Apprentice is running in another desktop session; run `hex quit`, then launch it again")
+            bail!(
+                "Apprentice is running in another desktop session; run `hex quit`, then launch it again"
+            )
         }
         Err(RequestError::Outdated) if supervised() => restart()?,
         Err(RequestError::NotRunning) if supervised() => {
@@ -1066,7 +1069,9 @@ pub(crate) fn launch(activation: &Activation, show: bool) -> Result<Launch> {
 
 pub(crate) fn restart() -> Result<()> {
     if !supervised() {
-        bail!("Only Apprentice started by its systemd unit restarts; run `hex quit`, then launch it");
+        bail!(
+            "Only Apprentice started by its systemd unit restarts; run `hex quit`, then launch it"
+        );
     }
     // Without a desktop (over SSH), keep the one Hex last ran in.
     if graphical_session() || !session_environment_path()?.exists() {

@@ -359,7 +359,10 @@ impl WindowsDesktopHost {
             | DesktopAction::ConfirmUpdateSwitch
             | DesktopAction::WindowFocused => {
                 if let Err(error) = self.updater.act(&action) {
-                    self.error = Some(tr_fill("Could not restart Apprentice: {}", &format!("{error:#}")));
+                    self.error = Some(tr_fill(
+                        "Could not restart Apprentice: {}",
+                        &format!("{error:#}"),
+                    ));
                 }
             }
             // Windows saves shortcuts from the window.
@@ -698,7 +701,10 @@ impl WindowsDesktopHost {
                 true
             }
             Some(Err(error)) => {
-                self.error = Some(tr_fill("Could not restart Apprentice: {}", &format!("{error:#}")));
+                self.error = Some(tr_fill(
+                    "Could not restart Apprentice: {}",
+                    &format!("{error:#}"),
+                ));
                 false
             }
             None => false,

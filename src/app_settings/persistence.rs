@@ -534,7 +534,8 @@ impl LoadIssue {
         match self {
             Self::Unparseable(reason) => reason.reload_error(),
             Self::Unreadable => {
-                "Apprentice couldn't read settings.json; keeping the settings it already has.".into()
+                "Apprentice couldn't read settings.json; keeping the settings it already has."
+                    .into()
             }
         }
     }

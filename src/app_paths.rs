@@ -282,12 +282,11 @@ pub fn audio_dir() -> Option<PathBuf> {
 }
 
 fn user_config_dir_in(home: &std::path::Path, test_build: bool) -> PathBuf {
-    home.join(".config")
-        .join(if test_build {
-            TEST_DATA_FOLDER
-        } else {
-            DATA_FOLDER
-        })
+    home.join(".config").join(if test_build {
+        TEST_DATA_FOLDER
+    } else {
+        DATA_FOLDER
+    })
 }
 
 #[cfg(test)]
